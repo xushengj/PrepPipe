@@ -30,7 +30,7 @@ QIcon ObjectBase::getTypeDisplayIcon(ObjectType ty)
 {
     switch(ty){
     case ObjectType::GeneralTree:
-        return QIcon();
+        return QIcon(":/icon/test.png");
     }
     qFatal("Unhandled object type");
     return QIcon();
