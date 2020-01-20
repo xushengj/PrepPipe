@@ -19,14 +19,44 @@ class EditorWindow : public QMainWindow
 
 public:
     EditorWindow(ObjectContext* ctx, QWidget *parent = nullptr);
-    ~EditorWindow();
+    virtual ~EditorWindow() override;
 private:
+    struct ObjectListItemData {
+        ObjectBase* obj = nullptr;
+        QWidget* editor = nullptr;
+        ObjectListItemData() = default;
+        ObjectListItemData(ObjectBase* objPtr, QWidget* editorPtr)
+            : obj(objPtr), editor(editorPtr)
+        {}
+    };
+    struct EditorOpenedObjectData {
+        ObjectBase* obj = nullptr;
+        QWidget* editor = nullptr;
+        QTreeWidgetItem* item = nullptr;
+
+        EditorOpenedObjectData() = default;
+        EditorOpenedObjectData(ObjectBase* objPtr, QWidget* editorPtr, QTreeWidgetItem* itemPtr)
+            : obj(objPtr), editor(editorPtr), item(itemPtr)
+        {}
+    };
+
     void initFromContext();
     void initGUI();
 
     void refreshObjectListGUI();
+
+    void showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item);
+
+    virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
+
 private slots:
     void settingChanged(const QStringList& keyList);
+
+    void objectListContextMenuRequested(const QPoint& pos);
+    void objectListItemClicked(QTreeWidgetItem* item, int column);
+    void objectListItemDoubleClicked(QTreeWidgetItem* item, int column);
+
+    void objectListOpenEditorRequested(QTreeWidgetItem* item);
 private:
     Ui::EditorWindow *ui;
     ObjectContext* ctx;
@@ -40,6 +70,8 @@ private:
     QMap<ObjectBase::ObjectType, QList<ObjectBase*>> namedObjectsByType;
     QMap<ObjectBase::ObjectType, QList<ObjectBase*>> anonymousObjectsByType;
 
-    QVector<std::pair<ObjectBase*,QWidget*>> openedGUIs;
+    QHash<QTreeWidgetItem*, ObjectListItemData> itemData;
+    QList<EditorOpenedObjectData> editorOpenedObjects;
+    int currentOpenedObjectIndex = -1;
 };
 #endif // EDITORWINDOW_H
