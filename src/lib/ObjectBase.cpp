@@ -2,7 +2,8 @@
 
 ObjectBase::ObjectBase(ObjectType Ty, const ConstructOptions &opt)
     : QObject(nullptr),
-      name(opt.name), comment(opt.comment), nameSpace(opt.nameSpace),
+      name(opt.name), comment(opt.comment),
+      filePath(opt.filePath), nameSpace(opt.nameSpace),
       ty(Ty), status(opt.isLocked? StatusFlag::Locked : StatusFlag::None)
 {
 

@@ -1,5 +1,6 @@
 #include "src/gui/EditorWindow.h"
 #include "src/lib/ObjectContext.h"
+#include "src/lib/StaticObjectIndexDB.h"
 #include "src/misc/Settings.h"
 
 #include <QApplication>
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     Settings::createInstance();
+    StaticObjectIndexDB::createInstance();
 
     QTranslator translator;
     QLocale defaultLocale = QLocale::system();
@@ -111,12 +113,13 @@ int main(int argc, char *argv[])
         editRootDirectory = QDir::currentPath();
     }
 
-    EditorWindow w(new ObjectContext(editRootDirectory));
+    EditorWindow w(editRootDirectory);
     w.show();
 
     int retVal = a.exec();
 
     Settings::destructInstance();
+    StaticObjectIndexDB::destructInstance();
     return retVal;
 }
 

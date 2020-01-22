@@ -4,6 +4,8 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QGridLayout>
+#include <QCommonStyle>
+#include <QFileDialog>
 
 namespace {
 const QString SETTINGS_EDITOR_PLACEHOLDER_TEXT = QStringLiteral("editor/placeholder_text");
@@ -18,21 +20,34 @@ QString getPlaceHolderText()
 }
 }
 
-EditorWindow::EditorWindow(ObjectContext *ctxptr, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::EditorWindow), ctx(ctxptr)
+EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::EditorWindow), mainCtx(startDirectory), sideCtx()
 {
     ui->setupUi(this);
-    Q_ASSERT(ctxptr);
     setContextMenuPolicy(Qt::DefaultContextMenu); // call contextMenuEvent()
 
-    initFromContext();
-    initGUI();
+    ui->placeholderLabel->setText(getPlaceHolderText());
+    ui->currentObjectComboBox->addItem(tr("(No object is opened)"));
+    ui->currentObjectComboBox->setEnabled(false);
+
+    QCommonStyle style;
+    mainRoot = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr), QStringList(tr("In Directory")));
+    mainRoot->setIcon(0, style.standardIcon(QStyle::SP_DirHomeIcon));
+    mainRoot->setToolTip(0, mainCtx.getDirectory());
+    sideRoot = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr), QStringList(tr("Other")));
+    sideRoot->setIcon(0, style.standardIcon(QStyle::SP_DirIcon));
+    ui->objectListTreeWidget->insertTopLevelItem(0, mainRoot);
+    ui->objectListTreeWidget->insertTopLevelItem(1, sideRoot);
+    populateObjectListTreeFromMainContext();
+
     connect(Settings::inst(), &Settings::settingChanged, this, &EditorWindow::settingChanged);
 
     ui->objectListTreeWidget->setContextMenuPolicy(Qt::CustomContextMenu); // emit signal
     connect(ui->objectListTreeWidget, &QTreeWidget::itemClicked,                this, &EditorWindow::objectListItemClicked);
     connect(ui->objectListTreeWidget, &QTreeWidget::itemDoubleClicked,          this, &EditorWindow::objectListItemDoubleClicked);
     connect(ui->objectListTreeWidget, &QTreeWidget::customContextMenuRequested, this, &EditorWindow::objectListContextMenuRequested);
+
+    connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
 }
 
 EditorWindow::~EditorWindow()
@@ -40,73 +55,31 @@ EditorWindow::~EditorWindow()
     delete ui;
 }
 
-void EditorWindow::initFromContext()
+void EditorWindow::setObjectItem(QTreeWidgetItem* item, ObjectBase* obj)
 {
-    Q_ASSERT(namedObjectsByType.empty());
-    Q_ASSERT(anonymousObjectsByType.empty());
-
-    auto addToDict = [](decltype(namedObjectsByType)& dict, ObjectBase* obj) -> void {
-        dict[obj->getType()].push_back(obj);
-    };
-
-    for (auto objPtr : *ctx) {
-        if (objPtr->getName().isEmpty()) {
-            addToDict(anonymousObjectsByType, objPtr);
-        } else {
-            addToDict(namedObjectsByType, objPtr);
-        }
+    item->setIcon(0, obj->getTypeDisplayIcon());
+    item->setText(0, obj->getName());
+    QString objTooltip = obj->getTypeDisplayName();
+    QString absPath = obj->getFilePath();
+    if (!absPath.isEmpty()) {
+        objTooltip.append(' ');
+        objTooltip.append('(');
+        objTooltip.append(absPath);
+        objTooltip.append(')');
     }
+    item->setToolTip(0, objTooltip);
 }
 
-void EditorWindow::initGUI()
+void EditorWindow::populateObjectListTreeFromMainContext()
 {
-    ui->placeholderLabel->setText(getPlaceHolderText());
-    ui->currentObjectComboBox->addItem(tr("(No object is opened)"));
-    ui->currentObjectComboBox->setEnabled(false);
-
-    refreshObjectListGUI();
-}
-
-void EditorWindow::refreshObjectListGUI()
-{
-    ui->objectListTreeWidget->clear();
-    namedRoot = nullptr;
-    anonymousRoot = nullptr;
-    namedObjectTypeItem.clear();
-    anonymousObjectTypeItem.clear();
-    namedObjectItems.clear();
-    anonymousObjectItems.clear();
-    itemData.clear();
-    auto setupTree = [this](
-            decltype(namedRoot) root,
-            decltype(namedObjectTypeItem)& typeItem,
-            decltype(namedObjectItems)& objectItems,
-            const decltype(namedObjectsByType)& objByType) -> void {
-        for (auto iter = objByType.begin(), iterEnd = objByType.end(); iter != iterEnd; ++iter) {
-            ObjectBase::ObjectType ty = iter.key();
-            QTreeWidgetItem* tyItem = new QTreeWidgetItem(root,QStringList(ObjectBase::getTypeDisplayName(ty)));
-            tyItem->setIcon(0, ObjectBase::getTypeDisplayIcon(ty));
-            typeItem.insert(ty, tyItem);
-            for (auto objPtr : iter.value()) {
-                QTreeWidgetItem* objItem = new QTreeWidgetItem(tyItem, QStringList(objPtr->getName()));
-                objectItems.insert(objPtr, objItem);
-                itemData.insert(objItem, ObjectListItemData(objPtr, nullptr));
-            }
-        }
-    };
-    int rowCnt = 0;
-    if (!namedObjectsByType.isEmpty()) {
-        namedRoot = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr), QStringList(tr("Named")));
-        ui->objectListTreeWidget->insertTopLevelItem(rowCnt, namedRoot);
-        rowCnt += 1;
-        setupTree(namedRoot, namedObjectTypeItem, namedObjectItems, namedObjectsByType);
+    // we only need to initialize the part for main context
+    for (auto objPtr : mainCtx) {
+        Q_ASSERT(objPtr && !objPtr->getName().isEmpty());
+        QTreeWidgetItem* item = new QTreeWidgetItem(mainRoot);
+        setObjectItem(item, objPtr);
+        itemData.insert(item, ObjectListItemData(objPtr, nullptr, OriginContext::MainContext));
     }
-    if (!anonymousObjectsByType.isEmpty()) {
-        anonymousRoot = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr), QStringList(tr("Anonymous")));
-        ui->objectListTreeWidget->insertTopLevelItem(rowCnt, anonymousRoot);
-        rowCnt += 1;
-        setupTree(anonymousRoot, anonymousObjectTypeItem, anonymousObjectItems, anonymousObjectsByType);
-    }
+    mainRoot->setExpanded(true);
 }
 
 void EditorWindow::settingChanged(const QStringList& keyList)
@@ -143,13 +116,13 @@ void EditorWindow::objectListOpenEditorRequested(QTreeWidgetItem* item)
         data.editor = data.obj->getEditor();
     }
     if (data.editor) {
-        showObjectEditor(data.obj, data.editor, item);
+        showObjectEditor(data.obj, data.editor, item, data.origin);
     } else {
         QMessageBox::information(this, tr("Feature not implemented"), tr("Sorry, editing or viewing this object is not supported."));
     }
 }
 
-void EditorWindow::showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item)
+void EditorWindow::showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item, OriginContext origin)
 {
     int index = -1;
     // first of all, go through the opened object list to see if there is already one there
@@ -164,30 +137,105 @@ void EditorWindow::showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidge
     if (index == -1) {
         // not opened before; add to list
         index = editorOpenedObjects.size();
-        editorOpenedObjects.push_back(EditorOpenedObjectData(obj, editor, item));
+        editorOpenedObjects.push_back(EditorOpenedObjectData(obj, editor, item, origin));
     }
 
-    // now try to actually switch the editor
-    // do nothing if current one is the desired
-    if (index == currentOpenedObjectIndex)
+    switchToEditor(index);
+}
+
+void EditorWindow::switchToEditor(int index)
+{
+    if (currentOpenedObjectIndex == index)
         return;
 
     QWidget* previousWidget = (currentOpenedObjectIndex != -1)? editorOpenedObjects.at(currentOpenedObjectIndex).editor : ui->placeholderLabel;
+    QWidget* curWidget = (index != -1)? editorOpenedObjects.at(index).editor : ui->placeholderLabel;
     currentOpenedObjectIndex = index;
     ui->placeholderWidget->layout()->removeWidget(previousWidget);
     previousWidget->hide();
-    qobject_cast<QGridLayout*>(ui->placeholderWidget->layout())->addWidget(editor, 0, 0);
-    editor->show();
+    qobject_cast<QGridLayout*>(ui->placeholderWidget->layout())->addWidget(curWidget, 0, 0);
+    curWidget->show();
 }
 
 void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
 {
-    // TODO
-    Q_UNUSED(pos)
+    QTreeWidgetItem* item = ui->objectListTreeWidget->itemAt(pos);
+    if (item == mainRoot) {
+        QAction* cdAction = new QAction(tr("Change Directory..."));
+        connect(cdAction, &QAction::triggered, ui->actionChangeDirectory, &QAction::trigger);
+        QMenu menu(ui->objectListTreeWidget);
+        menu.addAction(cdAction);
+        menu.exec(ui->objectListTreeWidget->mapToGlobal(pos));
+    }
 }
 
 void EditorWindow::contextMenuEvent(QContextMenuEvent *event)
 {
     // TODO
     event->accept();
+}
+
+void EditorWindow::changeDirectoryRequested()
+{
+    QString newDir = QFileDialog::getExistingDirectory(this, tr("Set new working directory"), mainCtx.getDirectory());
+    if (newDir.isEmpty() || newDir == mainCtx.getDirectory())
+        return;
+
+    changeDirectory(newDir);
+}
+
+bool EditorWindow::tryCloseAllMainContextObjects()
+{
+    // loop over all editor items and see which would be preserved and which would be closed
+    decltype (editorOpenedObjects) tmpList;
+    tmpList.reserve(editorOpenedObjects.size());
+    int indexAfterClose = -1;
+    for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
+        const auto& data = editorOpenedObjects.at(i);
+        if (data.origin == OriginContext::MainContext) {
+            // we will close this one
+            switchToEditor(i);
+            if (!data.obj->editorOkayToClose(data.editor, this)) {
+                // close request cancelled
+                return false;
+            }
+        } else {
+            if (indexAfterClose == -1) {
+                indexAfterClose = i;
+            }
+            tmpList.push_back(data);
+        }
+    }
+    switchToEditor(indexAfterClose);
+
+    // now we are good to close all of them
+    tmpList.swap(editorOpenedObjects);
+
+    // remove items in object list tree
+    for (auto iter = itemData.begin(); iter != itemData.end();) {
+        QTreeWidgetItem* itemToDelete = nullptr;
+        if (iter.key()->parent() == mainRoot) {
+            itemToDelete = iter.key();
+        }
+        if (itemToDelete) {
+            delete itemToDelete;
+            iter = itemData.erase(iter);
+        } else {
+            ++iter;
+        }
+    }
+    return true;
+}
+
+void EditorWindow::changeDirectory(const QString& newDirectory)
+{
+    // step 1: close all editors if they are open
+    if (!tryCloseAllMainContextObjects())
+        return;
+
+    // step 2: refresh context
+    mainCtx.setDirectory(newDirectory);
+
+    // step 3: re-init the object list for main context
+    populateObjectListTreeFromMainContext();
 }

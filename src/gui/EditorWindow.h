@@ -18,34 +18,44 @@ class EditorWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    EditorWindow(ObjectContext* ctx, QWidget *parent = nullptr);
+    EditorWindow(QString startDirectory, QWidget *parent = nullptr);
     virtual ~EditorWindow() override;
 private:
+    enum class OriginContext : int {
+        MainContext = 0,
+        SideContext = 1
+    };
     struct ObjectListItemData {
         ObjectBase* obj = nullptr;
         QWidget* editor = nullptr;
+        OriginContext origin = OriginContext::MainContext;
         ObjectListItemData() = default;
-        ObjectListItemData(ObjectBase* objPtr, QWidget* editorPtr)
-            : obj(objPtr), editor(editorPtr)
+        ObjectListItemData(ObjectBase* objPtr, QWidget* editorPtr, OriginContext originValue)
+            : obj(objPtr), editor(editorPtr), origin(originValue)
         {}
     };
     struct EditorOpenedObjectData {
         ObjectBase* obj = nullptr;
         QWidget* editor = nullptr;
         QTreeWidgetItem* item = nullptr;
+        OriginContext origin = OriginContext::MainContext;
 
         EditorOpenedObjectData() = default;
-        EditorOpenedObjectData(ObjectBase* objPtr, QWidget* editorPtr, QTreeWidgetItem* itemPtr)
-            : obj(objPtr), editor(editorPtr), item(itemPtr)
+        EditorOpenedObjectData(ObjectBase* objPtr, QWidget* editorPtr, QTreeWidgetItem* itemPtr, OriginContext originValue)
+            : obj(objPtr), editor(editorPtr), item(itemPtr), origin(originValue)
         {}
     };
 
     void initFromContext();
     void initGUI();
 
-    void refreshObjectListGUI();
+    void populateObjectListTreeFromMainContext();
+    static void setObjectItem(QTreeWidgetItem* item, ObjectBase* obj);
 
-    void showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item);
+    void showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item, OriginContext origin);
+    void switchToEditor(int index);
+    void changeDirectory(const QString& newDirectory);
+    bool tryCloseAllMainContextObjects();
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
@@ -57,18 +67,15 @@ private slots:
     void objectListItemDoubleClicked(QTreeWidgetItem* item, int column);
 
     void objectListOpenEditorRequested(QTreeWidgetItem* item);
+
+    void changeDirectoryRequested();
 private:
     Ui::EditorWindow *ui;
-    ObjectContext* ctx;
+    ObjectContext mainCtx; // what's in working directory
+    ObjectContext sideCtx; // what's "floating"
 
-    QTreeWidgetItem* namedRoot;
-    QTreeWidgetItem* anonymousRoot;
-    QMap<ObjectBase::ObjectType, QTreeWidgetItem*> namedObjectTypeItem;
-    QMap<ObjectBase::ObjectType, QTreeWidgetItem*> anonymousObjectTypeItem;
-    QHash<ObjectBase*, QTreeWidgetItem*> namedObjectItems;
-    QHash<ObjectBase*, QTreeWidgetItem*> anonymousObjectItems;
-    QMap<ObjectBase::ObjectType, QList<ObjectBase*>> namedObjectsByType;
-    QMap<ObjectBase::ObjectType, QList<ObjectBase*>> anonymousObjectsByType;
+    QTreeWidgetItem* mainRoot = nullptr;
+    QTreeWidgetItem* sideRoot = nullptr;
 
     QHash<QTreeWidgetItem*, ObjectListItemData> itemData;
     QList<EditorOpenedObjectData> editorOpenedObjects;

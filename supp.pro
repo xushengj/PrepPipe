@@ -34,6 +34,7 @@ SOURCES += \
     src/lib/IntrinsicObject.cpp \
     src/lib/ObjectBase.cpp \
     src/lib/ObjectContext.cpp \
+    src/lib/StaticObjectIndexDB.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
     src/misc/Settings.cpp
@@ -47,6 +48,7 @@ HEADERS += \
     src/lib/IntrinsicObject.h \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
+    src/lib/StaticObjectIndexDB.h \
     src/misc/Settings.h
 
 FORMS += \

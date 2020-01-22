@@ -14,30 +14,44 @@ class ObjectContext : public QObject
 
 public:
     ObjectContext() = default;
-    ObjectContext(const QString& rootDirectory);
+    ObjectContext(const QString& mainDirectory);
 
     ~ObjectContext() {
         clear();
     }
 
-    void loadAllObjectsFromDirectory(const QString& dir, const QStringList& nameSpace = QStringList() );
+    void swap(ObjectContext& rhs) {
+        mainDirectory.swap(rhs.mainDirectory);
+        objects.swap(rhs.objects);
+        objectMap.swap(rhs.objectMap);
+    }
 
     int getNumObjects() const {
         return objects.size();
     }
     void clear();
 
-    ObjectBase* getObject(const QString& name, const QStringList& nameSpace = QStringList()) const;
+    ObjectBase* getObject(const QString& name) const;
+
+    QString getDirectory() const {
+        return mainDirectory;
+    }
+
+    void setDirectory(const QString& newDirectory);
 
 private:
-    QString rootDirectory;
-    QStringList baseNameSpace;
+    void loadAllObjectsFromDirectory();
+
+private:
+    QString mainDirectory;
     QList<ObjectBase*> objects;
-    QHash<QStringList,QHash<QString,int>> objectIndexByNameSpace;
+    QHash<QString,int> objectMap;
 
 public:
     decltype(objects.begin())   begin() {return objects.begin();}
     decltype(objects.end())     end()   {return objects.end();}
+
+    decltype(objects.size())    size()  const {return objects.size();}
 };
 
 #endif // OBJECTCONTEXT_H

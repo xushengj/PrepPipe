@@ -10,21 +10,32 @@ void ObjectContext::clear()
         delete ptr;
     }
     objects.clear();
-    objectIndexByNameSpace.clear();
+    objectMap.clear();
 }
 
-ObjectContext::ObjectContext(const QString& root)
-    : rootDirectory(root)
+ObjectContext::ObjectContext(const QString& directory)
+    : mainDirectory(directory)
 {
-    loadAllObjectsFromDirectory(root, QStringList());
+    loadAllObjectsFromDirectory();
 }
 
-void ObjectContext::loadAllObjectsFromDirectory(const QString& dir, const QStringList& nameSpace)
+void ObjectContext::setDirectory(const QString& newDirectory)
 {
-    QDir workDirectory(dir, QStringLiteral("*.xml"));
+    if (mainDirectory == newDirectory)
+        return;
+
+    clear();
+    mainDirectory = newDirectory;
+    if (!newDirectory.isEmpty())
+        loadAllObjectsFromDirectory();
+}
+
+void ObjectContext::loadAllObjectsFromDirectory()
+{
+    QDir workDirectory(mainDirectory, QStringLiteral("*.xml"));
     // if the directory contains something with .xml suffix, open all of them and add them to this namespace
     QFileInfoList fileList = workDirectory.entryInfoList(QDir::Files, QDir::Name | QDir::LocaleAware);
-    qInfo() << fileList.size() << "xml files under directory" << workDirectory.absolutePath() << ", namespace:" << nameSpace;
+    qInfo() << fileList.size() << "xml files under directory" << workDirectory.absolutePath();
     for (const auto& f : fileList) {
         QString absPath = f.absoluteFilePath();
         QFile file(absPath);
@@ -33,7 +44,8 @@ void ObjectContext::loadAllObjectsFromDirectory(const QString& dir, const QStrin
             continue;
         }
         ObjectBase::ConstructOptions opt;
-        opt.nameSpace = nameSpace;
+        opt.filePath = absPath;
+        opt.name = f.completeBaseName();
         opt.isLocked = !f.isWritable();
         QXmlStreamReader xml(&file);
         IntrinsicObject* obj = IntrinsicObject::loadFromXML(xml, opt);
@@ -55,26 +67,23 @@ void ObjectContext::loadAllObjectsFromDirectory(const QString& dir, const QStrin
         if (objName.isEmpty())
             continue;
 
-        if (ObjectBase* existingObj = getObject(objName, nameSpace)) {
-            qInfo() << "Object" << objName << "at" << absPath << "is shadowed by the one at" << existingObj->getBackingFilePath();
+        if (ObjectBase* existingObj = getObject(objName)) {
+            qInfo() << "Object" << objName << "at" << absPath << "is shadowed by the one at" << existingObj->getFilePath();
             continue;
         }
 
-        objectIndexByNameSpace[nameSpace][objName] = objIndex;
+        objectMap.insert(objName, objIndex);
         qInfo() << objName << "at" << absPath << "registered";
     }
     // if any of the object is a DataManifestObject, also try to open all the files listed in that object
     // TODO
 }
 
-ObjectBase* ObjectContext::getObject(const QString& name, const QStringList& nameSpace) const
+ObjectBase* ObjectContext::getObject(const QString& name) const
 {
-    auto iter = objectIndexByNameSpace.find(nameSpace);
-    if (iter != objectIndexByNameSpace.end()) {
-        auto iter2 = iter.value().find(name);
-        if (iter2 != iter.value().end()) {
-            return objects.at(iter2.value());
-        }
+    auto iter = objectMap.find(name);
+    if (iter != objectMap.end()) {
+        return objects.at(iter.value());
     }
     return nullptr;
 }

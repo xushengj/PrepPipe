@@ -120,6 +120,7 @@
     </property>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionChangeDirectory"/>
    </widget>
    <addaction name="menuFile_Object"/>
   </widget>
@@ -132,6 +133,11 @@
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
+   </property>
+  </action>
+  <action name="actionChangeDirectory">
+   <property name="text">
+    <string>Change Directory...</string>
    </property>
   </action>
  </widget>

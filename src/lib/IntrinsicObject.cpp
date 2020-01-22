@@ -69,7 +69,17 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
             qWarning() << "Missing " << XML_NAME << " attribute on element " << XML_TOP;
             return nullptr;
         }
-        newOpt.name = attr.value(XML_NAME).toString();
+        QString nameFromXML = attr.value(XML_NAME).toString();
+
+        if (newOpt.name.isEmpty()) {
+            newOpt.name = nameFromXML;
+        } else {
+            // if the object name do not match with the file name, here we transparently rename the object
+            // (by not saving the name from xml)
+            if (newOpt.name != nameFromXML) {
+                qWarning() << "Intrinsic Object from " << newOpt.filePath << " is renamed from " << nameFromXML << " to " << newOpt.name;
+            }
+        }
     }
 
     // get comment

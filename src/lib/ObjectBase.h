@@ -36,6 +36,7 @@ public:
         QString name;
         QString comment;
         // from environment / settings
+        QString filePath;
         QStringList nameSpace;
         bool isLocked;
     };
@@ -53,7 +54,7 @@ public:
     QIcon       getTypeDisplayIcon()    const {return getTypeDisplayIcon(ty);}
 
     virtual QWidget* getEditor() {return nullptr;}
-    virtual QString getBackingFilePath() const {return QString();}
+    virtual bool editorOkayToClose(QWidget* editor, QWidget* window) {Q_UNUSED(editor) Q_UNUSED(window) return true;}
 
     StatusFlags getStatus() const {return status;}
 
@@ -67,6 +68,10 @@ public:
 
     QString getComment() const {
         return comment;
+    }
+
+    QString getFilePath() const {
+        return filePath;
     }
 
     void setName(const QString& newName) {
@@ -84,12 +89,17 @@ public:
         comment = newComment;
     }
 
+    void setFilePath(const QString& newFilePath) {
+        filePath = newFilePath;
+    }
+
 signals:
     void statusChanged(StatusFlags stat);
 
 private:
     QString name;
     QString comment;
+    QString filePath;
     QStringList nameSpace;
     const ObjectType ty;
     StatusFlags status;
