@@ -37,6 +37,9 @@ public:
         return mainDirectory;
     }
 
+    void addObject(ObjectBase* obj);
+    void releaseObject(ObjectBase* obj);
+
     void setDirectory(const QString& newDirectory);
 
 private:
@@ -45,7 +48,7 @@ private:
 private:
     QString mainDirectory;
     QList<ObjectBase*> objects;
-    QHash<QString,int> objectMap;
+    QHash<QString, ObjectBase*> objectMap;
 
 public:
     decltype(objects.begin())   begin() {return objects.begin();}

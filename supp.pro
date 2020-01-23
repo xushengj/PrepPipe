@@ -31,6 +31,8 @@ SOURCES += \
     src/gui/TextEditor.cpp \
     src/lib/DataObject/GeneralTree.cpp \
     src/lib/DataObject/GeneralTreeEditor.cpp \
+    src/lib/DataObject/MIMEData.cpp \
+    src/lib/DataObject/MIMEDataEditor.cpp \
     src/lib/IntrinsicObject.cpp \
     src/lib/ObjectBase.cpp \
     src/lib/ObjectContext.cpp \
@@ -45,6 +47,8 @@ HEADERS += \
     src/gui/TextEditor.h \
     src/lib/DataObject/GeneralTree.h \
     src/lib/DataObject/GeneralTreeEditor.h \
+    src/lib/DataObject/MIMEData.h \
+    src/lib/DataObject/MIMEDataEditor.h \
     src/lib/IntrinsicObject.h \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
@@ -53,7 +57,8 @@ HEADERS += \
 
 FORMS += \
     src/gui/EditorWindow.ui \
-    src/lib/DataObject/GeneralTreeEditor.ui
+    src/lib/DataObject/GeneralTreeEditor.ui \
+    src/lib/DataObject/MIMEDataEditor.ui
 
 TRANSLATIONS += \
     translations/supp_zh_CN.ts

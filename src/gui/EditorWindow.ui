@@ -118,9 +118,16 @@
     <property name="title">
      <string>File/Object</string>
     </property>
+    <widget class="QMenu" name="menuCapture">
+     <property name="title">
+      <string>Capture...</string>
+     </property>
+     <addaction name="actionCaptureClipboard"/>
+    </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="actionChangeDirectory"/>
+    <addaction name="menuCapture"/>
    </widget>
    <addaction name="menuFile_Object"/>
   </widget>
@@ -138,6 +145,11 @@
   <action name="actionChangeDirectory">
    <property name="text">
     <string>Change Directory...</string>
+   </property>
+  </action>
+  <action name="actionCaptureClipboard">
+   <property name="text">
+    <string>Clipboard</string>
    </property>
   </action>
  </widget>

@@ -72,7 +72,7 @@ void ObjectContext::loadAllObjectsFromDirectory()
             continue;
         }
 
-        objectMap.insert(objName, objIndex);
+        objectMap.insert(objName, obj);
         qInfo() << objName << "at" << absPath << "registered";
     }
     // if any of the object is a DataManifestObject, also try to open all the files listed in that object
@@ -83,7 +83,39 @@ ObjectBase* ObjectContext::getObject(const QString& name) const
 {
     auto iter = objectMap.find(name);
     if (iter != objectMap.end()) {
-        return objects.at(iter.value());
+        return iter.value();
     }
     return nullptr;
+}
+
+void ObjectContext::addObject(ObjectBase* obj)
+{
+    objects.push_back(obj);
+
+    QString name = obj->getName();
+    if (name.isEmpty() || objectMap.contains(name))
+        return;
+
+    objectMap.insert(name, obj);
+}
+
+void ObjectContext::releaseObject(ObjectBase* obj)
+{
+    int indexToRemove = objects.indexOf(obj);
+    Q_ASSERT(indexToRemove >= 0);
+    objects.removeAt(indexToRemove);
+
+    QString name = obj->getName();
+    if (!name.isEmpty()) {
+        // update objectMap
+        objectMap.remove(name);
+        // if any existing object is shadowed by the removed object, place it into objectMap
+        for (int i = 0, n = objects.size(); i < n; ++i) {
+            ObjectBase* ptr = objects.at(i);
+            if (ptr->getName() == name) {
+                objectMap.insert(name, ptr);
+                break;
+            }
+        }
+    }
 }

@@ -9,6 +9,7 @@
 #include <QMetaEnum>
 #include <QIcon>
 #include <QIODevice>
+#include <QMenu>
 
 #include <functional>
 
@@ -27,7 +28,8 @@ public:
 
 
     enum ObjectType { // this determines the sort order in UI
-        GeneralTree = 0
+        GeneralTree = 0,
+        MIMEData = 1
     };
     Q_ENUM(ObjectType)
 
@@ -55,6 +57,7 @@ public:
 
     virtual QWidget* getEditor() {return nullptr;}
     virtual bool editorOkayToClose(QWidget* editor, QWidget* window) {Q_UNUSED(editor) Q_UNUSED(window) return true;}
+    virtual void appendObjectActions(QMenu& menu) {Q_UNUSED(menu)}
 
     StatusFlags getStatus() const {return status;}
 

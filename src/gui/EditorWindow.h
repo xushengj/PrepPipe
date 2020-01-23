@@ -57,6 +57,10 @@ private:
     void changeDirectory(const QString& newDirectory);
     bool tryCloseAllMainContextObjects();
 
+    bool tryCloseAllObjectsCommon(OriginContext origin);
+
+    void addToSideContext(ObjectBase* obj);
+
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
 private slots:
@@ -69,6 +73,10 @@ private slots:
     void objectListOpenEditorRequested(QTreeWidgetItem* item);
 
     void changeDirectoryRequested();
+    void clipboardDumpRequested();
+
+    void closeSideContextObjectRequested(QTreeWidgetItem* item);
+    bool tryCloseAllSideContextObjects();
 private:
     Ui::EditorWindow *ui;
     ObjectContext mainCtx; // what's in working directory

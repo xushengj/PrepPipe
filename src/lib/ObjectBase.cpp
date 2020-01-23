@@ -22,6 +22,8 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
     switch(ty){
     case ObjectType::GeneralTree:
         return tr("General Tree");
+    case ObjectType::MIMEData:
+        return tr("MIME");
     }
     qFatal("Unhandled object type");
     return QString();
@@ -31,6 +33,8 @@ QIcon ObjectBase::getTypeDisplayIcon(ObjectType ty)
 {
     switch(ty){
     case ObjectType::GeneralTree:
+        return QIcon(":/icon/test.png");
+    case ObjectType::MIMEData:
         return QIcon(":/icon/test.png");
     }
     qFatal("Unhandled object type");

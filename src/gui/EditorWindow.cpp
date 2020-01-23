@@ -1,6 +1,8 @@
 #include "EditorWindow.h"
 #include "ui_EditorWindow.h"
 
+#include "src/lib/DataObject/MIMEData.h"
+
 #include <QSettings>
 #include <QMessageBox>
 #include <QGridLayout>
@@ -48,6 +50,7 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
     connect(ui->objectListTreeWidget, &QTreeWidget::customContextMenuRequested, this, &EditorWindow::objectListContextMenuRequested);
 
     connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
+    connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
 }
 
 EditorWindow::~EditorWindow()
@@ -160,13 +163,34 @@ void EditorWindow::switchToEditor(int index)
 void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
 {
     QTreeWidgetItem* item = ui->objectListTreeWidget->itemAt(pos);
+    QMenu menu(ui->objectListTreeWidget);
+
     if (item == mainRoot) {
         QAction* cdAction = new QAction(tr("Change Directory..."));
         connect(cdAction, &QAction::triggered, ui->actionChangeDirectory, &QAction::trigger);
-        QMenu menu(ui->objectListTreeWidget);
         menu.addAction(cdAction);
-        menu.exec(ui->objectListTreeWidget->mapToGlobal(pos));
+    } else if (item == sideRoot) {
+        QAction* closeAllAction = new QAction(tr("Close All"));
+        connect(closeAllAction, &QAction::triggered, this, &EditorWindow::tryCloseAllSideContextObjects);
+        menu.addAction(closeAllAction);
+    } else {
+        auto iter = itemData.find(item);
+        Q_ASSERT(iter != itemData.end());
+        auto& data = iter.value();
+        if (item->parent() == sideRoot) {
+            QAction* closeAction = new QAction(tr("Close"));
+            connect(closeAction, &QAction::triggered, this, [=]() -> void {
+                closeSideContextObjectRequested(item);
+            });
+            menu.addAction(closeAction);
+        }
+        data.obj->appendObjectActions(menu);
     }
+
+    if (menu.isEmpty())
+        return;
+
+    menu.exec(ui->objectListTreeWidget->mapToGlobal(pos));
 }
 
 void EditorWindow::contextMenuEvent(QContextMenuEvent *event)
@@ -184,15 +208,25 @@ void EditorWindow::changeDirectoryRequested()
     changeDirectory(newDir);
 }
 
-bool EditorWindow::tryCloseAllMainContextObjects()
+bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
 {
+    // if all opened editor belongs to objects that will be removed, switch to placeholder label
+    // if current editor do not belong to an object that will be removed, stay with it
+    // otherwise, pick any surviving editor
+
     // loop over all editor items and see which would be preserved and which would be closed
     decltype (editorOpenedObjects) tmpList;
     tmpList.reserve(editorOpenedObjects.size());
-    int indexAfterClose = -1;
+    QWidget* editorToSwitch = nullptr;
+    if (currentOpenedObjectIndex != -1) {
+        if (editorOpenedObjects.at(currentOpenedObjectIndex).origin != origin) {
+            // we can keep this one
+            editorToSwitch = editorOpenedObjects.at(currentOpenedObjectIndex).editor;
+        }
+    }
     for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
         const auto& data = editorOpenedObjects.at(i);
-        if (data.origin == OriginContext::MainContext) {
+        if (data.origin == origin) {
             // we will close this one
             switchToEditor(i);
             if (!data.obj->editorOkayToClose(data.editor, this)) {
@@ -200,37 +234,52 @@ bool EditorWindow::tryCloseAllMainContextObjects()
                 return false;
             }
         } else {
-            if (indexAfterClose == -1) {
-                indexAfterClose = i;
-            }
             tmpList.push_back(data);
         }
     }
-    switchToEditor(indexAfterClose);
+    switchToEditor(-1);
 
     // now we are good to close all of them
     tmpList.swap(editorOpenedObjects);
 
+    if (editorToSwitch) {
+        for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
+            if (editorOpenedObjects.at(i).editor == editorToSwitch) {
+                switchToEditor(i);
+                break;
+            }
+        }
+    }
+    if (currentOpenedObjectIndex == -1 && !editorOpenedObjects.isEmpty()) {
+        switchToEditor(0);
+    }
+
     // remove items in object list tree
     for (auto iter = itemData.begin(); iter != itemData.end();) {
-        QTreeWidgetItem* itemToDelete = nullptr;
-        if (iter.key()->parent() == mainRoot) {
-            itemToDelete = iter.key();
-        }
-        if (itemToDelete) {
-            delete itemToDelete;
+        if (iter.value().origin == origin) {
+            delete iter.key();
             iter = itemData.erase(iter);
         } else {
-            ++iter;
+            ++ iter;
         }
     }
     return true;
 }
 
+bool EditorWindow::tryCloseAllMainContextObjects()
+{
+    return tryCloseAllObjectsCommon(OriginContext::MainContext);
+}
+
+bool EditorWindow::tryCloseAllSideContextObjects()
+{
+    return tryCloseAllObjectsCommon(OriginContext::SideContext);
+}
+
 void EditorWindow::changeDirectory(const QString& newDirectory)
 {
     // step 1: close all editors if they are open
-    if (!tryCloseAllMainContextObjects())
+    if (!tryCloseAllObjectsCommon(OriginContext::MainContext))
         return;
 
     // step 2: refresh context
@@ -238,4 +287,62 @@ void EditorWindow::changeDirectory(const QString& newDirectory)
 
     // step 3: re-init the object list for main context
     populateObjectListTreeFromMainContext();
+
+    mainRoot->setToolTip(0, mainCtx.getDirectory());
+
+}
+
+void EditorWindow::clipboardDumpRequested()
+{
+    MIMEData* data = MIMEData::dumpFromClipboard();
+    if (!data) {
+        QMessageBox::information(this, tr("No data"), tr("Clipboard is empty and no data is captured."));
+        return;
+    }
+
+    addToSideContext(data);
+}
+
+void EditorWindow::addToSideContext(ObjectBase* obj)
+{
+    sideCtx.addObject(obj);
+    QTreeWidgetItem* item = new QTreeWidgetItem(sideRoot);
+    setObjectItem(item, obj);
+    itemData.insert(item, ObjectListItemData(obj, nullptr, OriginContext::SideContext));
+    sideRoot->setExpanded(true);
+}
+
+void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
+{
+    Q_ASSERT(item->parent() == sideRoot);
+    int indexOfItem = -1;
+    int indexAfterClose = currentOpenedObjectIndex;
+    for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
+        const auto& data = editorOpenedObjects.at(i);
+        if (data.item == item) {
+            // we will close this one
+            switchToEditor(i);
+            if (!data.obj->editorOkayToClose(data.editor, this)) {
+                // close request cancelled
+                return;
+            }
+            switchToEditor(indexAfterClose);
+            indexOfItem = i;
+            break;
+        }
+    }
+    if (indexOfItem != -1) {
+        if (currentOpenedObjectIndex == indexOfItem) {
+            switchToEditor(currentOpenedObjectIndex - 1);
+        }
+        editorOpenedObjects.removeAt(indexOfItem);
+    }
+    // now remove the item
+    auto iter = itemData.find(item);
+    Q_ASSERT(iter != itemData.end());
+    ObjectBase* obj = iter.value().obj;
+    sideCtx.releaseObject(obj);
+    itemData.erase(iter);
+    delete item;
+    delete obj;
 }
