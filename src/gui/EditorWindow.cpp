@@ -8,6 +8,7 @@
 #include <QGridLayout>
 #include <QCommonStyle>
 #include <QFileDialog>
+#include <QDateTime>
 
 namespace {
 const QString SETTINGS_EDITOR_PLACEHOLDER_TEXT = QStringLiteral("editor/placeholder_text");
@@ -51,6 +52,8 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
 
     connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
+
+    setAcceptDrops(true);
 }
 
 EditorWindow::~EditorWindow()
@@ -316,26 +319,31 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
 {
     Q_ASSERT(item->parent() == sideRoot);
     int indexOfItem = -1;
-    int indexAfterClose = currentOpenedObjectIndex;
+    QWidget* editorToSwitchTo = (currentOpenedObjectIndex >= 0)? editorOpenedObjects.at(currentOpenedObjectIndex).editor : nullptr;
     for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
         const auto& data = editorOpenedObjects.at(i);
         if (data.item == item) {
             // we will close this one
+            int indexToSwitchTo = currentOpenedObjectIndex;
             switchToEditor(i);
             if (!data.obj->editorOkayToClose(data.editor, this)) {
                 // close request cancelled
                 return;
             }
-            switchToEditor(indexAfterClose);
+            switchToEditor(indexToSwitchTo);
             indexOfItem = i;
             break;
         }
     }
     if (indexOfItem != -1) {
-        if (currentOpenedObjectIndex == indexOfItem) {
-            switchToEditor(currentOpenedObjectIndex - 1);
-        }
+        switchToEditor(-1);
         editorOpenedObjects.removeAt(indexOfItem);
+        for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
+            if (editorOpenedObjects.at(i).editor == editorToSwitchTo) {
+                switchToEditor(i);
+                break;
+            }
+        }
     }
     // now remove the item
     auto iter = itemData.find(item);
@@ -345,4 +353,20 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
     itemData.erase(iter);
     delete item;
     delete obj;
+}
+
+void EditorWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    event->acceptProposedAction();
+}
+
+void EditorWindow::dropEvent(QDropEvent* event)
+{
+    const QMimeData* ptr = event->mimeData();
+    ObjectBase::ConstructOptions opt;
+    opt.name = tr("Drop");
+    opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
+    MIMEData* data = new MIMEData(*ptr, opt);
+    addToSideContext(data);
+    event->acceptProposedAction();
 }

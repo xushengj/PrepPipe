@@ -63,6 +63,10 @@ private:
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
+protected:
+    virtual void dragEnterEvent(QDragEnterEvent* event) override;
+    virtual void dropEvent(QDropEvent* event) override;
+
 private slots:
     void settingChanged(const QStringList& keyList);
 
