@@ -66,6 +66,7 @@ void MIMEDataEditor::refreshDataFromSrc()
         entry.currentView = 0;
         formatDataList.push_back(entry);
     }
+    ui->formatComboBox->setEnabled(true);
 
     currentFormatChanged(0);
 }
