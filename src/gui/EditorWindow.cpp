@@ -2,6 +2,7 @@
 #include "ui_EditorWindow.h"
 
 #include "src/lib/DataObject/MIMEData.h"
+#include "src/misc/MessageLogger.h"
 
 #include <QSettings>
 #include <QMessageBox>
@@ -52,6 +53,7 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
 
     connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
+    connect(ui->actionOpenLog, &QAction::triggered, MessageLogger::inst(), &MessageLogger::openLogFile);
 
     setAcceptDrops(true);
 }

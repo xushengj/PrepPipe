@@ -39,6 +39,7 @@ SOURCES += \
     src/lib/StaticObjectIndexDB.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
+    src/misc/MessageLogger.cpp \
     src/misc/Settings.cpp
 
 HEADERS += \
@@ -53,6 +54,7 @@ HEADERS += \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
     src/lib/StaticObjectIndexDB.h \
+    src/misc/MessageLogger.h \
     src/misc/Settings.h
 
 FORMS += \

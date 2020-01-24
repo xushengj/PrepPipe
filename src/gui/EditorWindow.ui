@@ -129,7 +129,14 @@
     <addaction name="actionChangeDirectory"/>
     <addaction name="menuCapture"/>
    </widget>
+   <widget class="QMenu" name="menuMisc">
+    <property name="title">
+     <string>?</string>
+    </property>
+    <addaction name="actionOpenLog"/>
+   </widget>
    <addaction name="menuFile_Object"/>
+   <addaction name="menuMisc"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionNew">
@@ -150,6 +157,11 @@
   <action name="actionCaptureClipboard">
    <property name="text">
     <string>Clipboard</string>
+   </property>
+  </action>
+  <action name="actionOpenLog">
+   <property name="text">
+    <string>Open log file</string>
    </property>
   </action>
  </widget>
