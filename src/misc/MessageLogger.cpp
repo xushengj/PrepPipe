@@ -55,7 +55,6 @@ void MessageLogger::openLogFile()
 void MessageLogger::handleFatalMessage()
 {
     logFile.setAutoRemove(false);
-    logFile.close();
     openLogFile();
     QMessageBox::critical(window,
                           tr("Fatal error occured"),
