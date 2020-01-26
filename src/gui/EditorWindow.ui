@@ -135,7 +135,15 @@
     </property>
     <addaction name="actionOpenLog"/>
    </widget>
+   <widget class="QMenu" name="menuCrash">
+    <property name="title">
+     <string>Crash</string>
+    </property>
+    <addaction name="actionQFatal"/>
+    <addaction name="actionSegFault"/>
+   </widget>
    <addaction name="menuFile_Object"/>
+   <addaction name="menuCrash"/>
    <addaction name="menuMisc"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -162,6 +170,16 @@
   <action name="actionOpenLog">
    <property name="text">
     <string>Open log file</string>
+   </property>
+  </action>
+  <action name="actionQFatal">
+   <property name="text">
+    <string>qFatal()</string>
+   </property>
+  </action>
+  <action name="actionSegFault">
+   <property name="text">
+    <string>Segmentation fault</string>
    </property>
   </action>
  </widget>

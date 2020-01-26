@@ -55,6 +55,13 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
     connect(ui->actionOpenLog, &QAction::triggered, MessageLogger::inst(), &MessageLogger::openLogFile);
 
+    connect(ui->actionQFatal, &QAction::triggered, this, []() -> void {
+        qFatal("Fatal event message requested");
+    });
+    connect(ui->actionSegFault, &QAction::triggered, this, []() -> void {
+        *(volatile char*)nullptr;
+    });
+
     setAcceptDrops(true);
 }
 
