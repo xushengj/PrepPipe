@@ -65,6 +65,14 @@ FORMS += \
 TRANSLATIONS += \
     translations/supp_zh_CN.ts
 
+# Platform dependent sources
+win32 {
+    SOURCES += src/misc/MessageLogger_Windows.cpp
+    LIBS += -lDbgHelp
+} else {
+    SOURCES += src/misc/MessageLogger_OtherPlatform.cpp
+}
+
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin

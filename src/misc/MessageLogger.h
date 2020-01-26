@@ -6,9 +6,12 @@
 #include <QTemporaryFile>
 #include <QBuffer>
 
+class PlatformHelper;
 class MessageLogger : public QObject
 {
     Q_OBJECT
+
+    friend class PlatformHelper;
 public:
     static MessageLogger* inst() {return ptr;}
     static void createInstance();
@@ -33,6 +36,12 @@ signals:
 private:
     explicit MessageLogger(QObject *parent = nullptr);
     void handleFatalMessage();
+    void handleFatal_Unsafe();
+    void writeExceptionHeader();
+
+    // platform dependent
+    void tryDumpStackTrace();
+    void initFailureHandler();
 
 private:
     static MessageLogger* ptr;

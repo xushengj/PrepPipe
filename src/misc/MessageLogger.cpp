@@ -16,6 +16,7 @@ MessageLogger::MessageLogger(QObject *parent) : QObject(parent)
 {
     timer.start();
     bootstrapLog.reserve(1024);
+    initFailureHandler();
 }
 
 void MessageLogger::createInstance()
@@ -52,23 +53,26 @@ void MessageLogger::openLogFile()
     QDesktopServices::openUrl(QUrl::fromLocalFile(logFile.fileName()));
 }
 
-void MessageLogger::handleFatalMessage()
+void MessageLogger::handleFatal_Unsafe()
 {
-    logFile.setAutoRemove(false);
     openLogFile();
     QMessageBox::critical(window,
                           tr("Fatal error occured"),
                           tr("Sorry, a fatal error has occurred and the program cannot continue. The log is saved at:\n") + logFile.fileName());
 }
 
+void MessageLogger::handleFatalMessage()
+{
+    logFile.setAutoRemove(false);
+    tryDumpStackTrace();
+    handleFatal_Unsafe();
+}
+
 #define HEADER_BUFFER_SIZE 64
 namespace {
 
-void setMsgHeader(char buffer[HEADER_BUFFER_SIZE], QtMsgType type) {
-    qint64 elapsed = MessageLogger::inst()->getMSecSinceBootstrap();
-    qint64 sec = elapsed / 1000;
-    qint64 msec = elapsed % 1000;
-
+const char* getMsgType(QtMsgType type)
+{
     const char* msgType = nullptr;
     switch(type) {
     case QtDebugMsg:
@@ -87,15 +91,22 @@ void setMsgHeader(char buffer[HEADER_BUFFER_SIZE], QtMsgType type) {
         msgType = "Fatal:";
         break;
     }
-
+    return msgType;
+}
+void setMsgHeader(char buffer[HEADER_BUFFER_SIZE], const char* msgType)
+{
+    qint64 elapsed = MessageLogger::inst()->getMSecSinceBootstrap();
+    qint64 sec = elapsed / 1000;
+    qint64 msec = elapsed % 1000;
     std::snprintf(buffer, HEADER_BUFFER_SIZE, "[%4zd.%03zd] %s ", sec,msec, msgType);
 }
+
 } // end of anonymous namespace
 
 void MessageLogger::firstStageMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     char buffer[HEADER_BUFFER_SIZE];
-    setMsgHeader(buffer, type);
+    setMsgHeader(buffer, getMsgType(type));
     ptr->bootstrapLog.append(buffer);
     ptr->bootstrapLog.append(msg);
     if (context.file) {
@@ -107,7 +118,7 @@ void MessageLogger::firstStageMessageHandler(QtMsgType type, const QMessageLogCo
     }
 
     // if a qFatal arrives, dump all immediately
-    if (type == QtFatalMsg) {
+    if (Q_UNLIKELY(type == QtFatalMsg)) {
         QByteArray msg8Bit = ptr->bootstrapLog.toLocal8Bit();
         std::fwrite(msg8Bit.constData(), 1, static_cast<std::size_t>(msg8Bit.length()), stderr);
     }
@@ -121,7 +132,7 @@ void MessageLogger::normalMessageHandler(QtMsgType type, const QMessageLogContex
 void MessageLogger::handleMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     char buffer[HEADER_BUFFER_SIZE];
-    setMsgHeader(buffer, type);
+    setMsgHeader(buffer, getMsgType(type));
     logFile.write(buffer);
     logFile.write(msg.toUtf8());
     if (context.file) {
@@ -131,11 +142,17 @@ void MessageLogger::handleMessage(QtMsgType type, const QMessageLogContext &cont
         logFile.write(buffer);
     }
 
-    if (type == QtFatalMsg) {
+    if (Q_UNLIKELY(type == QtFatalMsg)) {
         handleFatalMessage();
     } else {
         emit messageUpdated();
     }
 }
 
+void MessageLogger::writeExceptionHeader()
+{
+    char buffer[HEADER_BUFFER_SIZE];
+    setMsgHeader(buffer, "EXCEPTION:");
+    logFile.write(buffer);
+}
 
