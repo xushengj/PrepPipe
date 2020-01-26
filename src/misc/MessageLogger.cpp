@@ -68,6 +68,19 @@ void MessageLogger::handleFatalMessage()
     handleFatal_Unsafe();
 }
 
+QTemporaryFile *MessageLogger::startExceptionInfoDump()
+{
+    ptr->writeExceptionHeader();
+    ptr->logFile.setAutoRemove(false);
+    return &ptr->logFile;
+}
+
+void MessageLogger::crashReportWrapup()
+{
+    // callee will also flush the log file
+    ptr->handleFatal_Unsafe();
+}
+
 #define HEADER_BUFFER_SIZE 64
 namespace {
 

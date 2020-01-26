@@ -69,6 +69,9 @@ TRANSLATIONS += \
 win32 {
     SOURCES += src/misc/MessageLogger_Windows.cpp
     LIBS += -lDbgHelp
+} else: unix {
+    SOURCES += src/misc/MessageLogger_POSIX.cpp
+    QMAKE_LFLAGS += -rdynamic
 } else {
     SOURCES += src/misc/MessageLogger_OtherPlatform.cpp
 }

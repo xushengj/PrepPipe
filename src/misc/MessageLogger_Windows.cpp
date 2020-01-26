@@ -11,11 +11,9 @@
 #error 32 bits Windows not supported!
 #endif
 
-class PlatformHelper {
-public:
-    static QTemporaryFile* startExceptionInfoDump();
-    static void crashReportWrapup();
-};
+#if !defined(_M_AMD64)
+#error Instruction set other than amd64 is not supported yet!
+#endif
 
 namespace {
 
@@ -128,7 +126,7 @@ LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 {
     CONTEXT ctx;
     RtlCaptureContext(&ctx);
-    auto* dest = PlatformHelper::startExceptionInfoDump();
+    auto* dest = MessageLogger::startExceptionInfoDump();
     switch(ExceptionInfo->ExceptionRecord->ExceptionCode)
     {
 #define HANDLE_EX(ex) case ex: WRITE_LITERAL(#ex "\n", dest); break;
@@ -162,25 +160,12 @@ LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
     if (ExceptionInfo->ExceptionRecord->ExceptionCode != EXCEPTION_STACK_OVERFLOW) {
         dumpStackTrace(GetCurrentThread(), &ctx, dest);
     }
-    PlatformHelper::crashReportWrapup();
+    MessageLogger::crashReportWrapup();
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
 
 } // end of anonymous namespace
-
-QTemporaryFile *PlatformHelper::startExceptionInfoDump()
-{
-    MessageLogger::inst()->writeExceptionHeader();
-    MessageLogger::inst()->logFile.setAutoRemove(false);
-    return &MessageLogger::inst()->logFile;
-}
-
-void PlatformHelper::crashReportWrapup()
-{
-    // callee will also flush the log file
-    MessageLogger::inst()->handleFatal_Unsafe();
-}
 
 void MessageLogger::tryDumpStackTrace()
 {
