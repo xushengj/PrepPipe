@@ -98,7 +98,7 @@ void setMsgHeader(char buffer[HEADER_BUFFER_SIZE], const char* msgType)
     qint64 elapsed = MessageLogger::inst()->getMSecSinceBootstrap();
     qint64 sec = elapsed / 1000;
     qint64 msec = elapsed % 1000;
-    std::snprintf(buffer, HEADER_BUFFER_SIZE, "[%4zd.%03zd] %s ", sec,msec, msgType);
+    std::snprintf(buffer, HEADER_BUFFER_SIZE, "[%4lld.%03lld] %s ", sec, msec, msgType);
 }
 
 } // end of anonymous namespace

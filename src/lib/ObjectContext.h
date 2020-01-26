@@ -31,7 +31,9 @@ public:
     }
     void clear();
 
-    ObjectBase* getObject(const QString& name) const;
+    ObjectBase* getObject(const QString& name) const {
+        return objectMap.value(name, nullptr);
+    }
 
     QString getDirectory() const {
         return mainDirectory;

@@ -53,7 +53,6 @@ void ObjectContext::loadAllObjectsFromDirectory()
             qInfo() << absPath << "open as intrinsic object failed";
             continue;
         }
-        int objIndex = objects.size();
         objects.push_back(obj);
 
         // if the object is named, add to named object
@@ -77,15 +76,6 @@ void ObjectContext::loadAllObjectsFromDirectory()
     }
     // if any of the object is a DataManifestObject, also try to open all the files listed in that object
     // TODO
-}
-
-ObjectBase* ObjectContext::getObject(const QString& name) const
-{
-    auto iter = objectMap.find(name);
-    if (iter != objectMap.end()) {
-        return iter.value();
-    }
-    return nullptr;
 }
 
 void ObjectContext::addObject(ObjectBase* obj)
