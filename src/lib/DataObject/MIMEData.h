@@ -22,7 +22,6 @@ public:
     virtual MIMEDataEditor* getEditor() override;
 private:
     QHash<QString, QByteArray> data;
-    MIMEDataEditor* editor = nullptr;
 };
 
 #endif // MIMEDATA_H

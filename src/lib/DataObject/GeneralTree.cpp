@@ -16,26 +16,8 @@ GeneralTree::GeneralTree(const Tree &tree, const ConstructOptions &opt)
 
 GeneralTree::~GeneralTree()
 {
-    if (ui) {
-        ui->hide();
-        ui->deleteLater();
-    }
-}
 
-TextEditor* GeneralTree::getEditor()
-{
-    if (!ui) {
-        ui = new TextEditor;
-        Q_ASSERT(ui);
-        QString text;
-        QXmlStreamWriter xml(&text);
-        IntrinsicObject::saveToXML(xml);
-        ui->setPlainText(text);
-        ui->setReadOnly(true);
-    }
-    return ui;
 }
-
 
 //-----------------------------------------------------------------------------
 // XML

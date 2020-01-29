@@ -226,6 +226,8 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
     // if current editor do not belong to an object that will be removed, stay with it
     // otherwise, pick any surviving editor
 
+    // WARNING: this function do not delete objects; the context is still untouched
+
     // loop over all editor items and see which would be preserved and which would be closed
     decltype (editorOpenedObjects) tmpList;
     tmpList.reserve(editorOpenedObjects.size());
@@ -241,7 +243,7 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
         if (data.origin == origin) {
             // we will close this one
             switchToEditor(i);
-            if (!data.obj->editorOkayToClose(data.editor, this)) {
+            if (!data.obj->editorNoUnsavedChanges(data.editor, this)) {
                 // close request cancelled
                 return false;
             }
@@ -269,7 +271,13 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
     // remove items in object list tree
     for (auto iter = itemData.begin(); iter != itemData.end();) {
         if (iter.value().origin == origin) {
-            delete iter.key();
+            QTreeWidgetItem* item = iter.key();
+            ObjectBase* obj = iter.value().obj;
+            QWidget* editor = iter.value().editor;
+            if (editor) {
+                obj->tearDownEditor(editor);
+            }
+            delete item;
             iter = itemData.erase(iter);
         } else {
             ++ iter;
@@ -280,12 +288,20 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
 
 bool EditorWindow::tryCloseAllMainContextObjects()
 {
-    return tryCloseAllObjectsCommon(OriginContext::MainContext);
+    if (tryCloseAllObjectsCommon(OriginContext::MainContext)) {
+        mainCtx.clear();
+        return true;
+    }
+    return false;
 }
 
 bool EditorWindow::tryCloseAllSideContextObjects()
 {
-    return tryCloseAllObjectsCommon(OriginContext::SideContext);
+    if (tryCloseAllObjectsCommon(OriginContext::SideContext)) {
+        sideCtx.clear();
+        return true;
+    }
+    return false;
 }
 
 void EditorWindow::changeDirectory(const QString& newDirectory)
@@ -335,7 +351,7 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
             // we will close this one
             int indexToSwitchTo = currentOpenedObjectIndex;
             switchToEditor(i);
-            if (!data.obj->editorOkayToClose(data.editor, this)) {
+            if (!data.obj->editorNoUnsavedChanges(data.editor, this)) {
                 // close request cancelled
                 return;
             }
@@ -359,6 +375,9 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
     Q_ASSERT(iter != itemData.end());
     ObjectBase* obj = iter.value().obj;
     sideCtx.releaseObject(obj);
+    if (iter.value().editor) {
+        obj->tearDownEditor(iter.value().editor);
+    }
     itemData.erase(iter);
     delete item;
     delete obj;

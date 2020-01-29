@@ -106,3 +106,15 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
 
     return obj;
 }
+
+QWidget* IntrinsicObject::getEditor()
+{
+    TextEditor* ui = new TextEditor;
+    Q_ASSERT(ui);
+    QString text;
+    QXmlStreamWriter xml(&text);
+    IntrinsicObject::saveToXML(xml);
+    ui->setPlainText(text);
+    ui->setReadOnly(true);
+    return ui;
+}

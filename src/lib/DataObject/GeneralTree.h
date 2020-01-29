@@ -18,8 +18,6 @@ public:
     GeneralTree(const Tree& tree, const ConstructOptions& opt);
     virtual ~GeneralTree() override;
 
-    virtual TextEditor* getEditor() override;
-
     static GeneralTree* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
 
 protected:
@@ -30,7 +28,6 @@ private:
 
 private:
     Tree treeData;
-    TextEditor* ui = nullptr;
 };
 
 #endif // GENERALTREE_H

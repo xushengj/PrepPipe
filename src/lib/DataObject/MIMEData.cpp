@@ -21,18 +21,12 @@ MIMEData::MIMEData(const QMimeData& initData, const ConstructOptions& opt)
 
 MIMEData::~MIMEData()
 {
-    if (editor) {
-        editor->hide();
-        editor->deleteLater();
-    }
+
 }
 
 MIMEDataEditor* MIMEData::getEditor()
 {
-    if (!editor) {
-        editor = new MIMEDataEditor(this);
-    }
-    return editor;
+    return new MIMEDataEditor(this);
 }
 
 MIMEData* MIMEData::dumpFromClipboard()

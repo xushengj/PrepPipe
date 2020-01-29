@@ -12,11 +12,13 @@ class IntrinsicObject : public ObjectBase
     Q_OBJECT
 public:
     IntrinsicObject(ObjectType ty, const ConstructOptions& opt);
-    virtual ~IntrinsicObject() {}
+    virtual ~IntrinsicObject() override {}
 
     static IntrinsicObject* loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt);
 
     void saveToXML(QXmlStreamWriter& xml);
+
+    virtual QWidget* getEditor() override;
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter& xml) = 0;
