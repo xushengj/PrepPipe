@@ -8,8 +8,8 @@ GeneralTree::GeneralTree(const ConstructOptions &opt)
 
 }
 
-GeneralTree::GeneralTree(const QList<GeneralTree::Node>& _nodes, const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::GeneralTree, opt), nodes(_nodes)
+GeneralTree::GeneralTree(const Tree &tree, const ConstructOptions &opt)
+    : IntrinsicObject(ObjectType::GeneralTree, opt), treeData(tree)
 {
 
 }
@@ -52,14 +52,14 @@ const QString XML_CHILD_LIST = QStringLiteral("ChildList");
 void GeneralTree::saveToXMLImpl(QXmlStreamWriter &xml)
 {
     xml.writeStartElement(getTypeClassName());
-    if (!nodes.isEmpty())
+    if (!treeData.isEmpty())
         saveToXML(xml, 0);
     xml.writeEndElement();
 }
 
 void GeneralTree::saveToXML(QXmlStreamWriter& xml, int nodeIndex)
 {
-    const Node& curNode = nodes.at(nodeIndex);
+    const Node& curNode = treeData.getNode(nodeIndex);
     Q_ASSERT(curNode.keyList.size() == curNode.valueList.size());
     xml.writeStartElement(XML_NODE);
     xml.writeAttribute(XML_TYPE, curNode.typeName);
@@ -75,8 +75,8 @@ void GeneralTree::saveToXML(QXmlStreamWriter& xml, int nodeIndex)
     }
     {
         xml.writeStartElement(XML_CHILD_LIST);
-        for (int child : curNode.children) {
-            saveToXML(xml, child);
+        for (int childOffset : curNode.offsetToChildren) {
+            saveToXML(xml, nodeIndex + childOffset);
         }
         xml.writeEndElement();
     }
@@ -84,7 +84,7 @@ void GeneralTree::saveToXML(QXmlStreamWriter& xml, int nodeIndex)
 }
 
 namespace {
-bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, QList<GeneralTree::Node>& nodes, QHash<QStringRef,QString>& strCache, int parent)
+bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, QHash<QStringRef,QString>& strCache, TreeBuilder::Node* parent)
 {
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
     auto getString = [] (QHash<QStringRef,QString>& cache, QStringRef str) -> QString {
@@ -101,8 +101,8 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, QList<GeneralTree::Node>&
         return false;
     }
 
-    GeneralTree::Node n;
-    n.parentIndex = parent;
+    auto ptr = parent? tree.addNode(parent) : tree.addNode();
+    auto& n = *ptr;
     {
         auto attr = xml.attributes();
         if (Q_UNLIKELY(!attr.hasAttribute(XML_TYPE))) {
@@ -156,18 +156,14 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, QList<GeneralTree::Node>&
         qWarning() << "Error on reading parameter list: " << xml.errorString();
         return false;
     }
-    int nodeIndex = nodes.size();
-    nodes.push_back(n);
 
     if (Q_UNLIKELY(!xml.readNextStartElement())) {
         qWarning() << "Missing " << XML_CHILD_LIST << " element in " << XML_NODE << "element";
         return false;
     }
 
-    int childCount = 0;
     while (xml.readNextStartElement()) {
-        childCount += 1;
-        if (Q_UNLIKELY(!loadGeneralTreeNodeFromXML(xml, nodes, strCache, nodeIndex))) {
+        if (Q_UNLIKELY(!loadGeneralTreeNodeFromXML(xml, tree, strCache, ptr))) {
             return false;
         }
     }
@@ -178,37 +174,37 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, QList<GeneralTree::Node>&
         end = xml.readNext();
     }
     Q_ASSERT(end == QXmlStreamReader::EndElement && xml.name() == XML_NODE);
-    nodes[nodeIndex].children.reserve(childCount);
     return true;
 }
 }
 
 GeneralTree* GeneralTree::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
 {
-    // TODO
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
     QString top = getTypeClassName(ObjectType::GeneralTree);
     if (Q_UNLIKELY(xml.name() != top)) {
         qWarning() << "Unexpected element " << xml.name() << "(expecting " << top <<")";
         return nullptr;
     }
-    QList<Node> nodes;
+    TreeBuilder tree;
 
-    // first pass: get all nodes
     if (xml.readNextStartElement()) {
         QHash<QStringRef,QString> strCache;
-        if (Q_UNLIKELY(!loadGeneralTreeNodeFromXML(xml, nodes, strCache, -1))) {
+        if (Q_UNLIKELY(!loadGeneralTreeNodeFromXML(xml, tree, strCache, nullptr))) {
             return nullptr;
         }
     }
-    // second pass: populate child lists
-    for (int i = 0, n = nodes.size(); i < n; ++i) {
-        int parent = nodes.at(i).parentIndex;
-        Q_ASSERT(parent < n);
-        if (parent >= 0) {
-            nodes[parent].children.push_back(i);
-        }
-    }
 
-    return new GeneralTree(nodes, opt);
+    Tree* treePtr = nullptr;
+    try {
+        treePtr = new Tree(tree);
+    } catch (...) {
+        // do nothing
+    }
+    if (treePtr) {
+        GeneralTree* result = new GeneralTree(*treePtr, opt);
+        delete treePtr;
+        return result;
+    }
+    return nullptr;
 }

@@ -27,9 +27,10 @@ public:
     Q_DECLARE_FLAGS(StatusFlags, StatusFlag)
 
 
-    enum ObjectType { // this determines the sort order in UI
+    enum ObjectType {
         GeneralTree = 0,
-        MIMEData = 1
+        MIMEData = 1,
+        SimpleTreeTransformObject = 2
     };
     Q_ENUM(ObjectType)
 

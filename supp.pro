@@ -37,6 +37,8 @@ SOURCES += \
     src/lib/ObjectBase.cpp \
     src/lib/ObjectContext.cpp \
     src/lib/StaticObjectIndexDB.cpp \
+    src/lib/TaskObject/SimpleTreeTransformObject.cpp \
+    src/lib/Tree/Tree.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
@@ -54,6 +56,9 @@ HEADERS += \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
     src/lib/StaticObjectIndexDB.h \
+    src/lib/TaskObject/SimpleTreeTransformObject.h \
+    src/lib/Tree/SimpleTreeTransform.h \
+    src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h
 
