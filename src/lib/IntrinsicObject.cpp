@@ -1,5 +1,5 @@
 #include "IntrinsicObject.h"
-#include "src/lib/DataObject/GeneralTree.h"
+#include "src/lib/DataObject/GeneralTreeObject.h"
 #include <QDebug>
 
 IntrinsicObject::IntrinsicObject(ObjectType ty, const ConstructOptions &opt)
@@ -56,11 +56,12 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
             qWarning() << "Missing " << XML_TYPE << " attribute on element " << XML_TOP;
             return nullptr;
         }
-        QByteArray objTypeName = attr.value(XML_TYPE).toLatin1();
+        QStringRef tyNameRef = attr.value(XML_TYPE);
+        QByteArray objTypeName = tyNameRef.toLatin1();
         bool isGood = false;
         objTyEnum = QMetaEnum::fromType<ObjectBase::ObjectType>().keyToValue(objTypeName.constData(), &isGood);
         if (!isGood) {
-            qWarning() << "Unexpected element name " << xml.name();
+            qWarning() << "Unexpected object type " << tyNameRef;
             return nullptr;
         }
 
@@ -99,8 +100,8 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
 
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
     default: qFatal("Unhandled Intrinsic Object load"); break;
-    case ObjectType::GeneralTree:
-        obj = GeneralTree::loadFromXML(xml, newOpt);
+    case ObjectType::GeneralTreeObject:
+        obj = GeneralTreeObject::loadFromXML(xml, newOpt);
         break;
     }
 

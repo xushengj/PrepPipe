@@ -2,22 +2,22 @@
 #define MIMEDATA_H
 
 #include "src/lib/ObjectBase.h"
-#include "src/lib/DataObject/MIMEDataEditor.h"
+#include "src/gui/MIMEDataEditor.h"
 
 #include <QObject>
 #include <QMimeData>
 
-class MIMEData : public ObjectBase
+class MIMEDataObject : public ObjectBase
 {
     Q_OBJECT
 public:
-    MIMEData(const ConstructOptions& opt);
-    MIMEData(const QMimeData& initData, const ConstructOptions& opt);
-    virtual ~MIMEData() override;
+    MIMEDataObject(const ConstructOptions& opt);
+    MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt);
+    virtual ~MIMEDataObject() override;
 
     const QHash<QString, QByteArray>& getData() const {return data;}
 
-    static MIMEData* dumpFromClipboard(); // null if no data
+    static MIMEDataObject* dumpFromClipboard(); // null if no data
 
     virtual MIMEDataEditor* getEditor() override;
 private:

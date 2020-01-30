@@ -1,7 +1,7 @@
 #include "EditorWindow.h"
 #include "ui_EditorWindow.h"
 
-#include "src/lib/DataObject/MIMEData.h"
+#include "src/lib/DataObject/MIMEDataObject.h"
 #include "src/misc/MessageLogger.h"
 
 #include <QSettings>
@@ -322,7 +322,7 @@ void EditorWindow::changeDirectory(const QString& newDirectory)
 
 void EditorWindow::clipboardDumpRequested()
 {
-    MIMEData* data = MIMEData::dumpFromClipboard();
+    MIMEDataObject* data = MIMEDataObject::dumpFromClipboard();
     if (!data) {
         QMessageBox::information(this, tr("No data"), tr("Clipboard is empty and no data is captured."));
         return;
@@ -394,7 +394,7 @@ void EditorWindow::dropEvent(QDropEvent* event)
     ObjectBase::ConstructOptions opt;
     opt.name = tr("Drop");
     opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
-    MIMEData* data = new MIMEData(*ptr, opt);
+    MIMEDataObject* data = new MIMEDataObject(*ptr, opt);
     addToSideContext(data);
     event->acceptProposedAction();
 }

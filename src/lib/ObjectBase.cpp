@@ -20,9 +20,9 @@ QString ObjectBase::getTypeClassName(ObjectType ty)
 QString ObjectBase::getTypeDisplayName(ObjectType ty)
 {
     switch(ty){
-    case ObjectType::GeneralTree:
+    case ObjectType::GeneralTreeObject:
         return tr("General Tree");
-    case ObjectType::MIMEData:
+    case ObjectType::MIMEDataObject:
         return tr("MIME");
     case ObjectType::SimpleTreeTransformObject:
         return tr("Tree-to-Tree Transform");
@@ -34,9 +34,9 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
 QIcon ObjectBase::getTypeDisplayIcon(ObjectType ty)
 {
     switch(ty){
-    case ObjectType::GeneralTree:
+    case ObjectType::GeneralTreeObject:
         return QIcon(":/icon/test.png");
-    case ObjectType::MIMEData:
+    case ObjectType::MIMEDataObject:
         return QIcon(":/icon/test.png");
     case ObjectType::SimpleTreeTransformObject:
         return QIcon(":/icon/test.png");

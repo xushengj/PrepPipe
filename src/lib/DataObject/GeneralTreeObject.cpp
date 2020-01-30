@@ -1,20 +1,20 @@
-#include "GeneralTree.h"
+#include "GeneralTreeObject.h"
 
 #include <QDebug>
 
-GeneralTree::GeneralTree(const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::GeneralTree, opt)
+GeneralTreeObject::GeneralTreeObject(const ConstructOptions &opt)
+    : IntrinsicObject(ObjectType::GeneralTreeObject, opt)
 {
 
 }
 
-GeneralTree::GeneralTree(const Tree &tree, const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::GeneralTree, opt), treeData(tree)
+GeneralTreeObject::GeneralTreeObject(const Tree &tree, const ConstructOptions &opt)
+    : IntrinsicObject(ObjectType::GeneralTreeObject, opt), treeData(tree)
 {
 
 }
 
-GeneralTree::~GeneralTree()
+GeneralTreeObject::~GeneralTreeObject()
 {
 
 }
@@ -31,7 +31,7 @@ const QString XML_NAME = QStringLiteral("Name");
 const QString XML_CHILD_LIST = QStringLiteral("ChildList");
 } // end of anonymous namespace
 
-void GeneralTree::saveToXMLImpl(QXmlStreamWriter &xml)
+void GeneralTreeObject::saveToXMLImpl(QXmlStreamWriter &xml)
 {
     xml.writeStartElement(getTypeClassName());
     if (!treeData.isEmpty())
@@ -39,7 +39,7 @@ void GeneralTree::saveToXMLImpl(QXmlStreamWriter &xml)
     xml.writeEndElement();
 }
 
-void GeneralTree::saveToXML(QXmlStreamWriter& xml, int nodeIndex)
+void GeneralTreeObject::saveToXML(QXmlStreamWriter& xml, int nodeIndex)
 {
     const Node& curNode = treeData.getNode(nodeIndex);
     Q_ASSERT(curNode.keyList.size() == curNode.valueList.size());
@@ -160,10 +160,10 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, QHash<
 }
 }
 
-GeneralTree* GeneralTree::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
+GeneralTreeObject* GeneralTreeObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
 {
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
-    QString top = getTypeClassName(ObjectType::GeneralTree);
+    QString top = getTypeClassName(ObjectType::GeneralTreeObject);
     if (Q_UNLIKELY(xml.name() != top)) {
         qWarning() << "Unexpected element " << xml.name() << "(expecting " << top <<")";
         return nullptr;
@@ -184,7 +184,7 @@ GeneralTree* GeneralTree::loadFromXML(QXmlStreamReader& xml, const ConstructOpti
         // do nothing
     }
     if (treePtr) {
-        GeneralTree* result = new GeneralTree(*treePtr, opt);
+        GeneralTreeObject* result = new GeneralTreeObject(*treePtr, opt);
         delete treePtr;
         return result;
     }

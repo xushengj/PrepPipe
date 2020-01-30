@@ -1,17 +1,17 @@
-#include "MIMEData.h"
+#include "MIMEDataObject.h"
 
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QDateTime>
 
-MIMEData::MIMEData(const ConstructOptions& opt)
-    : ObjectBase(ObjectType::MIMEData, opt)
+MIMEDataObject::MIMEDataObject(const ConstructOptions& opt)
+    : ObjectBase(ObjectType::MIMEDataObject, opt)
 {
 
 }
 
-MIMEData::MIMEData(const QMimeData& initData, const ConstructOptions& opt)
-    : ObjectBase(ObjectType::MIMEData, opt)
+MIMEDataObject::MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt)
+    : ObjectBase(ObjectType::MIMEDataObject, opt)
 {
     QStringList formats = initData.formats();
     for (const auto& fmt : formats) {
@@ -19,17 +19,17 @@ MIMEData::MIMEData(const QMimeData& initData, const ConstructOptions& opt)
     }
 }
 
-MIMEData::~MIMEData()
+MIMEDataObject::~MIMEDataObject()
 {
 
 }
 
-MIMEDataEditor* MIMEData::getEditor()
+MIMEDataEditor* MIMEDataObject::getEditor()
 {
     return new MIMEDataEditor(this);
 }
 
-MIMEData* MIMEData::dumpFromClipboard()
+MIMEDataObject* MIMEDataObject::dumpFromClipboard()
 {
     const QMimeData* data = QGuiApplication::clipboard()->mimeData(QClipboard::Clipboard);
     if (!data)
@@ -42,5 +42,5 @@ MIMEData* MIMEData::dumpFromClipboard()
     ObjectBase::ConstructOptions opt;
     opt.name = tr("Clipboard dump");
     opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
-    return new MIMEData(*data, opt);
+    return new MIMEDataObject(*data, opt);
 }

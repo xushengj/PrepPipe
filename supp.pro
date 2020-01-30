@@ -29,16 +29,19 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
     src/gui/TextEditor.cpp \
-    src/lib/DataObject/GeneralTree.cpp \
-    src/lib/DataObject/GeneralTreeEditor.cpp \
-    src/lib/DataObject/MIMEData.cpp \
-    src/lib/DataObject/MIMEDataEditor.cpp \
+    src/gui/GeneralTreeEditor.cpp \
+    src/gui/MIMEDataEditor.cpp \
+    src/lib/DataObject/GeneralTreeObject.cpp \
+    src/lib/DataObject/MIMEDataObject.cpp \
+    src/lib/ExecuteObject.cpp \
     src/lib/IntrinsicObject.cpp \
     src/lib/ObjectBase.cpp \
     src/lib/ObjectContext.cpp \
     src/lib/StaticObjectIndexDB.cpp \
+    src/lib/TaskObject.cpp \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
     src/lib/Tree/Tree.cpp \
+    src/lib/Tree/TreeConstraint.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
@@ -48,24 +51,27 @@ HEADERS += \
     src/gui/BreadcrumbWidget.h \
     src/gui/EditorWindow.h \
     src/gui/TextEditor.h \
-    src/lib/DataObject/GeneralTree.h \
-    src/lib/DataObject/GeneralTreeEditor.h \
-    src/lib/DataObject/MIMEData.h \
-    src/lib/DataObject/MIMEDataEditor.h \
+    src/gui/GeneralTreeEditor.h \
+    src/gui/MIMEDataEditor.h \
+    src/lib/DataObject/GeneralTreeObject.h \
+    src/lib/DataObject/MIMEDataObject.h \
+    src/lib/ExecuteObject.h \
     src/lib/IntrinsicObject.h \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
     src/lib/StaticObjectIndexDB.h \
+    src/lib/TaskObject.h \
     src/lib/TaskObject/SimpleTreeTransformObject.h \
     src/lib/Tree/SimpleTreeTransform.h \
     src/lib/Tree/Tree.h \
+    src/lib/Tree/TreeConstraint.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h
 
 FORMS += \
     src/gui/EditorWindow.ui \
-    src/lib/DataObject/GeneralTreeEditor.ui \
-    src/lib/DataObject/MIMEDataEditor.ui
+    src/gui/GeneralTreeEditor.ui \
+    src/gui/MIMEDataEditor.ui
 
 TRANSLATIONS += \
     translations/supp_zh_CN.ts

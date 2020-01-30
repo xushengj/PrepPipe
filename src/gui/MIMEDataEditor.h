@@ -7,13 +7,13 @@ namespace Ui {
 class MIMEDataEditor;
 }
 
-class MIMEData;
+class MIMEDataObject;
 class MIMEDataEditor : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit MIMEDataEditor(MIMEData* srcPtr);
+    explicit MIMEDataEditor(MIMEDataObject* srcPtr);
     ~MIMEDataEditor();
 
 public slots:
@@ -26,7 +26,7 @@ private:
 
 private:
     Ui::MIMEDataEditor *ui;
-    MIMEData* const src;
+    MIMEDataObject* const src;
 
     struct FormatData {
         QByteArray data;

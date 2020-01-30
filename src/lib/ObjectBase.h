@@ -28,8 +28,8 @@ public:
 
 
     enum ObjectType {
-        GeneralTree = 0,
-        MIMEData = 1,
+        GeneralTreeObject = 0,
+        MIMEDataObject = 1,
         SimpleTreeTransformObject = 2
     };
     Q_ENUM(ObjectType)

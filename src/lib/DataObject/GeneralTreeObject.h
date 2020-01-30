@@ -9,16 +9,16 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
-class GeneralTree : public IntrinsicObject
+class GeneralTreeObject : public IntrinsicObject
 {
     Q_OBJECT
 public:
     using Node = Tree::Node;
-    GeneralTree(const ConstructOptions& opt);
-    GeneralTree(const Tree& tree, const ConstructOptions& opt);
-    virtual ~GeneralTree() override;
+    GeneralTreeObject(const ConstructOptions& opt);
+    GeneralTreeObject(const Tree& tree, const ConstructOptions& opt);
+    virtual ~GeneralTreeObject() override;
 
-    static GeneralTree* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
+    static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;

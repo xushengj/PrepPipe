@@ -1,12 +1,12 @@
 #include "MIMEDataEditor.h"
 #include "ui_MIMEDataEditor.h"
-#include "src/lib/DataObject/MIMEData.h"
+#include "src/lib/DataObject/MIMEDataObject.h"
 
 #include <QtGlobal>
 #include <QGuiApplication>
 #include <QClipboard>
 
-MIMEDataEditor::MIMEDataEditor(MIMEData *srcPtr) :
+MIMEDataEditor::MIMEDataEditor(MIMEDataObject *srcPtr) :
     QWidget(nullptr),
     ui(new Ui::MIMEDataEditor),
     src(srcPtr)
