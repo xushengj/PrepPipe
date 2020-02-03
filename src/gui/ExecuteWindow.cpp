@@ -263,6 +263,7 @@ void ExecuteWindow::finalize(int rootExitCode, int causeInt)
     switch(cause) {
     case ExecuteObject::ExitCause::FatalEvent: {
         isFatalEventOccurred = true;
+        executeObjectRoot->setIcon(0, failedExIcon);
         disconnect(executeRoot, &ExecuteObject::finished, this, &ExecuteWindow::finalize);
         disconnect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus);
         QMessageBox* msgBox = new QMessageBox(QMessageBox::Critical,
@@ -275,6 +276,7 @@ void ExecuteWindow::finalize(int rootExitCode, int causeInt)
                                               QMessageBox::Ok,
                                               this);
         msgBox->show();
+        connect(msgBox, &QDialog::finished, msgBox, &QObject::deleteLater);
         // try to make sure the message box is shown before we start to concatenate logs (which can take a while)
         QApplication::processEvents();
         // heavy lifting
