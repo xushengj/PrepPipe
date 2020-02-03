@@ -72,20 +72,16 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
         return tr("MIME");
     case ObjectType::SimpleTreeTransformObject:
         return tr("Tree-to-Tree Transform");
+    case ObjectType::TestTaskObject:
+        return tr("Test");
+    default: qFatal("Unhandled object type"); return QString();
     }
-    qFatal("Unhandled object type");
-    return QString();
 }
 
 QIcon ObjectBase::getTypeDisplayIcon(ObjectType ty)
 {
     switch(ty){
-    case ObjectType::GeneralTreeObject:
-        return QIcon(":/icon/test.png");
-    case ObjectType::MIMEDataObject:
-        return QIcon(":/icon/test.png");
-    case ObjectType::SimpleTreeTransformObject:
-        return QIcon(":/icon/test.png");
+    default: return QIcon(":/icon/test.png");
     }
     qFatal("Unhandled object type");
     return QIcon();

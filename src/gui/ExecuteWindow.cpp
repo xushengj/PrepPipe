@@ -77,17 +77,21 @@ void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
 {
     top->moveToThread(executeThread);
     
-    connect(top, &ExecuteObject::started, this, [this, top, item]() -> void{
+    auto startHandlerLambda = [this, top, item]() -> void{
         qInfo() << "Execution of" << top->getName() << "started";
         item->setIcon(0, currentExIcon);
         if (followExecObjectCheckBox->isChecked()) {
             requestSwitchToExecuteObject(item, top);
         }
-    }, Qt::QueuedConnection);
+    };
+    Q_ASSERT(connect(top, &ExecuteObject::started, this, startHandlerLambda, Qt::QueuedConnection));
 
-    connect(top, &ExecuteObject::finished, this, [this, top, item](int status)->void {
-        qInfo() << "Execution of" << top->getName() << "finished with exit code " << status;
-        if (status == 0) {
+    auto finishHandlerLambda = [this, top, item](int status, int causeInt)->void {
+        ExecuteObject::ExitCause cause = static_cast<ExecuteObject::ExitCause>(causeInt);
+        qInfo() << "Execution of" << top->getName()
+                << "finished with exit code " << status
+                << " and cause " << causeInt;
+        if (cause == ExecuteObject::ExitCause::Completed && status == 0) {
             item->setIcon(0, completedExIcon);
         } else {
             item->setIcon(0, failedExIcon);
@@ -104,7 +108,8 @@ void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
         if (top == executeRoot) {
             followExecObjectCheckBox->setCheckable(false);
         }
-    }, Qt::QueuedConnection);
+    };
+    Q_ASSERT(connect(top, &ExecuteObject::finished, this, finishHandlerLambda, Qt::QueuedConnection));
 
     executeObjects.insert(item, top);
 
@@ -219,11 +224,10 @@ void ExecuteWindow::initialize()
     // TODO
     Q_ASSERT(taskInputDecl.isEmpty());
     
-    
     // step 2: launch the task
     connect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus, Qt::QueuedConnection);
-    connect(executeRoot, &ExecuteObject::finished, executeThread, &QThread::quit);
     connect(executeRoot, &ExecuteObject::finished, this, &ExecuteWindow::finalize, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(executeRoot, &ExecuteObject::start, Qt::QueuedConnection);
     executeThread->start();
     isRunning = true;
 }
@@ -235,12 +239,25 @@ void ExecuteWindow::writeBackOutputs()
 
 void ExecuteWindow::executionThreadFatalEventSlot()
 {
-    finalize(-1, ExecuteObject::ExitCause::FatalEvent);
+    finalize(-1, static_cast<int>(ExecuteObject::ExitCause::FatalEvent));
 }
 
-void ExecuteWindow::finalize(int rootExitCode, ExecuteObject::ExitCause cause)
+void ExecuteWindow::finalize(int rootExitCode, int causeInt)
 {
+    ExecuteObject::ExitCause cause = static_cast<ExecuteObject::ExitCause>(causeInt);
+    Q_ASSERT(executeThread);
     isRunning = false;
+    // stop the thread first
+    switch(cause) {
+    case ExecuteObject::ExitCause::FatalEvent: {
+        executeThread->terminate();
+    }break;
+    case ExecuteObject::ExitCause::Completed:
+    case ExecuteObject::ExitCause::Terminated:{
+        executeThread->quit();
+    }
+    }
+    executeThread->wait();
 
     qInfo() << "Execution finished with exit code " << rootExitCode << " and cause " << static_cast<int>(cause);
     switch(cause) {
@@ -276,6 +293,7 @@ void ExecuteWindow::finalize(int rootExitCode, ExecuteObject::ExitCause cause)
     case ExecuteObject::ExitCause::Completed: {
         MessageLogger::inst()->cleanupThread(executeThread);
         executeThread = nullptr;
+        updateCurrentExecutionStatus(tr("Completed"), 0, 1, 1);
         bool isExecutionGood = (rootExitCode == 0);
         bool isAutoClose = isExecutionGood ? (launchOptions.flags & TaskObject::LaunchFlag::Finalize_AutoCloseIfSuccess)
                                            : (launchOptions.flags & TaskObject::LaunchFlag::Finalize_AutoCloseIfFail);
@@ -305,8 +323,25 @@ void ExecuteWindow::closeEvent(QCloseEvent* event)
     // avoid handling multiple user request on termination
     // this must be after the check on isRunning so that finalize() can close the window
     if (isExitRequested) {
-        event->ignore();
-        return;
+        if (QMessageBox::question(
+                    this,
+                    tr("Confirm force exit"),
+                    tr("Do you want to force quit? The entire program will abort.")) == QMessageBox::No) {
+            event->ignore();
+            return;
+        }
+
+        // force quit requested
+        // check again first
+        if (!isRunning) {
+            if (!pendingOutput.isEmpty()) {
+                writeBackOutputs();
+            }
+            event->accept();
+            return;
+        }
+        // okay, force quit..
+        abort();
     }
 
     
@@ -315,17 +350,21 @@ void ExecuteWindow::closeEvent(QCloseEvent* event)
                               tr("Confirm cancel"),
                               tr("The task is still running. Do you want to terminate it?"),
                               QMessageBox::Yes | QMessageBox::Cancel, QMessageBox::NoButton) == QMessageBox::Cancel){
+        event->ignore();
         return;
     }
     
     // now we are requested to cancel
     // no change if the task has already finished before the dialog is answered
-    if (!isRunning)
+    if (!isRunning) {
+        event->accept();
         return;
+    }
     
     isExitRequested = true;
     disconnect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus);
     updateCurrentExecutionStatus(tr("Waiting for termination"), 0, 0, 0);
+    executeThread->requestInterruption();
     event->ignore();
 }
 

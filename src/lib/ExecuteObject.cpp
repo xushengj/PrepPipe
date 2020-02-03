@@ -25,5 +25,5 @@ void ExecuteObject::start()
     emit started();
     ExitCause cause = ExitCause::Completed;
     int status = startImpl(cause);
-    emit finished(status, cause);
+    emit finished(status, static_cast<int>(cause));
 }

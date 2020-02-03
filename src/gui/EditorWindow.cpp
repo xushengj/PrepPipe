@@ -5,6 +5,7 @@
 #include "src/lib/StaticObjectIndexDB.h"
 #include "src/misc/MessageLogger.h"
 #include "src/gui/ExecuteWindow.h"
+#include "src/lib/TaskObject.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -235,6 +236,17 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
             });
             menu.addAction(closeAction);
         }
+        if (TaskObject* task = qobject_cast<TaskObject*>(data.obj)) {
+            if (item->parent() == mainRoot) {
+                QAction* executeAction = new QAction(tr("Execute"));
+                connect(executeAction, &QAction::triggered, this, [=]() -> void {
+                    ObjectBase::NamedReference ref;
+                    ref.name = task->getName();
+                    launchTask(ref);
+                });
+                menu.addAction(executeAction);
+            }
+        }
         data.obj->appendObjectActions(menu);
     }
 
@@ -444,14 +456,14 @@ void EditorWindow::processDelayedStartupAction()
     populateObjectListTreeFromMainContext();
 
     if (startup.isStartTaskSpecified) {
-        if (!launchTask(startup.startTask, ConfigurationData()))
+        if (!launchTask(startup.startTask))
             close();
     }
 }
 
-bool EditorWindow::launchTask(const ObjectBase::NamedReference& task, const ConfigurationData& config)
+bool EditorWindow::launchTask(const ObjectBase::NamedReference& task)
 {
-    ExecuteWindow* exec = ExecuteWindow::tryExecuteTask(task, TaskObject::LaunchOptions(), config, QHash<QString, QString>(), this);
+    ExecuteWindow* exec = ExecuteWindow::tryExecuteTask(task, TaskObject::LaunchOptions(), ConfigurationData(), QHash<QString, QString>(), this);
 
     if (exec) {
         // TODO add signal connections

@@ -41,9 +41,11 @@ public:
     static QString prettyPrintNameSpace(const QStringList& nameSpace);
 
     enum ObjectType {
-        GeneralTreeObject = 0,
-        MIMEDataObject = 1,
-        SimpleTreeTransformObject = 2
+        GeneralTreeObject,
+        MIMEDataObject,
+        SimpleTreeTransformObject,
+        TestTaskObject,
+        TestExecuteObject
     };
     Q_ENUM(ObjectType)
 
@@ -54,7 +56,11 @@ public:
         // from environment / settings
         QString filePath;
         QStringList nameSpace;
-        bool isLocked;
+        bool isLocked = false;
+        ConstructOptions() = default;
+        ConstructOptions(const QString& nameArg, const QString& commentArg)
+            : name(nameArg), comment(commentArg)
+        {}
     };
 
     ObjectBase(ObjectType Ty, const ConstructOptions& opt);

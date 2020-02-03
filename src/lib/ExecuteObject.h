@@ -10,7 +10,7 @@ class ExecuteObject : public ObjectBase
 {
     Q_OBJECT
 public:
-    enum class ExitCause {
+    enum class ExitCause : int {
         Completed, // either normal execution or there is a (task-specific) runtime error
         FatalEvent, // a qFatal() or Q_ASSERT() or whatever
         Terminated // user requested termination
@@ -26,7 +26,7 @@ public:
 
 signals:
     void started();
-    void finished(int status, ExitCause cause);
+    void finished(int status, int cause); // cause is ExitCause casted to int (enum do not work for connection across threads)
     void outputAvailable(ObjectBase* obj);
     void temporaryOutputFinishedUse(ObjectBase* obj);
     void statusUpdate(const QString& description, int start, int end, int value);

@@ -38,7 +38,7 @@ public:
             InvalidTask,
             UnresolvedReference
         };
-        Cause cause;
+        Cause cause = Cause::NoError;
         QString firstFatalErrorDescription;
         ObjectBase::NamedReference firstUnresolvedReference;
     };

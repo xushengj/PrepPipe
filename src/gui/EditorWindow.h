@@ -67,7 +67,8 @@ private:
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
-    bool launchTask(const ObjectBase::NamedReference &task, const ConfigurationData &config);
+    // convenient version
+    bool launchTask(const ObjectBase::NamedReference &task);
 
 protected:
     virtual void dragEnterEvent(QDragEnterEvent* event) override;

@@ -48,7 +48,7 @@ private:
 private slots:
     void initialize();
     void executionThreadFatalEventSlot();
-    void finalize(int rootExitCode, ExecuteObject::ExitCause cause);
+    void finalize(int rootExitCode, int cause);
     void writeBackOutputs();
     void updateCurrentExecutionStatus(const QString& description, int start, int end, int value);
     

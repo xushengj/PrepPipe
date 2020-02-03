@@ -1,5 +1,6 @@
 #include "IntrinsicObject.h"
 #include "src/lib/DataObject/GeneralTreeObject.h"
+#include "src/lib/TaskObject/TestTaskObject.h"
 #include <QDebug>
 
 IntrinsicObject::IntrinsicObject(ObjectType ty, const ConstructOptions &opt)
@@ -102,6 +103,9 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
     default: qFatal("Unhandled Intrinsic Object load"); break;
     case ObjectType::GeneralTreeObject:
         obj = GeneralTreeObject::loadFromXML(xml, newOpt);
+        break;
+    case ObjectType::TestTaskObject:
+        obj = TestTaskObject::loadFromXML(xml, newOpt);
         break;
     }
 
