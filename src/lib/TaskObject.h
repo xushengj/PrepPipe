@@ -3,7 +3,7 @@
 
 #include "src/lib/IntrinsicObject.h"
 #include "src/lib/ExecuteObject.h"
-#include "src/lib/Tree/TreeConstraint.h"
+#include "src/lib/Tree/Configuration.h"
 #include "src/lib/ObjectContext.h"
 
 #include <QObject>
@@ -14,9 +14,22 @@ class TaskObject : public IntrinsicObject
 public:
     TaskObject(ObjectType ty, const ConstructOptions& opt);
 
-    struct ObjectNamedReference {
-        QStringList nameSpace;
-        QString name;
+    enum LaunchFlag {
+        NoLaunchFlag                    = 0x0000,
+        Verbose                         = 0x0001, // ExecuteObjects will record more info for UI display (basically whether in debug mode)
+        InitialCheck_SilentError        = 0x0002,
+        InputAssign_NoStartDialog       = 0x0004, // will fail to execute if not all inputs are specified
+        Run_PauseOnStepStart            = 0x0010, // whether there is a breakpoint on start of each execution
+        Run_DeleteObjectAfterLastUse    = 0x0020,
+        Finalize_AutoTransferObject     = 0x1000, // if editor parent is present, transfer an output object to editor after its last use
+        Finalize_AutoCloseIfSuccess     = 0x2000,
+        Finalize_AutoCloseIfFail        = 0x4000
+    };
+    Q_DECLARE_FLAGS(LaunchFlags, LaunchFlag)
+
+    struct LaunchOptions {
+        // options that are shared across all executions or with ExecuteWindow
+        LaunchFlags flags;
     };
 
     struct PreparationError {
@@ -26,49 +39,71 @@ public:
             UnresolvedReference
         };
         Cause cause;
-        ObjectNamedReference firstUnresolvedReference;
         QString firstFatalErrorDescription;
+        ObjectBase::NamedReference firstUnresolvedReference;
     };
 
-    enum InputRequirementFlag {
-        NoInputFlag = 0x0,
-        NamedReference = 0x1,
-        AcceptBatch = 0x2,
-        Batch_AcceptEmpty = 0x4,
-        Batch_AcceptMixedType = 0x8
+    enum InputFlag {
+        NoInputFlag             = 0x0,
+        ReservedInputFlag       = 0x1, // not used
+        AcceptBatch             = 0x2,
+        Batch_AcceptEmpty       = 0x4
     };
-    Q_DECLARE_FLAGS(InputRequirementFlags, InputRequirementFlag)
+    Q_DECLARE_FLAGS(InputFlags, InputFlag)
 
-    struct TaskInputRequirement {
+    // only anonymous input should be specified
+    struct TaskInput {
         QString inputName;
-        InputRequirementFlags flags;
+        InputFlags flags;
         QVector<ObjectType> acceptedType;
-        TreeConstraint generalTreeConstraint; // only used if only expecting GeneralTreeObject inputs
     };
 
-    virtual bool tryGetInputRequirements(QList<TaskInputRequirement>& result, const ObjectContext& ctx, PreparationError& err) const = 0;
-
-    enum OutputDeclarationFlag {
+    enum OutputFlag {
         NoOutputFlag = 0x0,
-        ProduceBatch = 0x1,
-        ObjectTypeFixed = 0x02,
-        ObjectTypeSameAsInput = 0x04
+        TemporaryOutput = 0x1, // output can be safely discarded
+        ProduceBatch = 0x2,
+        ObjectTypeFixed = 0x04,
+        ObjectTypeSameAsInput = 0x08
     };
-    Q_DECLARE_FLAGS(OutputDeclarationFlags, OutputDeclarationFlag)
+    Q_DECLARE_FLAGS(OutputFlags, OutputFlag)
 
-    struct TaskOutputDeclaration {
+    struct TaskOutput {
         QString outputName;
-        OutputDeclarationFlag flags;
+        OutputFlag flags;
         ObjectType ty; // not used if ObjectTypeSameAsInput is set
     };
 
-    virtual bool tryGetOutputDeclaration(QList<TaskOutputDeclaration>& result, const ObjectContext& ctx, PreparationError& err) const = 0;
+    struct TaskDependence {
+        ObjectBase::NamedReference task;
+        QHash<QString, QString> presets;
+    };
+
+    virtual const ConfigurationDeclaration* getConfigurationDeclaration() const {return nullptr;} // nullptr for no config
+
+    virtual const ConfigurationData& getDefaultConfig() const {
+        qFatal("No default config for objects without config");
+        Q_UNREACHABLE();
+    }
+
+
+    virtual PreparationError getInputOutputInfo(
+            const ConfigurationData& config,
+            QList<TaskInput>& in,
+            QList<TaskOutput>& out,
+            std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB) const = 0;
 
     // only called after validation
-    virtual ExecuteObject* getExecuteObject() const = 0;
+    // must copy all data needed from named object references; they aren't available afterwards
+    // (only run time inputs are available)
+    virtual ExecuteObject* getExecuteObject(
+            const LaunchOptions& options,
+            const ConfigurationData& config,
+            std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
+            ) const = 0;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(TaskObject::InputRequirementFlags)
-Q_DECLARE_OPERATORS_FOR_FLAGS(TaskObject::OutputDeclarationFlags)
+Q_DECLARE_OPERATORS_FOR_FLAGS(TaskObject::LaunchFlags)
+Q_DECLARE_OPERATORS_FOR_FLAGS(TaskObject::InputFlags)
+Q_DECLARE_OPERATORS_FOR_FLAGS(TaskObject::OutputFlags)
 
 #endif // TASKOBJECT_H

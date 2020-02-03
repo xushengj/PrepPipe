@@ -14,6 +14,52 @@ QString ObjectBase::getTypeClassName(ObjectType ty)
     return QString(QMetaEnum::fromType<ObjectType>().valueToKey(ty));
 }
 
+QString ObjectBase::prettyPrintNameSpace(const QStringList& nameSpace)
+{
+    QString result;
+    result.append('[');
+    result.append(nameSpace.join(" -> "));
+    result.append(']');
+    return result;
+}
+
+ObjectBase::NamedReference::NamedReference(QString expr)
+{
+    QStringList list = expr.split('/');
+    if (!list.isEmpty()) {
+        if (list.size() == 1) {
+            name = list.front();
+        } else {
+            name = list.back();
+            list.pop_back();
+            nameSpace = list;
+        }
+    }
+}
+
+QString ObjectBase::NamedReference::prettyPrint() const
+{
+    if (nameSpace.isEmpty())
+        return name;
+
+    QString result(name);
+    result.append(" @ ");
+    result.append(prettyPrintNameSpace(nameSpace));
+    return result;
+}
+
+QString ObjectBase::NamedReference::prettyPrint(const QStringList& mainNameSpace) const
+{
+    const QStringList& nameSpaceToUse = nameSpace.isEmpty()? mainNameSpace: nameSpace;
+    if (nameSpaceToUse.isEmpty())
+        return name;
+
+    QString result(name);
+    result.append(" @ ");
+    result.append(prettyPrintNameSpace(nameSpaceToUse));
+    return result;
+}
+
 //*****************************************************************************
 // Object type "registration"
 

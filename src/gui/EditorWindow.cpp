@@ -2,14 +2,19 @@
 #include "ui_EditorWindow.h"
 
 #include "src/lib/DataObject/MIMEDataObject.h"
+#include "src/lib/StaticObjectIndexDB.h"
 #include "src/misc/MessageLogger.h"
+#include "src/gui/ExecuteWindow.h"
 
+#include <QDebug>
 #include <QSettings>
 #include <QMessageBox>
 #include <QGridLayout>
 #include <QCommonStyle>
 #include <QFileDialog>
 #include <QDateTime>
+#include <QString>
+#include <QStringRef>
 
 namespace {
 const QString SETTINGS_EDITOR_PLACEHOLDER_TEXT = QStringLiteral("editor/placeholder_text");
@@ -24,8 +29,8 @@ QString getPlaceHolderText()
 }
 }
 
-EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::EditorWindow), mainCtx(startDirectory), sideCtx()
+EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringList presets, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::EditorWindow), mainCtx(), sideCtx()
 {
     ui->setupUi(this);
     setContextMenuPolicy(Qt::DefaultContextMenu); // call contextMenuEvent()
@@ -42,7 +47,6 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
     sideRoot->setIcon(0, style.standardIcon(QStyle::SP_DirIcon));
     ui->objectListTreeWidget->insertTopLevelItem(0, mainRoot);
     ui->objectListTreeWidget->insertTopLevelItem(1, sideRoot);
-    populateObjectListTreeFromMainContext();
 
     connect(Settings::inst(), &Settings::settingChanged, this, &EditorWindow::settingChanged);
 
@@ -61,8 +65,43 @@ EditorWindow::EditorWindow(QString startDirectory, QWidget *parent)
     connect(ui->actionSegFault, &QAction::triggered, this, []() -> void {
         *(volatile char*)nullptr;
     });
-
     setAcceptDrops(true);
+
+    QMetaObject::invokeMethod(this, &EditorWindow::processDelayedStartupAction, Qt::QueuedConnection);
+
+    // populate startup info
+    startup.startDirectory = startDirectory;
+    startup.isStartTaskSpecified = false;
+
+    if (!startTask.isEmpty()) {
+        startup.isStartTaskSpecified = true;
+        startup.startTask = ObjectBase::NamedReference(startTask);
+    }
+
+    for (const auto& str : presets) {
+        int pos = str.indexOf('=');
+        if (pos == -1) {
+            qWarning() << "Unhandled command line option " << str;
+            continue;
+        }
+        QStringRef key = str.midRef(0, pos);
+        QStringRef value = str.midRef(pos + 1);
+        if (key.length() >= 2 && key.front() == '"' && key.back() == '"') {
+            key = key.mid(1).chopped(1);
+        }
+        if (value.length() >= 2 && value.front() == '"' && value.back() == '"') {
+            value = value.mid(1).chopped(1);
+        }
+        QString keyStr = key.toString();
+        QString valueStr = value.toString();
+        auto iter = startup.presets.find(keyStr);
+        if (iter != startup.presets.end()) {
+            qWarning() << "Duplicate value for key " << keyStr <<"; previous value " << iter.value() << "is overwritten";
+            iter.value() = valueStr;
+        } else {
+            startup.presets.insert(keyStr, valueStr);
+        }
+    }
 }
 
 EditorWindow::~EditorWindow()
@@ -397,4 +436,26 @@ void EditorWindow::dropEvent(QDropEvent* event)
     MIMEDataObject* data = new MIMEDataObject(*ptr, opt);
     addToSideContext(data);
     event->acceptProposedAction();
+}
+
+void EditorWindow::processDelayedStartupAction()
+{
+    mainCtx.setDirectory(startup.startDirectory);
+    populateObjectListTreeFromMainContext();
+
+    if (startup.isStartTaskSpecified) {
+        if (!launchTask(startup.startTask, ConfigurationData()))
+            close();
+    }
+}
+
+bool EditorWindow::launchTask(const ObjectBase::NamedReference& task, const ConfigurationData& config)
+{
+    ExecuteWindow* exec = ExecuteWindow::tryExecuteTask(task, TaskObject::LaunchOptions(), config, QHash<QString, QString>(), this);
+
+    if (exec) {
+        // TODO add signal connections
+    }
+
+    return exec != nullptr;
 }

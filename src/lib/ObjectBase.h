@@ -26,6 +26,19 @@ public:
     };
     Q_DECLARE_FLAGS(StatusFlags, StatusFlag)
 
+    struct NamedReference {
+        QString name;
+        QStringList nameSpace;
+        NamedReference() = default;
+        NamedReference(QString nameArg, QStringList nameSpaceArg)
+            : name(nameArg), nameSpace(nameSpaceArg)
+        {}
+        NamedReference(QString expr);
+        QString prettyPrint() const;
+        QString prettyPrint(const QStringList& mainNameSpace) const;
+    };
+
+    static QString prettyPrintNameSpace(const QStringList& nameSpace);
 
     enum ObjectType {
         GeneralTreeObject = 0,

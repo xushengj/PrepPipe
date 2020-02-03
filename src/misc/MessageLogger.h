@@ -5,6 +5,8 @@
 #include <QElapsedTimer>
 #include <QTemporaryFile>
 #include <QBuffer>
+#include <QThread>
+#include <QLinkedList>
 
 class MessageLogger : public QObject
 {
@@ -16,9 +18,20 @@ public:
     static void firstStageMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
     static void normalMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 
-    void handleMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
-
     void bootstrapFinished(QWidget* mainWindow);
+
+    struct ThreadInfo {
+        QThread thread;
+        QString description;
+        QTemporaryFile log;
+        bool isFatalEventOccurred = false;
+        std::function<void()> fatalEventCallback;
+    };
+
+    // these two functions MUST only be called from main thread and NOT be called when there are other threads running
+    // otherwise threadInfo will be corrupted
+    QThread* createThread(const QString& description, std::function<void()> fatalEventCallback);
+    void cleanupThread(QThread* thread);
 
     qint64 getMSecSinceBootstrap() const {
         return timer.elapsed();
@@ -32,17 +45,18 @@ signals:
 
 public:
     // only for platform dependent error handling code
-    static QTemporaryFile* startExceptionInfoDump();
-    static void crashReportWrapup();
+    static QIODevice *startExceptionInfoDump();
+    static void crashReportWrapup(); // this may or may not return
 
 private:
     explicit MessageLogger(QObject *parent = nullptr);
-    void handleFatalMessage();
-    void handleFatal_Unsafe();
-    void writeExceptionHeader();
+    virtual ~MessageLogger() override;
+    void mainThreadFatalEventWrapup_Unsafe();
+    static void writeExceptionHeader(QIODevice* dest);
+    static QString getLogNameTemplate();
 
     // platform dependent
-    void tryDumpStackTrace();
+    static void tryDumpStackTrace(QIODevice* dest);
     void initFailureHandler();
 
 private:
@@ -53,6 +67,10 @@ private:
     QString bootstrapLog;
     QWidget* window = nullptr;
     QTemporaryFile logFile;
+    bool isFatalEventOccurred = false;
+    QList<ThreadInfo*> threadInfo;
+
+friend QIODevice* getLogDestination();
 };
 
 #endif // MESSAGELOGGER_H

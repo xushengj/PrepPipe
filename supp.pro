@@ -28,6 +28,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
+    src/gui/ExecuteWindow.cpp \
     src/gui/TextEditor.cpp \
     src/gui/GeneralTreeEditor.cpp \
     src/gui/MIMEDataEditor.cpp \
@@ -40,8 +41,8 @@ SOURCES += \
     src/lib/StaticObjectIndexDB.cpp \
     src/lib/TaskObject.cpp \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
+    src/lib/Tree/Configuration.cpp \
     src/lib/Tree/Tree.cpp \
-    src/lib/Tree/TreeConstraint.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
@@ -50,6 +51,7 @@ SOURCES += \
 HEADERS += \
     src/gui/BreadcrumbWidget.h \
     src/gui/EditorWindow.h \
+    src/gui/ExecuteWindow.h \
     src/gui/TextEditor.h \
     src/gui/GeneralTreeEditor.h \
     src/gui/MIMEDataEditor.h \
@@ -62,14 +64,15 @@ HEADERS += \
     src/lib/StaticObjectIndexDB.h \
     src/lib/TaskObject.h \
     src/lib/TaskObject/SimpleTreeTransformObject.h \
+    src/lib/Tree/Configuration.h \
     src/lib/Tree/SimpleTreeTransform.h \
     src/lib/Tree/Tree.h \
-    src/lib/Tree/TreeConstraint.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h
 
 FORMS += \
     src/gui/EditorWindow.ui \
+    src/gui/ExecuteWindow.ui \
     src/gui/GeneralTreeEditor.ui \
     src/gui/MIMEDataEditor.ui
 

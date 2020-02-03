@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>icon/test.png</file>
+        <file>icon/execute/completed.png</file>
+        <file>icon/execute/current.png</file>
+        <file>icon/execute/failed.png</file>
+        <file>icon/execute/pending.png</file>
     </qresource>
 </RCC>

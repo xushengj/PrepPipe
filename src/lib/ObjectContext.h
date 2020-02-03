@@ -44,6 +44,8 @@ public:
 
     void setDirectory(const QString& newDirectory);
 
+    static ObjectBase* resolveNamedReference(const ObjectBase::NamedReference& ref, const QStringList &mainNameSpace, const ObjectContext* ctx);
+
 private:
     void loadAllObjectsFromDirectory();
 

@@ -2,6 +2,7 @@
 #define EDITORWINDOW_H
 
 #include "src/lib/ObjectContext.h"
+#include "src/lib/TaskObject.h"
 #include "src/misc/Settings.h"
 
 #include <QMainWindow>
@@ -18,8 +19,11 @@ class EditorWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    EditorWindow(QString startDirectory, QWidget *parent = nullptr);
+    EditorWindow(QString startDirectory, QString startTask, QStringList presets, QWidget *parent = nullptr);
     virtual ~EditorWindow() override;
+
+    const ObjectContext& getMainContext() const {return mainCtx;}
+
 private:
     enum class OriginContext : int {
         MainContext = 0,
@@ -63,6 +67,8 @@ private:
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
+    bool launchTask(const ObjectBase::NamedReference &task, const ConfigurationData &config);
+
 protected:
     virtual void dragEnterEvent(QDragEnterEvent* event) override;
     virtual void dropEvent(QDropEvent* event) override;
@@ -81,6 +87,17 @@ private slots:
 
     void closeSideContextObjectRequested(QTreeWidgetItem* item);
     bool tryCloseAllSideContextObjects();
+
+    void processDelayedStartupAction();
+
+private:
+    struct StartupInfo {
+        QString startDirectory;
+        QHash<QString, QString> presets;
+        ObjectBase::NamedReference startTask;
+        bool isStartTaskSpecified;
+    } startup;
+
 private:
     Ui::EditorWindow *ui;
     ObjectContext mainCtx; // what's in working directory

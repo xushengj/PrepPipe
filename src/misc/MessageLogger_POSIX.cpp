@@ -76,10 +76,10 @@ void sighupHandler(int signo)
 
 } // end of anonymous namespace
 
-void MessageLogger::tryDumpStackTrace()
+void MessageLogger::tryDumpStackTrace(QIODevice* dest)
 {
-    logFile.write("Trying to get POSIX Stack Trace:\n");
-    dumpStackTrace(&logFile);
+    dest->write("Trying to get POSIX Stack Trace:\n");
+    dumpStackTrace(dest);
 }
 
 void MessageLogger::initFailureHandler()

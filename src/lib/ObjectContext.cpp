@@ -1,5 +1,6 @@
 #include "ObjectContext.h"
 #include "src/lib/IntrinsicObject.h"
+#include "src/lib/StaticObjectIndexDB.h"
 
 #include <QDebug>
 #include <QDir>
@@ -107,5 +108,30 @@ void ObjectContext::releaseObject(ObjectBase* obj)
                 break;
             }
         }
+    }
+}
+
+ObjectBase* ObjectContext::resolveNamedReference(const ObjectBase::NamedReference& ref, const QStringList& mainNameSpace, const ObjectContext* ctx)
+{
+    const QStringList& nameSpaceToUse = ref.nameSpace.isEmpty()? mainNameSpace : ref.nameSpace;
+    if (nameSpaceToUse.isEmpty()) {
+        if (Q_UNLIKELY(!ctx)) {
+            qCritical() << "No main context to search for object" << ref.name;
+            return nullptr;
+        } else {
+            ObjectBase* obj = ctx->getObject(ref.name);
+            if (Q_UNLIKELY(!obj)) {
+                qCritical() << "Object" << ref.name << "not found in" << ctx->getDirectory();
+                return nullptr;
+            }
+            return obj;
+        }
+    } else {
+        ObjectBase* obj = StaticObjectIndexDB::inst()->getObject(nameSpaceToUse, ref.name);
+        if (Q_UNLIKELY(!obj)) {
+            qCritical() << "Object" << ref.prettyPrint(mainNameSpace) << "not found";
+            return nullptr;
+        }
+        return obj;
     }
 }

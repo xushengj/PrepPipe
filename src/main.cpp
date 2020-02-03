@@ -44,15 +44,15 @@ int main(int argc, char *argv[])
                                  QCoreApplication::translate("main", "locale"));
     parser.addOption(localeOpt);
 
-    QCommandLineOption runOpt({"r", "run"},
-                              QCoreApplication::translate("main", "Run given script and exit"),
-                              QCoreApplication::translate("main", "script"));
-    parser.addOption(runOpt);
+    QCommandLineOption taskOpt({"t", "task"},
+                              QCoreApplication::translate("main", "Run given task upon start"),
+                              QCoreApplication::translate("main", "task"));
+    parser.addOption(taskOpt);
 
-    QCommandLineOption editOpt({"e", "edit"},
-                               QCoreApplication::translate("main", "Set root directory of editor bundle"),
+    QCommandLineOption rootDirOpt({"r", "root"},
+                               QCoreApplication::translate("main", "Set object root directory"),
                                QCoreApplication::translate("main", "directory"));
-    parser.addOption(editOpt);
+    parser.addOption(rootDirOpt);
 
     parser.process(a);
 
@@ -78,14 +78,19 @@ int main(int argc, char *argv[])
         }
     }
 
-    QString editRootDirectory;
-    if (parser.isSet(editOpt)) {
-        editRootDirectory = parser.value(editOpt);
+    QString rootDirectory;
+    if (parser.isSet(rootDirOpt)) {
+        rootDirectory = parser.value(rootDirOpt);
     } else {
-        editRootDirectory = QDir::currentPath();
+        rootDirectory = QDir::currentPath();
     }
 
-    EditorWindow w(editRootDirectory);
+    QString startTask;
+    if (parser.isSet(taskOpt)) {
+        startTask = parser.value(taskOpt);
+    }
+
+    EditorWindow w(rootDirectory, startTask, parser.positionalArguments());
     MessageLogger::inst()->bootstrapFinished(&w);
     w.show();
 

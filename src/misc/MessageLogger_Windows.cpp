@@ -167,13 +167,13 @@ LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 
 } // end of anonymous namespace
 
-void MessageLogger::tryDumpStackTrace()
+void MessageLogger::tryDumpStackTrace(QIODevice *dest)
 {
-    logFile.write("Trying to get Win64 Stack Trace:\n");
+    dest->write("Trying to get Win64 Stack Trace:\n");
     CONTEXT ctx;
     RtlCaptureContext(&ctx);
     HANDLE thread = GetCurrentThread();
-    dumpStackTrace(thread, &ctx, &logFile);
+    dumpStackTrace(thread, &ctx, dest);
 }
 
 void MessageLogger::initFailureHandler()

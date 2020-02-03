@@ -22,6 +22,8 @@ void ExecuteObject::setInput(QString inputName, QList<ObjectBase*> batch)
 
 void ExecuteObject::start()
 {
-    int status = startImpl();
-    emit finished(status);
+    emit started();
+    ExitCause cause = ExitCause::Completed;
+    int status = startImpl(cause);
+    emit finished(status, cause);
 }
