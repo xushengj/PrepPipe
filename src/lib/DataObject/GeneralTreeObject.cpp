@@ -3,13 +3,13 @@
 #include <QDebug>
 
 GeneralTreeObject::GeneralTreeObject(const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::GeneralTreeObject, opt)
+    : IntrinsicObject(ObjectType::Data_GeneralTree, opt)
 {
 
 }
 
 GeneralTreeObject::GeneralTreeObject(const Tree &tree, const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::GeneralTreeObject, opt), treeData(tree)
+    : IntrinsicObject(ObjectType::Data_GeneralTree, opt), treeData(tree)
 {
 
 }
@@ -83,7 +83,7 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, QHash<
         return false;
     }
 
-    auto ptr = parent? tree.addNode(parent) : tree.addNode();
+    auto ptr = tree.addNode(parent);
     auto& n = *ptr;
     {
         auto attr = xml.attributes();
@@ -163,7 +163,7 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, QHash<
 GeneralTreeObject* GeneralTreeObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
 {
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
-    QString top = getTypeClassName(ObjectType::GeneralTreeObject);
+    QString top = getTypeClassName(ObjectType::Data_GeneralTree);
     if (Q_UNLIKELY(xml.name() != top)) {
         qWarning() << "Unexpected element " << xml.name() << "(expecting " << top <<")";
         return nullptr;

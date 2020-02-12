@@ -101,10 +101,10 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
 
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
     default: qFatal("Unhandled Intrinsic Object load"); break;
-    case ObjectType::GeneralTreeObject:
+    case ObjectType::Data_GeneralTree:
         obj = GeneralTreeObject::loadFromXML(xml, newOpt);
         break;
-    case ObjectType::TestTaskObject:
+    case ObjectType::Task_Test:
         obj = TestTaskObject::loadFromXML(xml, newOpt);
         break;
     }

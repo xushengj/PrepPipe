@@ -5,13 +5,13 @@
 #include <QDateTime>
 
 MIMEDataObject::MIMEDataObject(const ConstructOptions& opt)
-    : ObjectBase(ObjectType::MIMEDataObject, opt)
+    : ObjectBase(ObjectType::Data_MIME, opt)
 {
 
 }
 
 MIMEDataObject::MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt)
-    : ObjectBase(ObjectType::MIMEDataObject, opt)
+    : ObjectBase(ObjectType::Data_MIME, opt)
 {
     QStringList formats = initData.formats();
     for (const auto& fmt : formats) {

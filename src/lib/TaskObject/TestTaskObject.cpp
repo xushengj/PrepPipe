@@ -6,13 +6,13 @@
 #include <chrono>         // std::chrono::seconds
 
 TestTaskObject::TestTaskObject(const TestExecuteObject::TestSettings &settingsArg, const ConstructOptions &options)
-    : TaskObject(ObjectType::TestTaskObject, options), settings(settingsArg)
+    : TaskObject(ObjectType::Task_Test, options), settings(settingsArg)
 {
 
 }
 
 TestTaskObject::TestTaskObject(const ConstructOptions &options)
-    : TaskObject(ObjectType::TestTaskObject, options), settings()
+    : TaskObject(ObjectType::Task_Test, options), settings()
 {
 
 }
@@ -96,7 +96,7 @@ TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, const Constru
 //-----------------------------------------------------------------------------
 
 TestExecuteObject::TestExecuteObject(const TestSettings& test, const QString &name)
-    : ExecuteObject(ObjectType::TestExecuteObject, ConstructOptions(name, QString())), settings(test)
+    : ExecuteObject(ObjectType::Exec_Test, ConstructOptions(name, QString())), settings(test)
 {}
 
 TestExecuteObject::~TestExecuteObject() {}

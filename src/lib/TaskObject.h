@@ -62,8 +62,7 @@ public:
         NoOutputFlag = 0x0,
         TemporaryOutput = 0x1, // output can be safely discarded
         ProduceBatch = 0x2,
-        ObjectTypeFixed = 0x04,
-        ObjectTypeSameAsInput = 0x08
+        ObjectTypeSameAsInput = 0x4 // which means that output object type can change for different input types
     };
     Q_DECLARE_FLAGS(OutputFlags, OutputFlag)
 

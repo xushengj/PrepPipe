@@ -66,13 +66,13 @@ QString ObjectBase::NamedReference::prettyPrint(const QStringList& mainNameSpace
 QString ObjectBase::getTypeDisplayName(ObjectType ty)
 {
     switch(ty){
-    case ObjectType::GeneralTreeObject:
+    case ObjectType::Data_GeneralTree:
         return tr("General Tree");
-    case ObjectType::MIMEDataObject:
+    case ObjectType::Data_MIME:
         return tr("MIME");
-    case ObjectType::SimpleTreeTransformObject:
+    case ObjectType::Task_SimpleTreeTransform:
         return tr("Tree-to-Tree Transform");
-    case ObjectType::TestTaskObject:
+    case ObjectType::Task_Test:
         return tr("Test");
     default: qFatal("Unhandled object type"); return QString();
     }

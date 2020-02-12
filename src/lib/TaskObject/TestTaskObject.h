@@ -17,7 +17,9 @@ public:
     TestExecuteObject(const TestSettings& test, const QString& name);
     virtual ~TestExecuteObject() override;
 
+protected:
     virtual int startImpl(ExitCause& cause) override;
+
 private:
     const TestSettings settings;
 };

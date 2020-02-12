@@ -43,11 +43,13 @@ SOURCES += \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
     src/lib/TaskObject/TestTaskObject.cpp \
     src/lib/Tree/Configuration.cpp \
+    src/lib/Tree/SimpleTreeTransform.cpp \
     src/lib/Tree/Tree.cpp \
     src/main.cpp \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
-    src/misc/Settings.cpp
+    src/misc/Settings.cpp \
+    src/utils/XMLUtilities.cpp
 
 HEADERS += \
     src/gui/BreadcrumbWidget.h \
@@ -70,7 +72,8 @@ HEADERS += \
     src/lib/Tree/SimpleTreeTransform.h \
     src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \
-    src/misc/Settings.h
+    src/misc/Settings.h \
+    src/utils/XMLUtilities.h
 
 FORMS += \
     src/gui/EditorWindow.ui \

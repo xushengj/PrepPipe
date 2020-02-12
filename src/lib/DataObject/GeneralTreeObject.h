@@ -20,6 +20,8 @@ public:
 
     static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
 
+    const Tree& getTreeData() const {return treeData;}
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;
 

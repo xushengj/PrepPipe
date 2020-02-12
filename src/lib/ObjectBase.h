@@ -41,11 +41,12 @@ public:
     static QString prettyPrintNameSpace(const QStringList& nameSpace);
 
     enum ObjectType {
-        GeneralTreeObject,
-        MIMEDataObject,
-        SimpleTreeTransformObject,
-        TestTaskObject,
-        TestExecuteObject
+        Data_GeneralTree,
+        Data_MIME,
+        Task_SimpleTreeTransform,
+        Exec_SimpleTreeTransform,
+        Task_Test,
+        Exec_Test
     };
     Q_ENUM(ObjectType)
 

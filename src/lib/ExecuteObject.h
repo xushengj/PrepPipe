@@ -22,6 +22,7 @@ public:
     virtual void setInput(QString inputName, ObjectBase* obj);
     virtual void setInput(QString inputName, QList<ObjectBase*> batch);
 
+protected:
     virtual int startImpl(ExitCause& cause) = 0;
 
 signals:
