@@ -241,7 +241,8 @@ bool readLoadableList(QXmlStreamReader& xml, const char* const currentElement,
         if (Q_UNLIKELY(xml.name() != listEntryElementName)) {
             return XMLError::unexpectedElement(qWarning(), xml, currentElement, listEntryElementName);
         }
-        list.push_back(std::remove_reference<decltype (list.front())>::type());
+        typename std::remove_reference<decltype (list.front())>::type dummy;
+        list.push_back(dummy);
         if (Q_UNLIKELY(!list.back().loadFromXML(xml, strCache))) {
             return XMLError::failOnChild(qWarning(), currentElement, listEntryElementName);
         }
