@@ -34,7 +34,7 @@ public:
     SimpleTreeTransformObject(const ConstructOptions& opt);
     SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg, const ConstructOptions& opt);
 
-    static SimpleTreeTransformObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
+    static SimpleTreeTransformObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
 
     virtual PreparationError getInputOutputInfo(
             const ConfigurationData& config,

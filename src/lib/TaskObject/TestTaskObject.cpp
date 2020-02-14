@@ -1,5 +1,5 @@
 #include "TestTaskObject.h"
-
+#include "src/utils/XMLUtilities.h"
 #include <QDebug>
 
 #include <thread>         // std::this_thread::sleep_for
@@ -60,6 +60,10 @@ void TestTaskObject::saveToXMLImpl(QXmlStreamWriter& xml)
 
 TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt)
 {
+    if (Q_UNLIKELY(!xml.readNextStartElement())) {
+        XMLError::missingStartElement(qWarning(), xml, "TestTaskObject", STR_SLEEP_DURATION);
+        return nullptr;
+    }
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
     if (Q_UNLIKELY(xml.name() != STR_SLEEP_DURATION)) {
         qWarning() << "Unexpected element " << xml.name() << "(expecting " << STR_SLEEP_DURATION <<")";
@@ -89,6 +93,7 @@ TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, const Constru
         qWarning() << "Invalid" << STR_CAUSE << ":" << causeStr;
         return nullptr;
     }
+    xml.skipCurrentElement();
 
     return new TestTaskObject(settings, opt);
 }

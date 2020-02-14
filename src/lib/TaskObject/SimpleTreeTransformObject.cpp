@@ -18,10 +18,9 @@ void SimpleTreeTransformObject::saveToXMLImpl(QXmlStreamWriter &xml)
     data.saveToXML(xml);
 }
 
-SimpleTreeTransformObject* SimpleTreeTransformObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
+SimpleTreeTransformObject* SimpleTreeTransformObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache& strCache)
 {
     SimpleTreeTransform::Data data;
-    StringCache strCache;
     if (Q_LIKELY(data.loadFromXML(xml, strCache))) {
         return new SimpleTreeTransformObject(data, opt);
     }

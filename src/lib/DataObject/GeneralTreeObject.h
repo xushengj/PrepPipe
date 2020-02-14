@@ -18,7 +18,7 @@ public:
     GeneralTreeObject(const Tree& tree, const ConstructOptions& opt);
     virtual ~GeneralTreeObject() override;
 
-    static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt);
+    static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
 
     const Tree& getTreeData() const {return treeData;}
 

@@ -67,6 +67,12 @@ bool readAttribute(QXmlStreamReader& xml, const char* const currentElement,
                    std::initializer_list<QString> possibleValues,
                    const char * const reason);
 
+bool readStringAttribute(QXmlStreamReader& xml, const char* const currentElement,
+                         const QString& attributedElement,
+                         const QString& attributeName,
+                         QString& string,
+                         StringCache &strCache);
+
 /**
  * @brief readStringList read a string list
  *
@@ -113,6 +119,8 @@ bool readGeneralList(QXmlStreamReader& xml, const char* const currentElement,
                      const QString& listEntryElementName,
                      std::function<bool(QXmlStreamReader&, StringCache&)> readElementCallback,
                      StringCache &strCache);
+
+bool readElementText(QXmlStreamReader& xml, const char* const currentElement, const QString &textElement, QString& str, StringCache &strCache);
 }
 
 namespace XMLError {

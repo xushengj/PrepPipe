@@ -82,6 +82,23 @@ bool XMLUtil::readAttribute(
     return true;
 }
 
+bool XMLUtil::readStringAttribute(
+        QXmlStreamReader& xml, const char* const currentElement,
+        const QString& attributedElement,
+        const QString& attributeName,
+        QString& string,
+        StringCache& strCache)
+{
+    Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+    auto attr = xml.attributes();
+    if (Q_UNLIKELY(!attr.hasAttribute(attributeName))) {
+        return XMLError::missingAttribute(qWarning(), xml, currentElement, (attributedElement.isEmpty()? xml.name() : QStringRef(&attributedElement)), attributeName);
+    }
+    auto value = attr.value(attributeName);
+    string = strCache(value);
+    return true;
+}
+
 bool XMLUtil::readStringList(QXmlStreamReader& xml, const char* const currentElement,
         const QString& stringListElement,
         const QString& listEntryElementName,
@@ -138,6 +155,18 @@ bool XMLUtil::readGeneralList(QXmlStreamReader& xml, const char* const currentEl
     }
     if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
         return XMLError::missingEndElement(qWarning(), xml, currentElement, listElement);
+    }
+    return true;
+}
+
+bool XMLUtil::readElementText(QXmlStreamReader& xml, const char* const currentElement, const QString& textElement, QString &str, StringCache &strCache)
+{
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+        return XMLError::notHavingCharacter(qWarning(), xml, currentElement, textElement);
+    }
+    str = strCache(xml.text());
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+        return XMLError::missingEndElement(qWarning(), xml, currentElement, textElement);
     }
     return true;
 }
