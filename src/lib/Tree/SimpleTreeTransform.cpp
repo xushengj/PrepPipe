@@ -332,12 +332,12 @@ void SimpleTreeTransform::Data::saveToXML(QXmlStreamWriter& xml) const
 
 namespace {
 
-bool readNodeTransform(QXmlStreamReader& xml, StringCache& strCache) {
+bool readNodeTransform(QHash<QString, QVector<SimpleTreeTransform::NodeTransformRule>>& dest, QXmlStreamReader& xml, StringCache& strCache) {
     QString tyName;
     const char* curElement = "NodeTransform";
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
     Q_ASSERT(xml.name() == XML_NODE_TRANSFORM);
-    if (!Q_UNLIKELY(!XMLUtil::readAttribute(
+    if (Q_UNLIKELY(!XMLUtil::readAttribute(
         xml, curElement, XML_NODE_TRANSFORM, XML_NODE_TRANSFORM_NODE_TYPE,
         [&] (QStringRef str) ->bool {
             tyName = strCache(str);
@@ -356,11 +356,12 @@ bool readNodeTransform(QXmlStreamReader& xml, StringCache& strCache) {
         if (Q_UNLIKELY(!rule.loadFromXML(xml, strCache))) {
             return XMLError::failOnChild(qWarning(), curElement, XML_NODE_TRANSFORM_RULE);
         }
-        Q_ASSERT(xml.tokenType() == QXmlStreamReader::EndElement);
+        ruleList.push_back(rule);
     }
     if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
         return XMLError::missingEndElement(qWarning(), xml, curElement, XML_NODE_TRANSFORM);
     }
+    dest.insert(tyName, ruleList);
     return true;
 }
 } // end of anonymous namespace
@@ -426,7 +427,7 @@ bool SimpleTreeTransform::Data::loadFromXML(QXmlStreamReader& xml, StringCache &
 
     // transform rules
     nodeTypeToRuleList.clear();
-    if (Q_UNLIKELY(!XMLUtil::readGeneralList(xml, curElement, XML_NODE_TRANSFORM_LIST, XML_NODE_TRANSFORM, readNodeTransform, strCache))) {
+    if (Q_UNLIKELY(!XMLUtil::readGeneralList(xml, curElement, XML_NODE_TRANSFORM_LIST, XML_NODE_TRANSFORM, std::bind(readNodeTransform, std::ref(nodeTypeToRuleList), std::placeholders::_1, std::placeholders::_2), strCache))) {
         return false;
     }
 
@@ -517,14 +518,14 @@ bool SimpleTreeTransform::NodeTransformRule::loadFromXML(QXmlStreamReader& xml, 
         return false;
     };
     const char* curElement = "SimpleTreeTransform::NodeTransformRule";
-    if (Q_UNLIKELY(!XMLUtil::readEnum(
-        xml, curElement, XML_TRANSFORM_TYPE, std::bind(setTransformType, std::placeholders::_1, ty),
+    if (Q_UNLIKELY(!XMLUtil::readAttribute(
+        xml, curElement, QString(), XML_TRANSFORM_TYPE, std::bind(setTransformType, std::placeholders::_1, std::ref(ty)),
     {
         XML_ACTION_PASSTHROUGH,
         XML_ACTION_REMOVE,
         XML_ACTION_REPLACE,
         XML_ACTION_MODIFY
-    }))) {
+    }, nullptr))) {
         return false;
     }
 
@@ -596,7 +597,7 @@ bool SimpleTreeTransform::SubTreeNodeTemplate::loadFromXML(QXmlStreamReader& xml
 
 namespace  {
 const QString XML_KEY = QStringLiteral("Key");
-const QString XML_VALUE = QStringLiteral("VALUE");
+const QString XML_VALUE = QStringLiteral("Value");
 } // end of anonymous namespace
 void SimpleTreeTransform::KeyValueExpressionPair::saveToXML(QXmlStreamWriter& xml) const
 {

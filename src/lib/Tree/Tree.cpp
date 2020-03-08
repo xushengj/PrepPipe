@@ -439,10 +439,7 @@ bool Tree::NodeTraverseStep::loadFromXML(QXmlStreamReader& xml, StringCache& str
                 return false;
             }
             keyValueFilter.insert(key, value);
-            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
-                qWarning() << "When wrapping up" << XML_STEP_KEYVALUEFILTER << ": unexpected xml token " << xml.tokenString() << "(Expecting EndElement)";
-                return false;
-            }
+            xml.skipCurrentElement();
         } else if (xml.name() == XML_STEP_TYPEFILTER) {
             if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
                 qWarning() << "When reading" << XML_STEP_TYPEFILTER << ": unexpected xml token " << xml.tokenString() << "(Expecting Characters)";
