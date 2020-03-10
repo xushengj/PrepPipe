@@ -46,6 +46,7 @@ TaskObject::PreparationError SimpleTreeTransformObject::getInputOutputInfo(
         sideTreeIn.inputName = sideTree;
         sideTreeIn.flags = InputFlag::NoInputFlag;
         sideTreeIn.acceptedType.push_back(ObjectType::Data_GeneralTree);
+        in.push_back(sideTreeIn);
     }
 
     TaskOutput treeOut;
@@ -86,7 +87,6 @@ SimpleTreeTransformExecuteObject::~SimpleTreeTransformExecuteObject()
 
 void SimpleTreeTransformExecuteObject::setInput(QString inputName, ObjectBase* obj)
 {
-    Q_ASSERT(inputName.isEmpty());
     Q_ASSERT(obj->getType() == ObjectType::Data_GeneralTree);
     GeneralTreeObject* tree = qobject_cast<GeneralTreeObject*>(obj);
     if (inputName.isEmpty()) {

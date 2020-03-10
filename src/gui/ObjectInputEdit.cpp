@@ -39,28 +39,28 @@ void ObjectInputEdit::trySetReference(ObjectContext::AnonymousObjectReference re
 void ObjectInputEdit::dragEnterEvent(QDragEnterEvent* event)
 {
     isInDragDrop = true;
+    bool isDropGood = true;
     QList<ObjectContext::AnonymousObjectReference> newRefList = ObjectTreeWidget::recoverReference(event->mimeData());
     if (newRefList.size() != 1) {
         ui->label->setText(tr("1 object expected instead of %1").arg(QString::number(newRefList.size())));
-        event->ignore();
-        return;
+        isDropGood = false;
     } else {
         ObjectBase* obj = ObjectContext::resolveAnonymousReference(newRefList.front());
         if (Q_UNLIKELY(!obj)) {
             ui->label->setText(tr("Invalid object reference"));
-            event->ignore();
-            return;
-        }
-        if (Q_UNLIKELY(!acceptedTypes.contains(obj->getType()))) {
+            isDropGood = false;
+        } else if (Q_UNLIKELY(!acceptedTypes.contains(obj->getType()))) {
             ui->label->setText(tr("Invalid type %1").arg(obj->getTypeDisplayName()));
-            event->ignore();
-            return;
+            isDropGood = false;
         }
-        // okay, the object is good
-        ui->label->setText(tr("Drop here for input"));
-        setBackgroundRole(QPalette::AlternateBase);
-        event->acceptProposedAction();
+
     }
+
+    if (isDropGood)
+        ui->label->setText(tr("Drop here for input"));
+
+    setBackgroundRole(QPalette::AlternateBase);
+    event->acceptProposedAction();
 }
 
 void ObjectInputEdit::dragLeaveEvent(QDragLeaveEvent *event)

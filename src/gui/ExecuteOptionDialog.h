@@ -48,6 +48,7 @@ private:
     void refreshTaskRequirements();
     void updateInputFields();
     bool tryResolveAllReferences(QString& failedInputName);
+    QString getInputDisplayName(const QString& rawInputName);
 
 private:
     Ui::ExecuteOptionDialog *ui;

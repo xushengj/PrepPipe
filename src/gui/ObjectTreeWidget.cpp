@@ -19,8 +19,8 @@ QMimeData* ObjectTreeWidget::mimeData(const QList<QTreeWidgetItem *> items) cons
         ObjectContext::AnonymousObjectReference ref;
         if (getRef(item, ref)) {
             QJsonObject refObj;
-            refObj.insert(REF_CTX_ID, QString::number(ref.ctxIndex));
-            refObj.insert(REF_REF_ID, QString::number(ref.refIndex));
+            refObj.insert(REF_CTX_ID, ref.ctxIndex);
+            refObj.insert(REF_REF_ID, ref.refIndex);
             itemArray.push_back(refObj);
         }
     }

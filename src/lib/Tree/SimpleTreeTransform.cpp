@@ -257,9 +257,10 @@ bool SimpleTreeTransform::performTransform(const Tree& tree, Tree& dest, const Q
     }
     // for each node in source tree, which source node and pattern index cause it to be skipped
     QVector<int> skipSrcVec(numNodes, -1);
-    QVector<NodeProvenance> srcVec(numNodes);
+    QVector<NodeProvenance> srcVec;
     QVector<TransformError> errors;
     TreeBuilder builder;
+    srcVec.reserve(numNodes);
     performTransformImpl(data, tree, builder, sideTreeList, skipSrcVec, srcVec, errors, 0, nullptr);
     QVector<int> seqTable;
     Tree newTree(builder, seqTable);
