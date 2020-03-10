@@ -13,7 +13,12 @@ class MIMEDataObject : public ObjectBase
 public:
     MIMEDataObject(const ConstructOptions& opt);
     MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt);
+    MIMEDataObject(const MIMEDataObject& src) = default;
     virtual ~MIMEDataObject() override;
+
+    virtual MIMEDataObject* clone() override {
+        return new MIMEDataObject(*this);
+    }
 
     const QHash<QString, QByteArray>& getData() const {return data;}
 

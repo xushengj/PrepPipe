@@ -70,6 +70,9 @@ private:
     // convenient version
     bool launchTask(const ObjectBase::NamedReference &task);
 
+    // for drag/drop
+    bool getObjectReference(QTreeWidgetItem* item, ObjectContext::AnonymousObjectReference& ref);
+
 protected:
     virtual void dragEnterEvent(QDragEnterEvent* event) override;
     virtual void dropEvent(QDropEvent* event) override;

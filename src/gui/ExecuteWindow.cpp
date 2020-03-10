@@ -2,6 +2,7 @@
 #include "ui_ExecuteWindow.h"
 
 #include "src/gui/EditorWindow.h"
+#include "src/gui/ExecuteOptionDialog.h"
 #include "src/misc/MessageLogger.h"
 
 #include <QDebug>
@@ -9,15 +10,14 @@
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QEventLoop>
+#include <QDateTime>
 
 #include <functional>
 
 ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReference& taskRef,
                              const TaskObject::LaunchOptions& options,
-                             const ConfigurationData& configData,
-                             const QList<TaskObject::TaskInput> &taskInput,
-                             const QList<TaskObject::TaskOutput> &taskOutput,
-                             const QHash<QString, QString> &input,
+                             const QHash<QString, QList<ObjectBase *> > &taskInput,
+                             const QHash<QString, QVector<OutputAction> > &taskOutput,
                              EditorWindow *parent) :
     QMainWindow(nullptr), // we always want to show execute window as an independent one (without forced to be on top of EditorWindow)
     ui(new Ui::ExecuteWindow),
@@ -34,11 +34,8 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
     executeRoot(top),
     outputObjectContext(),
     launchOptions(options),
-    config(configData),
     task(taskRef),
-    taskInputDecl(taskInput),
-    taskOutputDecl(taskOutput),
-    specifiedInput(input)
+    taskOutputDecl(taskOutput)
 {
     ui->setupUi(this);
 
@@ -67,8 +64,75 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         QMetaObject::invokeMethod(this, &ExecuteWindow::executionThreadFatalEventSlot, Qt::QueuedConnection);
         while(true){}
     });
+
     // populate all dependent executable objects
     addExecuteObjects(top, executeObjectRoot);
+
+    // helper for next stage
+    auto getClonedObject = [](ObjectBase* src) -> ObjectBase* {
+        ObjectBase* cloned = src->clone();
+        cloned->lock();
+
+        // move current name to comments
+        QString header = tr("[%1] Origin: \"").arg(QDateTime::currentDateTime().toString());
+        header.append(cloned->getName());
+        QString path = cloned->getFilePath();
+        if (!path.isEmpty()) {
+            header.append(" (");
+            header.append(path);
+            header.append(")");
+        }
+        header.append('\n');
+        header.append(cloned->getComment());
+        cloned->setComment(header);
+        cloned->setFilePath(QString());
+
+        return cloned;
+    };
+
+    // populate all input objects
+    for (auto iter = taskInput.begin(), iterEnd = taskInput.end(); iter != iterEnd; ++iter) {
+        auto& list = iter.value();
+        const QString& key = iter.key();
+        QTreeWidgetItem* item = new QTreeWidgetItem(inputDataRoot);
+        item->setText(0, key);
+        if (list.isEmpty()) {
+            // no icon
+            top->setInput(key, nullptr);
+        } else if (list.size() == 1) {
+            ObjectBase* srcObject = list.front();
+            ObjectBase* cloned = getClonedObject(srcObject);
+            cloned->setName(key);
+            item->setIcon(0, cloned->getTypeDisplayIcon());
+            ObjectListItemData curItemData;
+            curItemData.obj = cloned;
+            curItemData.item = item;
+            itemData.insert(item, curItemData);
+            top->setInput(key, cloned);
+            clonedTaskInputs.addObject(cloned);
+        } else {
+            item->setIcon(0, style.standardIcon(QStyle::SP_DirOpenIcon));
+            QList<ObjectBase*> clonedInputs;
+            for (int i = 0, n = list.size(); i < n; ++i) {
+                ObjectBase* srcObject = list.at(i);
+                ObjectBase* cloned = getClonedObject(srcObject);
+                QString objName = key;
+                objName.append('_');
+                objName.append(QString::number(i));
+                cloned->setName(objName);
+                QTreeWidgetItem* curItem = new QTreeWidgetItem(item);
+                curItem->setText(0, objName);
+                curItem->setIcon(0, cloned->getTypeDisplayIcon());
+                ObjectListItemData curItemData;
+                curItemData.obj = cloned;
+                curItemData.item = curItem;
+                itemData.insert(curItem, curItemData);
+                clonedInputs.push_back(cloned);
+                clonedTaskInputs.addObject(cloned);
+            }
+            top->setInput(key, clonedInputs);
+        }
+    }
 
     QMetaObject::invokeMethod(this, &ExecuteWindow::initialize, Qt::QueuedConnection);
 }
@@ -76,6 +140,10 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
 void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
 {
     top->moveToThread(executeThread);
+    ObjectListItemData curItemData;
+    curItemData.obj = top;
+    curItemData.item = item;
+    itemData.insert(item, curItemData);
     
     auto startHandlerLambda = [this, top, item]() -> void{
         qInfo() << "Execution of" << top->getName() << "started";
@@ -134,8 +202,10 @@ void ExecuteWindow::requestSwitchToExecuteObject(QTreeWidgetItem* item, ExecuteO
 }
 
 ExecuteWindow* ExecuteWindow::tryExecuteTask(const ObjectBase::NamedReference &taskRef,
-        const TaskObject::LaunchOptions& options,
-        const ConfigurationData& taskConfig, const QHash<QString, QString> &input,
+        TaskObject::LaunchOptions& options,
+        ConfigurationData& taskConfig,
+        QHash<QString, QList<ObjectContext::AnonymousObjectReference>>& input,
+        QHash<QString, QVector<ExecuteWindow::OutputAction>>& output,
         EditorWindow* editor)
 {
     const ObjectContext* ctxPtr = editor? &editor->getMainContext() : nullptr;
@@ -166,50 +236,39 @@ ExecuteWindow* ExecuteWindow::tryExecuteTask(const ObjectBase::NamedReference &t
     }
 
     // okay, task object is valid
-    // check the config
-    if (const ConfigurationDeclaration* configDecl = task->getConfigurationDeclaration()) {
-        Q_ASSERT(taskConfig.isValid(*configDecl));
-    }
+    // pop up the dialog to fill remaining things
+    ExecuteOptionDialog* dialog = new ExecuteOptionDialog(
+                task,
+                taskRef.nameSpace,
+                ctxPtr,
+                options,
+                taskConfig,
+                QHash<QString, QList<ObjectContext::AnonymousObjectReference>>(),
+                QHash<QString, QVector<OutputAction>>(),
+                editor);
 
-    QList<TaskObject::TaskInput> rootIn;
-    QList<TaskObject::TaskOutput> rootOut;
-    const QStringList& rootNameSpace = taskRef.nameSpace;
-    std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB =
-            std::bind(ObjectContext::resolveNamedReference, std::placeholders::_1, rootNameSpace, ctxPtr);
+    // wait until the dialog is done
+    QEventLoop localLoop;
+    QObject::connect(dialog, &QDialog::finished, &localLoop, &QEventLoop::quit);
+    dialog->show();
+    localLoop.exec();
 
-    TaskObject::PreparationError rootErr = task->getInputOutputInfo(
-                taskConfig, rootIn, rootOut,
-                resolveReferenceCB);
-
-    if (Q_UNLIKELY(rootErr.cause != TaskObject::PreparationError::Cause::NoError)) {
-        switch(rootErr.cause){
-        case TaskObject::PreparationError::Cause::NoError: {
-            Q_UNREACHABLE();
-        }break;
-        case TaskObject::PreparationError::Cause::InvalidTask: {
-            QMessageBox::critical(editor,
-                                  tr("Task not ready"),
-                                  rootErr.firstFatalErrorDescription);
-        }break;
-        case TaskObject::PreparationError::Cause::UnresolvedReference: {
-            if (rootErr.firstUnresolvedReference.nameSpace.isEmpty()) {
-                rootErr.firstUnresolvedReference.nameSpace = rootNameSpace;
-            }
-            QMessageBox::critical(editor,
-                                  tr("Object not found"),
-                                  tr("Dependent object %1 is not found").arg(
-                                      rootErr.firstUnresolvedReference.prettyPrint()
-                                  ));
-        }break;
-        }
+    if (dialog->result() == QDialog::Rejected)
         return nullptr;
-    }
 
     // okay, all good
+    // get what we had from dialog
+    options = dialog->getLaunchOptions();
+    taskConfig = dialog->getConfigurationData();
+    input = dialog->getInputReferences();
+    output = dialog->getOutputActions();
+
     // we can derive ExecuteObjects now
-    ExecuteObject* execObj = task->getExecuteObject(options, taskConfig, resolveReferenceCB);
+    ExecuteObject* execObj = dialog->getExecuteObject();
     Q_ASSERT(execObj);
-    ExecuteWindow* window = new ExecuteWindow(execObj, taskRef, options, taskConfig, rootIn, rootOut, input, editor);
+
+    ExecuteWindow* window = new ExecuteWindow(execObj, taskRef, options, dialog->getInputObjects(), output, editor);
+    dialog->deleteLater();
     window->show();
     return window;
 }
@@ -217,14 +276,7 @@ ExecuteWindow* ExecuteWindow::tryExecuteTask(const ObjectBase::NamedReference &t
 void ExecuteWindow::initialize()
 {
     // this is invoked by a queued connection from constructor
-    // pop up a dialog, ask for input / output, and launch
-    // For now, the dialog is not implemented
-    
-    // step 1: pop up a dialog and ask for input/output
-    // TODO
-    Q_ASSERT(taskInputDecl.isEmpty());
-    
-    // step 2: launch the task
+    // launch the task
     connect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus, Qt::QueuedConnection);
     connect(executeRoot, &ExecuteObject::finished, this, &ExecuteWindow::finalize, Qt::QueuedConnection);
     QMetaObject::invokeMethod(executeRoot, &ExecuteObject::start, Qt::QueuedConnection);

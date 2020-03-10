@@ -16,6 +16,8 @@ public:
         Terminated // user requested termination
     };
     ExecuteObject(ObjectType ty, const ConstructOptions& opt);
+    // ExecuteObject is not supposed to be copied or cloned
+    virtual ExecuteObject* clone() override {return nullptr;}
 
     virtual void getChildExecuteObjects(QList<ExecuteObject*>& list) {Q_UNUSED(list)}
 

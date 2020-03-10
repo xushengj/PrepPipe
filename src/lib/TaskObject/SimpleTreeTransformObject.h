@@ -33,6 +33,12 @@ public:
 
     SimpleTreeTransformObject(const ConstructOptions& opt);
     SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg, const ConstructOptions& opt);
+    SimpleTreeTransformObject(const SimpleTreeTransformObject& src) = default;
+    virtual ~SimpleTreeTransformObject() override {}
+
+    virtual SimpleTreeTransformObject* clone() override {
+        return new SimpleTreeTransformObject(*this);
+    }
 
     static SimpleTreeTransformObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
 

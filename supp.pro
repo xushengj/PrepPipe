@@ -28,7 +28,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
+    src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
+    src/gui/ObjectInputEdit.cpp \
+    src/gui/ObjectTreeWidget.cpp \
     src/gui/TextEditor.cpp \
     src/gui/GeneralTreeEditor.cpp \
     src/gui/MIMEDataEditor.cpp \
@@ -54,7 +57,10 @@ SOURCES += \
 HEADERS += \
     src/gui/BreadcrumbWidget.h \
     src/gui/EditorWindow.h \
+    src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
+    src/gui/ObjectInputEdit.h \
+    src/gui/ObjectTreeWidget.h \
     src/gui/TextEditor.h \
     src/gui/GeneralTreeEditor.h \
     src/gui/MIMEDataEditor.h \
@@ -77,9 +83,11 @@ HEADERS += \
 
 FORMS += \
     src/gui/EditorWindow.ui \
+    src/gui/ExecuteOptionDialog.ui \
     src/gui/ExecuteWindow.ui \
     src/gui/GeneralTreeEditor.ui \
-    src/gui/MIMEDataEditor.ui
+    src/gui/MIMEDataEditor.ui \
+    src/gui/ObjectInputEdit.ui
 
 TRANSLATIONS += \
     translations/supp_zh_CN.ts

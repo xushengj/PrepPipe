@@ -5,6 +5,9 @@
 #include <QDebug>
 #include <QDir>
 
+QHash<int, ObjectContext*> ObjectContext::ContextRecord;
+int ObjectContext::ContextIndex = 0;
+
 void ObjectContext::clear()
 {
     for (auto ptr : objects) {
@@ -12,11 +15,26 @@ void ObjectContext::clear()
     }
     objects.clear();
     objectMap.clear();
+    objectToRefIndexMap.clear();
+    refIndexToObjectMap.clear();
+}
+
+ObjectContext::ObjectContext()
+    : ctxIndex(ContextIndex++)
+{
+    ContextRecord.insert(ctxIndex, this);
+}
+
+ObjectContext::~ObjectContext()
+{
+    clear();
+    ContextRecord.remove(ctxIndex);
 }
 
 ObjectContext::ObjectContext(const QString& directory)
-    : mainDirectory(directory)
+    : ObjectContext()
 {
+    mainDirectory = directory;
     loadAllObjectsFromDirectory();
 }
 
@@ -109,6 +127,29 @@ void ObjectContext::releaseObject(ObjectBase* obj)
             }
         }
     }
+
+    // remove from references
+    {
+        auto iter = objectToRefIndexMap.find(obj);
+        if (iter != objectToRefIndexMap.end()) {
+            refIndexToObjectMap.remove(iter.value());
+            objectToRefIndexMap.erase(iter);
+        }
+    }
+}
+
+int ObjectContext::getObjectReference(ObjectBase* obj)
+{
+    Q_ASSERT(objects.contains(obj));
+    auto iter = objectToRefIndexMap.find(obj);
+    if (iter != objectToRefIndexMap.end()) {
+        return iter.value();
+    }
+
+    int index = nextReferenceIndex++;
+    objectToRefIndexMap.insert(obj, index);
+    refIndexToObjectMap.insert(index, obj);
+    return index;
 }
 
 ObjectBase* ObjectContext::resolveNamedReference(const ObjectBase::NamedReference& ref, const QStringList& mainNameSpace, const ObjectContext* ctx)
@@ -135,3 +176,16 @@ ObjectBase* ObjectContext::resolveNamedReference(const ObjectBase::NamedReferenc
         return obj;
     }
 }
+
+ObjectBase* ObjectContext::resolveAnonymousReference(int ctxIndex, int refIndex)
+{
+    auto ctxIter = ContextRecord.find(ctxIndex);
+    if (ctxIter == ContextRecord.end())
+        return nullptr;
+    ObjectContext* ctx = ctxIter.value();
+    auto refIter = ctx->refIndexToObjectMap.find(refIndex);
+    if (refIter == ctx->refIndexToObjectMap.end())
+        return nullptr;
+    return refIter.value();
+}
+

@@ -41,7 +41,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QTreeWidget" name="objectListTreeWidget">
+       <widget class="ObjectTreeWidget" name="objectListTreeWidget">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>
@@ -111,7 +111,7 @@
      <x>0</x>
      <y>0</y>
      <width>906</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile_Object">
@@ -183,6 +183,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ObjectTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>src/gui/ObjectTreeWidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

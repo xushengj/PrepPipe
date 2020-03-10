@@ -16,7 +16,12 @@ public:
     using Node = Tree::Node;
     GeneralTreeObject(const ConstructOptions& opt);
     GeneralTreeObject(const Tree& tree, const ConstructOptions& opt);
+    GeneralTreeObject(const GeneralTreeObject& src) = default;
     virtual ~GeneralTreeObject() override;
+
+    virtual GeneralTreeObject* clone() override {
+        return new GeneralTreeObject(*this);
+    }
 
     static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
 

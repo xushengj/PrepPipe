@@ -25,23 +25,32 @@ public:
 
     virtual ~ExecuteWindow() override;
 
-    static ExecuteWindow* tryExecuteTask(const ObjectBase::NamedReference& task,
-            const TaskObject::LaunchOptions& options,
-            const ConfigurationData &taskConfig,
-            const QHash<QString, QString>& input,
-            EditorWindow* parent = nullptr);
-
     void requestSwitchToExecuteObject(QTreeWidgetItem* item, ExecuteObject* obj);
+
+    enum class OutputDestinationType{
+        Editor,
+        File
+    };
+    struct OutputAction{
+        OutputDestinationType dest;
+        QString fileDest_path; // only used for files
+    };
+
+public:
+    static ExecuteWindow* tryExecuteTask(const ObjectBase::NamedReference& task,
+            TaskObject::LaunchOptions &options,
+            ConfigurationData &taskConfig,
+            QHash<QString, QList<ObjectContext::AnonymousObjectReference> > &input,
+            QHash<QString, QVector<OutputAction> > &output,
+            EditorWindow* parent = nullptr);
 
 private:
     explicit ExecuteWindow(
             ExecuteObject* top,
             const ObjectBase::NamedReference& taskRef,
             const TaskObject::LaunchOptions& options,
-            const ConfigurationData& config,
-            const QList<TaskObject::TaskInput>& taskInput,
-            const QList<TaskObject::TaskOutput>& taskOutput,
-            const QHash<QString, QString>& input,
+            const QHash<QString, QList<ObjectBase*>>& taskInput,
+            const QHash<QString, QVector<OutputAction>>& taskOutput,
             EditorWindow* parent = nullptr);
     void addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item);
 
@@ -56,6 +65,11 @@ protected:
     virtual void closeEvent(QCloseEvent* event) override;
 
 private:
+    struct ObjectListItemData {
+        ObjectBase* obj = nullptr;
+        QTreeWidgetItem* item = nullptr;
+        QWidget* widget = nullptr;
+    };
     Ui::ExecuteWindow *ui;
     EditorWindow* editor;
     QProgressBar* progressBar;
@@ -71,11 +85,10 @@ private:
     QHash<QTreeWidgetItem*, ExecuteObject*> executeObjects; // it also include the root execute object
     ObjectContext outputObjectContext;
     TaskObject::LaunchOptions launchOptions;
-    ConfigurationData config;
     const ObjectBase::NamedReference task;
-    const QList<TaskObject::TaskInput> taskInputDecl;
-    const QList<TaskObject::TaskOutput> taskOutputDecl;
-    QHash<QString, QString> specifiedInput;
+    const QHash<QString, QVector<OutputAction>> taskOutputDecl;
+    ObjectContext clonedTaskInputs;
+    QHash<QTreeWidgetItem*, ObjectListItemData> itemData;
     QThread* executeThread = nullptr;
     QList<ObjectBase*> pendingOutput;
     bool isRunning = false;

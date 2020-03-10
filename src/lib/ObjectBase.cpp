@@ -9,6 +9,18 @@ ObjectBase::ObjectBase(ObjectType Ty, const ConstructOptions &opt)
 
 }
 
+ObjectBase::ObjectBase(const ObjectBase& src)
+    : QObject(nullptr),
+      name(src.name),
+      comment(src.comment),
+      filePath(src.filePath),
+      nameSpace(src.nameSpace),
+      ty(src.ty),
+      status(src.status)
+{
+
+}
+
 QString ObjectBase::getTypeClassName(ObjectType ty)
 {
     return QString(QMetaEnum::fromType<ObjectType>().valueToKey(ty));

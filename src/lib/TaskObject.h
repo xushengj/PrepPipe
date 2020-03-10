@@ -13,6 +13,7 @@ class TaskObject : public IntrinsicObject
     Q_OBJECT
 public:
     TaskObject(ObjectType ty, const ConstructOptions& opt);
+    TaskObject(const TaskObject& src) = default;
 
     enum LaunchFlag {
         NoLaunchFlag                    = 0x0000,
@@ -45,9 +46,8 @@ public:
 
     enum InputFlag {
         NoInputFlag             = 0x0,
-        ReservedInputFlag       = 0x1, // not used
-        AcceptBatch             = 0x2,
-        Batch_AcceptEmpty       = 0x4
+        InputIsOptional         = 0x1,
+        AcceptBatch             = 0x2
     };
     Q_DECLARE_FLAGS(InputFlags, InputFlag)
 

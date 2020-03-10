@@ -65,7 +65,9 @@ public:
     };
 
     ObjectBase(ObjectType Ty, const ConstructOptions& opt);
+    ObjectBase(const ObjectBase& src);
     virtual ~ObjectBase() {}
+    virtual ObjectBase* clone() = 0;
 
     static QString getTypeClassName(ObjectType ty);
     static QString getTypeDisplayName(ObjectType ty);
@@ -116,6 +118,15 @@ public:
 
     void setFilePath(const QString& newFilePath) {
         filePath = newFilePath;
+    }
+
+    void setStatus(StatusFlags stat) {
+        status = stat;
+    }
+
+    // helpers
+    void lock() {
+        status |= StatusFlag::Locked;
     }
 
 signals:

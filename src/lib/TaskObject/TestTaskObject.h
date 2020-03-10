@@ -30,6 +30,11 @@ class TestTaskObject : public TaskObject
 public:
     TestTaskObject(const ConstructOptions& options);
     TestTaskObject(const TestExecuteObject::TestSettings& settingsArg ,const ConstructOptions& options);
+    TestTaskObject(const TestTaskObject& src) = default;
+
+    virtual TestTaskObject* clone() override {
+        return new TestTaskObject(*this);
+    }
 
     virtual ~TestTaskObject() override;
 

@@ -5,6 +5,7 @@
 #include "src/lib/StaticObjectIndexDB.h"
 #include "src/misc/MessageLogger.h"
 #include "src/gui/ExecuteWindow.h"
+#include "src/gui/ObjectTreeWidget.h"
 #include "src/lib/TaskObject.h"
 
 #include <QDebug>
@@ -46,6 +47,7 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     mainRoot->setToolTip(0, mainCtx.getDirectory());
     sideRoot = new QTreeWidgetItem(static_cast<QTreeWidgetItem*>(nullptr), QStringList(tr("Other")));
     sideRoot->setIcon(0, style.standardIcon(QStyle::SP_DirIcon));
+    ui->objectListTreeWidget->setGetReferenceCallback(std::bind(&EditorWindow::getObjectReference, this, std::placeholders::_1, std::placeholders::_2));
     ui->objectListTreeWidget->insertTopLevelItem(0, mainRoot);
     ui->objectListTreeWidget->insertTopLevelItem(1, sideRoot);
 
@@ -143,6 +145,25 @@ void EditorWindow::settingChanged(const QStringList& keyList)
     if (keyList.contains(SETTINGS_EDITOR_PLACEHOLDER_TEXT)) {
         ui->placeholderLabel->setText(getPlaceHolderText());
     }
+}
+
+bool EditorWindow::getObjectReference(QTreeWidgetItem* item, ObjectContext::AnonymousObjectReference &ref)
+{
+    auto iter = itemData.find(item);
+    if (iter == itemData.end())
+        return false;
+    auto& data = iter.value();
+    switch (data.origin) {
+    case OriginContext::MainContext: {
+        ref.ctxIndex = mainCtx.getContextIndex();
+        ref.refIndex = mainCtx.getObjectReference(data.obj);
+    }break;
+    case OriginContext::SideContext: {
+        ref.ctxIndex = sideCtx.getContextIndex();
+        ref.refIndex = sideCtx.getObjectReference(data.obj);
+    }break;
+    }
+    return true;
 }
 
 void EditorWindow::objectListItemClicked(QTreeWidgetItem* item, int column)
@@ -463,7 +484,11 @@ void EditorWindow::processDelayedStartupAction()
 
 bool EditorWindow::launchTask(const ObjectBase::NamedReference& task)
 {
-    ExecuteWindow* exec = ExecuteWindow::tryExecuteTask(task, TaskObject::LaunchOptions(), ConfigurationData(), QHash<QString, QString>(), this);
+    TaskObject::LaunchOptions options;
+    ConfigurationData config;
+    QHash<QString, QList<ObjectContext::AnonymousObjectReference>> inputs;
+    QHash<QString, QVector<ExecuteWindow::OutputAction>> outputActions;
+    ExecuteWindow* exec = ExecuteWindow::tryExecuteTask(task, options, config, inputs, outputActions, this);
 
     if (exec) {
         // TODO add signal connections

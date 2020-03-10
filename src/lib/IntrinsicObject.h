@@ -12,6 +12,8 @@ class IntrinsicObject : public ObjectBase
     Q_OBJECT
 public:
     IntrinsicObject(ObjectType ty, const ConstructOptions& opt);
+    IntrinsicObject(const IntrinsicObject& src) = default;
+
     virtual ~IntrinsicObject() override {}
 
     static IntrinsicObject* loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt);
