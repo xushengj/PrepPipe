@@ -7,6 +7,7 @@
 #include "src/gui/ExecuteWindow.h"
 #include "src/gui/ObjectTreeWidget.h"
 #include "src/lib/TaskObject.h"
+#include "src/gui/DropTestLabel.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -68,7 +69,12 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     connect(ui->actionSegFault, &QAction::triggered, this, []() -> void {
         *(volatile char*)nullptr;
     });
-    setAcceptDrops(true);
+
+    connect(ui->dropTestLabel, &DropTestLabel::dataDropped, this, &EditorWindow::dataDropped);
+    connect(ui->objectListTreeWidget, &ObjectTreeWidget::objectDropped, this, &EditorWindow::objectDropped);
+    ui->objectListTreeWidget->addSelfContextIndex(mainCtx.getContextIndex());
+    ui->objectListTreeWidget->addSelfContextIndex(sideCtx.getContextIndex());
+    ui->objectListTreeWidget->setAcceptDrops(true);
 
     QMetaObject::invokeMethod(this, &EditorWindow::processDelayedStartupAction, Qt::QueuedConnection);
 
@@ -455,20 +461,25 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
     delete obj;
 }
 
-void EditorWindow::dragEnterEvent(QDragEnterEvent* event)
+void EditorWindow::dataDropped(const QMimeData* data)
 {
-    event->acceptProposedAction();
-}
-
-void EditorWindow::dropEvent(QDropEvent* event)
-{
-    const QMimeData* ptr = event->mimeData();
     ObjectBase::ConstructOptions opt;
     opt.name = tr("Drop");
     opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
-    MIMEDataObject* data = new MIMEDataObject(*ptr, opt);
-    addToSideContext(data);
-    event->acceptProposedAction();
+    MIMEDataObject* ptr = new MIMEDataObject(*data, opt);
+    addToSideContext(ptr);
+}
+
+void EditorWindow::objectDropped(const QList<ObjectBase*>& vec)
+{
+    for (auto* ptr : vec) {
+        ObjectBase* newObj = ptr->clone();
+        // clear certain data
+        newObj->setFilePath(QString());
+        newObj->setNameSpace(QStringList());
+        newObj->setStatus(newObj->getStatus() & ~ObjectBase::StatusFlag::Locked);
+        addToSideContext(newObj);
+    }
 }
 
 void EditorWindow::processDelayedStartupAction()

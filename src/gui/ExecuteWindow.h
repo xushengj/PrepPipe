@@ -54,21 +54,31 @@ private:
             EditorWindow* parent = nullptr);
     void addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item);
 
+    // for drag/drop
+    bool getObjectReference(QTreeWidgetItem* item, ObjectContext::AnonymousObjectReference& ref);
+
 private slots:
     void initialize();
     void executionThreadFatalEventSlot();
     void finalize(int rootExitCode, int cause);
     void writeBackOutputs();
     void updateCurrentExecutionStatus(const QString& description, int start, int end, int value);
+    void handleOutput(const QString &outputName, ObjectBase* obj);
     
 protected:
     virtual void closeEvent(QCloseEvent* event) override;
 
 private:
+    enum class OriginContext : int {
+        Execute         = 0, // this is not backed by an object context
+        InputContext    = 1,
+        OutputContext   = 2
+    };
     struct ObjectListItemData {
         ObjectBase* obj = nullptr;
         QTreeWidgetItem* item = nullptr;
         QWidget* widget = nullptr;
+        OriginContext origin = OriginContext::Execute;
     };
     Ui::ExecuteWindow *ui;
     EditorWindow* editor;

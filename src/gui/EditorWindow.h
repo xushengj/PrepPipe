@@ -73,10 +73,6 @@ private:
     // for drag/drop
     bool getObjectReference(QTreeWidgetItem* item, ObjectContext::AnonymousObjectReference& ref);
 
-protected:
-    virtual void dragEnterEvent(QDragEnterEvent* event) override;
-    virtual void dropEvent(QDropEvent* event) override;
-
 private slots:
     void settingChanged(const QStringList& keyList);
 
@@ -88,6 +84,8 @@ private slots:
 
     void changeDirectoryRequested();
     void clipboardDumpRequested();
+    void dataDropped(const QMimeData* data);
+    void objectDropped(const QList<ObjectBase*>& vec);
 
     void closeSideContextObjectRequested(QTreeWidgetItem* item);
     bool tryCloseAllSideContextObjects();

@@ -4,6 +4,9 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QDebug>
 
 namespace {
 const QString MIME_TYPE = QStringLiteral("application/supp-object-ref");
@@ -33,15 +36,27 @@ QMimeData* ObjectTreeWidget::mimeData(const QList<QTreeWidgetItem *> items) cons
     return data;
 }
 
-bool ObjectTreeWidget::isValidReference(const QMimeData* data)
+bool ObjectTreeWidget::isValidExternReference(const QMimeData* data, QList<ObjectContext::AnonymousObjectReference>& refList)
 {
-    return data->hasFormat(MIME_TYPE);
+    refList = recoverReference(data);
+    if (refList.isEmpty()) {
+        return false;
+    }
+
+    // check if there are some reference from contexts within this tree
+    // we do not want internal move here (which would be duplicating objects)
+    for (const auto& ref : refList) {
+        if (selfContextIndexList.contains(ref.ctxIndex)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
-QList<ObjectBase*> ObjectTreeWidget::solveReference(const QMimeData* data)
+QList<ObjectBase*> ObjectTreeWidget::solveReference(const QList<ObjectContext::AnonymousObjectReference>& refList)
 {
     QList<ObjectBase*> result;
-    QList<ObjectContext::AnonymousObjectReference> refList = recoverReference(data);
     if (refList.isEmpty())
         return result;
 
@@ -73,4 +88,38 @@ QList<ObjectContext::AnonymousObjectReference> ObjectTreeWidget::recoverReferenc
         result.push_back(curRef);
     }
     return result;
+}
+
+void ObjectTreeWidget::dragEnterEvent(QDragEnterEvent* event)
+{
+    QList<ObjectContext::AnonymousObjectReference> refList;
+    if (isValidExternReference(event->mimeData(), refList)) {
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ObjectTreeWidget::dropEvent(QDropEvent* event)
+{
+    QList<ObjectContext::AnonymousObjectReference> refList;
+    if (isValidExternReference(event->mimeData(), refList)) {
+        QList<ObjectBase*> objList = solveReference(refList);
+        if (!objList.isEmpty()) {
+            emit objectDropped(objList);
+        }
+        event->acceptProposedAction();
+    } else {
+        event->ignore();
+    }
+}
+
+void ObjectTreeWidget::dragMoveEvent(QDragMoveEvent* event)
+{
+    event->accept();
+}
+
+void ObjectTreeWidget::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    event->accept();
 }

@@ -110,6 +110,9 @@ int SimpleTreeTransformExecuteObject::startImpl(ExitCause& cause)
     for (int i = 0, n = sideTreeList.size(); i < n; ++i) {
         sideTreePtrList.push_back(&sideTreeList.at(i));
     }
-    transform.performTransform(treeIn, treeOut, sideTreePtrList);
+    bool transformGood = transform.performTransform(treeIn, treeOut, sideTreePtrList);
+    Q_ASSERT(transformGood);
+    GeneralTreeObject* output = new GeneralTreeObject(treeOut, ObjectBase::ConstructOptions());
+    emit outputAvailable(QString(), output);
     return 0;
 }

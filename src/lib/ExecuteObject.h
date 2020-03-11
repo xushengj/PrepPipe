@@ -30,7 +30,7 @@ protected:
 signals:
     void started();
     void finished(int status, int cause); // cause is ExitCause casted to int (enum do not work for connection across threads)
-    void outputAvailable(ObjectBase* obj);
+    void outputAvailable(const QString& outputName, ObjectBase* obj);
     void temporaryOutputFinishedUse(ObjectBase* obj);
     void statusUpdate(const QString& description, int start, int end, int value);
 

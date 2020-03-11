@@ -150,21 +150,13 @@ bool ExecuteOptionDialog::tryResolveAllReferences(QString& failedInputName)
     return true;
 }
 
-QString ExecuteOptionDialog::getInputDisplayName(const QString& rawInputName)
-{
-    if (rawInputName.isEmpty())
-        return tr("Main input");
-
-    return rawInputName;
-}
-
 void ExecuteOptionDialog::updateInputFields()
 {
     // step 1: create a new QFormLayout and populate it
     QFormLayout* newLayout = new QFormLayout;
     decltype(inputEdits) newInputEdits;
     for (const auto& taskInput : taskIn) {
-        QString inputName = getInputDisplayName(taskInput.inputName);
+        QString inputName = TaskObject::getInputDisplayName(taskInput.inputName);
         QLabel* label = new QLabel(inputName);
         QWidget* field = nullptr;
         if (taskInput.flags & TaskObject::InputFlag::AcceptBatch) {
@@ -209,7 +201,7 @@ void ExecuteOptionDialog::tryAccept()
 {
     QString failedParamName;
     if (!tryResolveAllReferences(failedParamName)) {
-        QMessageBox::warning(this, tr("Invalid input"), tr("Input for %1 is invalid").arg(getInputDisplayName(failedParamName)));
+        QMessageBox::warning(this, tr("Invalid input"), tr("Input for %1 is invalid").arg(TaskObject::getInputDisplayName(failedParamName)));
         return;
     }
 

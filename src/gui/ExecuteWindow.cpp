@@ -3,6 +3,7 @@
 
 #include "src/gui/EditorWindow.h"
 #include "src/gui/ExecuteOptionDialog.h"
+#include "src/gui/ObjectTreeWidget.h"
 #include "src/misc/MessageLogger.h"
 
 #include <QDebug>
@@ -52,9 +53,15 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
     inputDataRoot->setIcon(0, style.standardIcon(QStyle::SP_DirOpenIcon));
     outputDataRoot->setText(0, tr("Output data"));
     outputDataRoot->setIcon(0, style.standardIcon(QStyle::SP_FileDialogNewFolder));
+    ui->objectTreeWidget->setGetReferenceCallback(std::bind(&ExecuteWindow::getObjectReference, this, std::placeholders::_1, std::placeholders::_2));
+    ui->objectTreeWidget->addSelfContextIndex(clonedTaskInputs.getContextIndex());
+    ui->objectTreeWidget->addSelfContextIndex(outputObjectContext.getContextIndex());
     ui->objectTreeWidget->insertTopLevelItem(0, executeObjectRoot);
     ui->objectTreeWidget->insertTopLevelItem(1, inputDataRoot);
     ui->objectTreeWidget->insertTopLevelItem(2, outputDataRoot);
+    executeObjectRoot->setExpanded(true);
+    inputDataRoot->setExpanded(true);
+    outputDataRoot->setExpanded(true);
 
     executeThread = MessageLogger::inst()->createThread(tr("Execution thread"), [this]() -> void {
         // warning: this lambda will be executed in executeThread
@@ -73,8 +80,10 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         ObjectBase* cloned = src->clone();
 
         // move current name to comments
-        QString header = tr("[%1] Origin: \"").arg(QDateTime::currentDateTime().toString());
+        QString header = tr("[%1] Origin: ").arg(QDateTime::currentDateTime().toString());
+        header.append('"');
         header.append(cloned->getName());
+        header.append('"');
         QString path = cloned->getFilePath();
         if (!path.isEmpty()) {
             header.append(" (");
@@ -83,6 +92,7 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         }
         header.append('\n');
         header.append(cloned->getComment());
+        cloned->setNameSpace(QStringList());
         cloned->setComment(header);
         cloned->setFilePath(QString());
 
@@ -94,18 +104,20 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         auto& list = iter.value();
         const QString& key = iter.key();
         QTreeWidgetItem* item = new QTreeWidgetItem(inputDataRoot);
-        item->setText(0, key);
+        QString displayName = TaskObject::getInputDisplayName(key);
+        item->setText(0, displayName);
         if (list.isEmpty()) {
             // no icon
             top->setInput(key, nullptr);
         } else if (list.size() == 1) {
             ObjectBase* srcObject = list.front();
             ObjectBase* cloned = getClonedObject(srcObject);
-            cloned->setName(key);
+            cloned->setName(displayName);
             item->setIcon(0, cloned->getTypeDisplayIcon());
             ObjectListItemData curItemData;
             curItemData.obj = cloned;
             curItemData.item = item;
+            curItemData.origin = OriginContext::InputContext;
             itemData.insert(item, curItemData);
             top->setInput(key, cloned);
             clonedTaskInputs.addObject(cloned);
@@ -115,7 +127,7 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
             for (int i = 0, n = list.size(); i < n; ++i) {
                 ObjectBase* srcObject = list.at(i);
                 ObjectBase* cloned = getClonedObject(srcObject);
-                QString objName = key;
+                QString objName = displayName;
                 objName.append('_');
                 objName.append(QString::number(i));
                 cloned->setName(objName);
@@ -126,6 +138,7 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
                 ObjectListItemData curItemData;
                 curItemData.obj = cloned;
                 curItemData.item = curItem;
+                curItemData.origin = OriginContext::InputContext;
                 itemData.insert(curItem, curItemData);
                 clonedInputs.push_back(cloned);
                 clonedTaskInputs.addObject(cloned);
@@ -143,6 +156,7 @@ void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
     ObjectListItemData curItemData;
     curItemData.obj = top;
     curItemData.item = item;
+    curItemData.origin = OriginContext::Execute;
     itemData.insert(item, curItemData);
     
     auto startHandlerLambda = [this, top, item]() -> void{
@@ -279,6 +293,7 @@ void ExecuteWindow::initialize()
     // launch the task
     connect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus, Qt::QueuedConnection);
     connect(executeRoot, &ExecuteObject::finished, this, &ExecuteWindow::finalize, Qt::QueuedConnection);
+    connect(executeRoot, &ExecuteObject::outputAvailable, this, &ExecuteWindow::handleOutput, Qt::QueuedConnection);
     QMetaObject::invokeMethod(executeRoot, &ExecuteObject::start, Qt::QueuedConnection);
     executeThread->start();
     isRunning = true;
@@ -452,4 +467,39 @@ void ExecuteWindow::updateCurrentExecutionStatus(const QString& description, int
     ui->statusbar->showMessage(description);
     progressBar->setRange(start, end);
     progressBar->setValue(value);
+}
+
+bool ExecuteWindow::getObjectReference(QTreeWidgetItem* item, ObjectContext::AnonymousObjectReference& ref)
+{
+    auto iter = itemData.find(item);
+    if (iter == itemData.end())
+        return false;
+    auto& data = iter.value();
+    switch (data.origin) {
+    default: return false;
+    case OriginContext::InputContext: {
+        ref.ctxIndex = clonedTaskInputs.getContextIndex();
+        ref.refIndex = clonedTaskInputs.getObjectReference(data.obj);
+    }break;
+    case OriginContext::OutputContext: {
+        ref.ctxIndex = outputObjectContext.getContextIndex();
+        ref.refIndex = outputObjectContext.getObjectReference(data.obj);
+    }break;
+    }
+    return true;
+}
+
+void ExecuteWindow::handleOutput(const QString& outputName, ObjectBase* obj)
+{
+    obj->setName(TaskObject::getOutputDisplayName(outputName));
+    outputObjectContext.addObject(obj);
+    // create item in object tree
+    QTreeWidgetItem* item = new QTreeWidgetItem(outputDataRoot);
+    item->setText(0, obj->getName());
+    item->setIcon(0, obj->getTypeDisplayIcon());
+    ObjectListItemData curItemData;
+    curItemData.obj = obj;
+    curItemData.item = item;
+    curItemData.origin = OriginContext::OutputContext;
+    itemData.insert(item, curItemData);
 }

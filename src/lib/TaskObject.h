@@ -77,6 +77,19 @@ public:
         QHash<QString, QString> presets;
     };
 
+    static QString getInputDisplayName(const QString& rawInputName) {
+        if (rawInputName.isEmpty())
+            return tr("Main input");
+
+        return rawInputName;
+    }
+    static QString getOutputDisplayName(const QString& rawOutputName) {
+        if (rawOutputName.isEmpty())
+            return tr("Main output");
+
+        return rawOutputName;
+    }
+
     virtual const ConfigurationDeclaration* getConfigurationDeclaration() const {return nullptr;} // nullptr for no config
 
     virtual const ConfigurationData& getDefaultConfig() const {

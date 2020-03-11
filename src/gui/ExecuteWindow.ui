@@ -16,12 +16,15 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
     <item>
-     <widget class="QTreeWidget" name="objectTreeWidget">
+     <widget class="ObjectTreeWidget" name="objectTreeWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::DragOnly</enum>
       </property>
       <attribute name="headerVisible">
        <bool>false</bool>
@@ -75,12 +78,19 @@
      <x>0</x>
      <y>0</y>
      <width>892</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ObjectTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>src/gui/ObjectTreeWidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

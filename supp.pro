@@ -28,6 +28,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
+    src/gui/DropTestLabel.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
     src/gui/ObjectInputEdit.cpp \
@@ -56,6 +57,7 @@ SOURCES += \
 
 HEADERS += \
     src/gui/BreadcrumbWidget.h \
+    src/gui/DropTestLabel.h \
     src/gui/EditorWindow.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \

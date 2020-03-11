@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,2">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,2,0">
       <item>
        <widget class="QComboBox" name="currentObjectComboBox">
         <property name="sizePolicy">
@@ -48,11 +48,8 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
-        <property name="dragEnabled">
-         <bool>true</bool>
-        </property>
         <property name="dragDropMode">
-         <enum>QAbstractItemView::DragOnly</enum>
+         <enum>QAbstractItemView::DragDrop</enum>
         </property>
         <attribute name="headerVisible">
          <bool>false</bool>
@@ -62,6 +59,31 @@
           <string notr="true">1</string>
          </property>
         </column>
+       </widget>
+      </item>
+      <item>
+       <widget class="DropTestLabel" name="dropTestLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="text">
+         <string>Drop Test</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
        </widget>
       </item>
      </layout>
@@ -194,6 +216,11 @@
    <class>ObjectTreeWidget</class>
    <extends>QTreeWidget</extends>
    <header>src/gui/ObjectTreeWidget.h</header>
+  </customwidget>
+  <customwidget>
+   <class>DropTestLabel</class>
+   <extends>QLabel</extends>
+   <header>src/gui/DropTestLabel.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
