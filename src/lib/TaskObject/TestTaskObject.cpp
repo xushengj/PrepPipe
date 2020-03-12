@@ -5,14 +5,14 @@
 #include <thread>         // std::this_thread::sleep_for
 #include <chrono>         // std::chrono::seconds
 
-TestTaskObject::TestTaskObject(const TestExecuteObject::TestSettings &settingsArg, const ConstructOptions &options)
-    : TaskObject(ObjectType::Task_Test, options), settings(settingsArg)
+TestTaskObject::TestTaskObject(const TestExecuteObject::TestSettings &settingsArg)
+    : TaskObject(ObjectType::Task_Test), settings(settingsArg)
 {
 
 }
 
-TestTaskObject::TestTaskObject(const ConstructOptions &options)
-    : TaskObject(ObjectType::Task_Test, options), settings()
+TestTaskObject::TestTaskObject()
+    : TaskObject(ObjectType::Task_Test), settings()
 {
 
 }
@@ -58,7 +58,7 @@ void TestTaskObject::saveToXMLImpl(QXmlStreamWriter& xml)
     xml.writeTextElement(STR_CAUSE, QString::number(settings.exitCause));
 }
 
-TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt)
+TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml)
 {
     if (Q_UNLIKELY(!xml.readNextStartElement())) {
         XMLError::missingStartElement(qWarning(), xml, "TestTaskObject", STR_SLEEP_DURATION);
@@ -95,14 +95,16 @@ TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, const Constru
     }
     xml.skipCurrentElement();
 
-    return new TestTaskObject(settings, opt);
+    return new TestTaskObject(settings);
 }
 
 //-----------------------------------------------------------------------------
 
 TestExecuteObject::TestExecuteObject(const TestSettings& test, const QString &name)
-    : ExecuteObject(ObjectType::Exec_Test, ConstructOptions(name, QString())), settings(test)
-{}
+    : ExecuteObject(ObjectType::Exec_Test, name), settings(test)
+{
+
+}
 
 TestExecuteObject::~TestExecuteObject() {}
 

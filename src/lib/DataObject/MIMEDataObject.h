@@ -11,8 +11,8 @@ class MIMEDataObject : public ObjectBase
 {
     Q_OBJECT
 public:
-    MIMEDataObject(const ConstructOptions& opt);
-    MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt);
+    explicit MIMEDataObject(const QMimeData& initData);
+    MIMEDataObject();
     MIMEDataObject(const MIMEDataObject& src) = default;
     virtual ~MIMEDataObject() override;
 

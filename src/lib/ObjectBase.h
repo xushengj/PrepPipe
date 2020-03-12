@@ -50,21 +50,8 @@ public:
     };
     Q_ENUM(ObjectType)
 
-    struct ConstructOptions {
-        // self contained for intrinsic object
-        QString name;
-        QString comment;
-        // from environment / settings
-        QString filePath;
-        QStringList nameSpace;
-        bool isLocked = false;
-        ConstructOptions() = default;
-        ConstructOptions(const QString& nameArg, const QString& commentArg)
-            : name(nameArg), comment(commentArg)
-        {}
-    };
-
-    ObjectBase(ObjectType Ty, const ConstructOptions& opt);
+    explicit ObjectBase(ObjectType Ty);
+    ObjectBase(ObjectType Ty, const QString& name);
     ObjectBase(const ObjectBase& src);
     virtual ~ObjectBase() {}
     virtual ObjectBase* clone() = 0;
@@ -97,9 +84,7 @@ public:
         return comment;
     }
 
-    QString getFilePath() const {
-        return filePath;
-    }
+    virtual QString getFilePath() const {return QString();} // only overriden in FileBackedObject
 
     void setName(const QString& newName) {
         Q_ASSERT(!(getStatus() & StatusFlag::Locked));
@@ -114,10 +99,6 @@ public:
     void setComment(const QString& newComment) {
         Q_ASSERT(!(getStatus() & StatusFlag::Locked));
         comment = newComment;
-    }
-
-    void setFilePath(const QString& newFilePath) {
-        filePath = newFilePath;
     }
 
     void setStatus(StatusFlags stat) {
@@ -135,7 +116,7 @@ signals:
 private:
     QString name;
     QString comment;
-    QString filePath;
+
     QStringList nameSpace;
     const ObjectType ty;
     StatusFlags status;

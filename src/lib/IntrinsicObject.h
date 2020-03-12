@@ -2,21 +2,22 @@
 #define INTRINSICOBJECT_H
 
 #include "src/lib/ObjectBase.h"
+#include "src/lib/FileBackedObject.h"
 
 #include <QObject>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
-class IntrinsicObject : public ObjectBase
+class IntrinsicObject : public FileBackedObject
 {
     Q_OBJECT
 public:
-    IntrinsicObject(ObjectType ty, const ConstructOptions& opt);
+    explicit IntrinsicObject(ObjectType ty);
     IntrinsicObject(const IntrinsicObject& src) = default;
 
     virtual ~IntrinsicObject() override {}
 
-    static IntrinsicObject* loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt);
+    static IntrinsicObject* loadFromXML(QXmlStreamReader &xml);
 
     void saveToXML(QXmlStreamWriter& xml);
 

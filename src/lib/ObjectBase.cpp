@@ -1,10 +1,13 @@
 #include "ObjectBase.h"
 
-ObjectBase::ObjectBase(ObjectType Ty, const ConstructOptions &opt)
-    : QObject(nullptr),
-      name(opt.name), comment(opt.comment),
-      filePath(opt.filePath), nameSpace(opt.nameSpace),
-      ty(Ty), status(opt.isLocked? StatusFlag::Locked : StatusFlag::None)
+ObjectBase::ObjectBase(ObjectType Ty)
+    : QObject(nullptr), ty(Ty), status(StatusFlag::None)
+{
+
+}
+
+ObjectBase::ObjectBase(ObjectType Ty, const QString& nameArg)
+    : QObject(nullptr), name(nameArg), ty(Ty), status(StatusFlag::None)
 {
 
 }
@@ -13,7 +16,6 @@ ObjectBase::ObjectBase(const ObjectBase& src)
     : QObject(nullptr),
       name(src.name),
       comment(src.comment),
-      filePath(src.filePath),
       nameSpace(src.nameSpace),
       ty(src.ty),
       status(src.status)

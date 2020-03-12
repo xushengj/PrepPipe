@@ -94,7 +94,6 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         header.append(cloned->getComment());
         cloned->setNameSpace(QStringList());
         cloned->setComment(header);
-        cloned->setFilePath(QString());
 
         return cloned;
     };

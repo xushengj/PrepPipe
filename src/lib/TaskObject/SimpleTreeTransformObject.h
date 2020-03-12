@@ -30,9 +30,8 @@ class SimpleTreeTransformObject : public TaskObject
 {
     Q_OBJECT
 public:
-
-    SimpleTreeTransformObject(const ConstructOptions& opt);
-    SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg, const ConstructOptions& opt);
+    explicit SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg);
+    SimpleTreeTransformObject();
     SimpleTreeTransformObject(const SimpleTreeTransformObject& src) = default;
     virtual ~SimpleTreeTransformObject() override {}
 
@@ -40,7 +39,7 @@ public:
         return new SimpleTreeTransformObject(*this);
     }
 
-    static SimpleTreeTransformObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
+    static SimpleTreeTransformObject* loadFromXML(QXmlStreamReader& xml, StringCache &strCache);
 
     virtual PreparationError getInputOutputInfo(
             const ConfigurationData& config,

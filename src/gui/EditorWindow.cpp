@@ -463,10 +463,9 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
 
 void EditorWindow::dataDropped(const QMimeData* data)
 {
-    ObjectBase::ConstructOptions opt;
-    opt.name = tr("Drop");
-    opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
-    MIMEDataObject* ptr = new MIMEDataObject(*data, opt);
+    MIMEDataObject* ptr = new MIMEDataObject(*data);
+    ptr->setName(tr("Drop"));
+    ptr->setComment(tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate)));
     addToSideContext(ptr);
 }
 
@@ -475,7 +474,6 @@ void EditorWindow::objectDropped(const QList<ObjectBase*>& vec)
     for (auto* ptr : vec) {
         ObjectBase* newObj = ptr->clone();
         // clear certain data
-        newObj->setFilePath(QString());
         newObj->setNameSpace(QStringList());
         newObj->setStatus(newObj->getStatus() & ~ObjectBase::StatusFlag::Locked);
         addToSideContext(newObj);

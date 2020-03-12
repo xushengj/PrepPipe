@@ -62,16 +62,15 @@ void ObjectContext::loadAllObjectsFromDirectory()
             qInfo() << absPath << "cannot be read";
             continue;
         }
-        ObjectBase::ConstructOptions opt;
-        opt.filePath = absPath;
-        opt.name = f.completeBaseName();
-        opt.isLocked = !f.isWritable();
         QXmlStreamReader xml(&file);
-        IntrinsicObject* obj = IntrinsicObject::loadFromXML(xml, opt);
+        IntrinsicObject* obj = IntrinsicObject::loadFromXML(xml);
         if (!obj) {
             qInfo() << absPath << "open as intrinsic object failed";
             continue;
         }
+        obj->setName(f.completeBaseName());
+        obj->setFilePath(absPath);
+
         objects.push_back(obj);
 
         // if the object is named, add to named object

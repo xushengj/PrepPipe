@@ -28,8 +28,8 @@ class TestTaskObject : public TaskObject
 {
     Q_OBJECT
 public:
-    TestTaskObject(const ConstructOptions& options);
-    TestTaskObject(const TestExecuteObject::TestSettings& settingsArg ,const ConstructOptions& options);
+    TestTaskObject();
+    TestTaskObject(const TestExecuteObject::TestSettings& settingsArg);
     TestTaskObject(const TestTaskObject& src) = default;
 
     virtual TestTaskObject* clone() override {
@@ -50,7 +50,7 @@ public:
             std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
             ) const override;
 
-    static TestTaskObject* loadFromXML(QXmlStreamReader &xml, const ConstructOptions& opt);
+    static TestTaskObject* loadFromXML(QXmlStreamReader &xml);
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter& xml) override;

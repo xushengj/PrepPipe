@@ -69,6 +69,7 @@ HEADERS += \
     src/lib/DataObject/GeneralTreeObject.h \
     src/lib/DataObject/MIMEDataObject.h \
     src/lib/ExecuteObject.h \
+    src/lib/FileBackedObject.h \
     src/lib/IntrinsicObject.h \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \

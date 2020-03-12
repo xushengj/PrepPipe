@@ -12,7 +12,7 @@ class TaskObject : public IntrinsicObject
 {
     Q_OBJECT
 public:
-    TaskObject(ObjectType ty, const ConstructOptions& opt);
+    explicit TaskObject(ObjectType ty);
     TaskObject(const TaskObject& src) = default;
 
     enum LaunchFlag {

@@ -3,14 +3,14 @@
 
 #include <QDebug>
 
-GeneralTreeObject::GeneralTreeObject(const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::Data_GeneralTree, opt)
+GeneralTreeObject::GeneralTreeObject()
+    : IntrinsicObject(ObjectType::Data_GeneralTree)
 {
 
 }
 
-GeneralTreeObject::GeneralTreeObject(const Tree &tree, const ConstructOptions &opt)
-    : IntrinsicObject(ObjectType::Data_GeneralTree, opt), treeData(tree)
+GeneralTreeObject::GeneralTreeObject(const Tree &tree)
+    : IntrinsicObject(ObjectType::Data_GeneralTree), treeData(tree)
 {
 
 }
@@ -111,12 +111,12 @@ bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, String
 }
 }
 
-GeneralTreeObject* GeneralTreeObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache& strCache)
+GeneralTreeObject* GeneralTreeObject::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
 {
     Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
     const char* curElement = "GeneralTreeObject";
     if (!xml.readNextStartElement()) {
-        return new GeneralTreeObject(opt);
+        return new GeneralTreeObject();
     }
 
     if (Q_UNLIKELY(xml.name() != XML_ROOT)) {
@@ -137,7 +137,7 @@ GeneralTreeObject* GeneralTreeObject::loadFromXML(QXmlStreamReader& xml, const C
         // do nothing
     }
     if (treePtr) {
-        GeneralTreeObject* result = new GeneralTreeObject(*treePtr, opt);
+        GeneralTreeObject* result = new GeneralTreeObject(*treePtr);
         delete treePtr;
         return result;
     }

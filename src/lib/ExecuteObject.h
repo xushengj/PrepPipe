@@ -15,7 +15,12 @@ public:
         FatalEvent, // a qFatal() or Q_ASSERT() or whatever
         Terminated // user requested termination
     };
-    ExecuteObject(ObjectType ty, const ConstructOptions& opt);
+    explicit ExecuteObject(ObjectType ty)
+        : ObjectBase(ty)
+    {}
+    ExecuteObject(ObjectType ty, const QString& name)
+        : ObjectBase(ty, name)
+    {}
     // ExecuteObject is not supposed to be copied or cloned
     virtual ExecuteObject* clone() override {return nullptr;}
 

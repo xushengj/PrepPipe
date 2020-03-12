@@ -1,11 +1,5 @@
 #include "ExecuteObject.h"
 
-ExecuteObject::ExecuteObject(ObjectType ty, const ConstructOptions &opt)
-    : ObjectBase(ty, opt)
-{
-
-}
-
 void ExecuteObject::setInput(QString inputName, ObjectBase* obj)
 {
     Q_UNUSED(inputName)

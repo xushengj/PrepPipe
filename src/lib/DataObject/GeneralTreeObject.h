@@ -14,8 +14,9 @@ class GeneralTreeObject : public IntrinsicObject
     Q_OBJECT
 public:
     using Node = Tree::Node;
-    GeneralTreeObject(const ConstructOptions& opt);
-    GeneralTreeObject(const Tree& tree, const ConstructOptions& opt);
+
+    explicit GeneralTreeObject(const Tree& tree);
+    GeneralTreeObject();
     GeneralTreeObject(const GeneralTreeObject& src) = default;
     virtual ~GeneralTreeObject() override;
 
@@ -23,7 +24,7 @@ public:
         return new GeneralTreeObject(*this);
     }
 
-    static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache &strCache);
+    static GeneralTreeObject* loadFromXML(QXmlStreamReader& xml, StringCache &strCache);
 
     const Tree& getTreeData() const {return treeData;}
 

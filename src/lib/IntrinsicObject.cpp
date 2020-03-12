@@ -5,8 +5,8 @@
 #include "src/utils/XMLUtilities.h"
 #include <QDebug>
 
-IntrinsicObject::IntrinsicObject(ObjectType ty, const ConstructOptions &opt)
-    : ObjectBase(ty, opt)
+IntrinsicObject::IntrinsicObject(ObjectType ty)
+    : FileBackedObject(ty)
 {
 
 }
@@ -35,17 +35,17 @@ void IntrinsicObject::saveToXML(QXmlStreamWriter& xml)
     xml.writeEndDocument();
 }
 
-IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt)
+IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
 {
     StringCache strCache;
-    ConstructOptions newOpt = opt;
     const char* curElement = "IntrinsicObject";
+    QString comment;
     while (xml.readNext() != QXmlStreamReader::StartElement) {
         if (xml.tokenType() == QXmlStreamReader::Comment) {
-            if (!newOpt.comment.isEmpty()) {
-                newOpt.comment.append('\n');
+            if (!comment.isEmpty()) {
+                comment.append('\n');
             }
-            newOpt.comment.append(xml.text());
+            comment.append(xml.text());
         } else if (xml.tokenType() != QXmlStreamReader::Characters && xml.tokenType() != QXmlStreamReader::StartDocument) {
             auto msg = qWarning();
             XMLError::errorCommon(msg, xml, curElement);
@@ -80,29 +80,23 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml, const Const
         }
     }
 
-    if (newOpt.name.isEmpty()) {
-        newOpt.name = nameFromXML;
-    } else {
-        // if the object name do not match with the file name, here we transparently rename the object
-        // (by not saving the name from xml)
-        if (newOpt.name != nameFromXML) {
-            qWarning() << "Intrinsic Object from " << newOpt.filePath << " is renamed from " << nameFromXML << " to " << newOpt.name;
-        }
-    }
-
     IntrinsicObject* obj = nullptr;
 
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
     default: qFatal("Unhandled Intrinsic Object load"); break;
     case ObjectType::Data_GeneralTree:
-        obj = GeneralTreeObject::loadFromXML(xml, newOpt, strCache);
+        obj = GeneralTreeObject::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_Test:
-        obj = TestTaskObject::loadFromXML(xml, newOpt);
+        obj = TestTaskObject::loadFromXML(xml);
         break;
     case ObjectType::Task_SimpleTreeTransform:
-        obj = SimpleTreeTransformObject::loadFromXML(xml, newOpt, strCache);
+        obj = SimpleTreeTransformObject::loadFromXML(xml, strCache);
         break;
+    }
+    if (obj) {
+        obj->setName(nameFromXML);
+        obj->setComment(comment);
     }
 
     return obj;

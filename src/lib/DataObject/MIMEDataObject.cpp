@@ -4,14 +4,14 @@
 #include <QClipboard>
 #include <QDateTime>
 
-MIMEDataObject::MIMEDataObject(const ConstructOptions& opt)
-    : ObjectBase(ObjectType::Data_MIME, opt)
+MIMEDataObject::MIMEDataObject()
+    : ObjectBase(ObjectType::Data_MIME)
 {
 
 }
 
-MIMEDataObject::MIMEDataObject(const QMimeData& initData, const ConstructOptions& opt)
-    : ObjectBase(ObjectType::Data_MIME, opt)
+MIMEDataObject::MIMEDataObject(const QMimeData& initData)
+    : ObjectBase(ObjectType::Data_MIME)
 {
     QStringList formats = initData.formats();
     for (const auto& fmt : formats) {
@@ -39,8 +39,8 @@ MIMEDataObject* MIMEDataObject::dumpFromClipboard()
     if (formats.isEmpty())
         return nullptr;
 
-    ObjectBase::ConstructOptions opt;
-    opt.name = tr("Clipboard dump");
-    opt.comment = tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate));
-    return new MIMEDataObject(*data, opt);
+    MIMEDataObject* dumpObj = new MIMEDataObject(*data);
+    dumpObj->setName(tr("Clipboard dump"));
+    dumpObj->setComment(tr("Time: %1").arg(QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate)));
+    return dumpObj;
 }

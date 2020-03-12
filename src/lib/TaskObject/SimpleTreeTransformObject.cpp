@@ -1,14 +1,14 @@
 #include "SimpleTreeTransformObject.h"
 #include "src/lib/DataObject/GeneralTreeObject.h"
 
-SimpleTreeTransformObject::SimpleTreeTransformObject(const ConstructOptions &opt)
-    : TaskObject(ObjectType::Task_SimpleTreeTransform, opt)
+SimpleTreeTransformObject::SimpleTreeTransformObject()
+    : TaskObject(ObjectType::Task_SimpleTreeTransform)
 {
 
 }
 
-SimpleTreeTransformObject::SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg, const ConstructOptions& opt)
-    : TaskObject(ObjectType::Task_SimpleTreeTransform, opt), data(dataArg)
+SimpleTreeTransformObject::SimpleTreeTransformObject(const SimpleTreeTransform::Data& dataArg)
+    : TaskObject(ObjectType::Task_SimpleTreeTransform), data(dataArg)
 {
 
 }
@@ -18,11 +18,11 @@ void SimpleTreeTransformObject::saveToXMLImpl(QXmlStreamWriter &xml)
     data.saveToXML(xml);
 }
 
-SimpleTreeTransformObject* SimpleTreeTransformObject::loadFromXML(QXmlStreamReader& xml, const ConstructOptions& opt, StringCache& strCache)
+SimpleTreeTransformObject* SimpleTreeTransformObject::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
 {
     SimpleTreeTransform::Data data;
     if (Q_LIKELY(data.loadFromXML(xml, strCache))) {
-        return new SimpleTreeTransformObject(data, opt);
+        return new SimpleTreeTransformObject(data);
     }
     return nullptr;
 }
@@ -73,7 +73,7 @@ SimpleTreeTransformExecuteObject* SimpleTreeTransformObject::getExecuteObject(
 //-----------------------------------------------------------------------------
 
 SimpleTreeTransformExecuteObject::SimpleTreeTransformExecuteObject(const SimpleTreeTransform::Data& dataArg, QString name)
-    : ExecuteObject(ObjectBase::Exec_SimpleTreeTransform, ConstructOptions(name, QString())), data(dataArg)
+    : ExecuteObject(ObjectBase::Exec_SimpleTreeTransform, name), data(dataArg)
 {
     for (int i = 0, n = data.sideTreeNameList.size(); i < n; ++i) {
         sideTreeList.push_back(Tree());
@@ -112,7 +112,7 @@ int SimpleTreeTransformExecuteObject::startImpl(ExitCause& cause)
     }
     bool transformGood = transform.performTransform(treeIn, treeOut, sideTreePtrList);
     Q_ASSERT(transformGood);
-    GeneralTreeObject* output = new GeneralTreeObject(treeOut, ObjectBase::ConstructOptions());
+    GeneralTreeObject* output = new GeneralTreeObject(treeOut);
     emit outputAvailable(QString(), output);
     return 0;
 }
