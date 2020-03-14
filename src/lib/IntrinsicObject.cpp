@@ -4,6 +4,7 @@
 #include "src/lib/TaskObject/SimpleTreeTransformObject.h"
 #include "src/utils/XMLUtilities.h"
 #include <QDebug>
+#include <QSaveFile>
 
 IntrinsicObject::IntrinsicObject(ObjectType ty)
     : FileBackedObject(ty)
@@ -100,6 +101,18 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
     }
 
     return obj;
+}
+
+bool IntrinsicObject::saveToFile()
+{
+    QString path = getFilePath();
+    QSaveFile f(path);
+    f.open(QIODevice::WriteOnly);
+    {
+        QXmlStreamWriter xml(&f);
+        IntrinsicObject::saveToXML(xml);
+    }
+    return f.commit();
 }
 
 QWidget* IntrinsicObject::getEditor()

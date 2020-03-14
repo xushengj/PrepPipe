@@ -68,7 +68,6 @@ public:
     virtual QWidget* getEditor() {return nullptr;}
     virtual bool editorNoUnsavedChanges(QWidget* editor, QWidget* window) {Q_UNUSED(editor) Q_UNUSED(window) return true;}
     virtual void tearDownEditor(QWidget* editor) {editor->hide(); delete editor;}
-    virtual void appendObjectActions(QMenu& menu) {Q_UNUSED(menu)}
 
     StatusFlags getStatus() const {return status;}
 

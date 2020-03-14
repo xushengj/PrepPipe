@@ -256,13 +256,7 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
         auto iter = itemData.find(item);
         Q_ASSERT(iter != itemData.end());
         auto& data = iter.value();
-        if (item->parent() == sideRoot) {
-            QAction* closeAction = new QAction(tr("Close"));
-            connect(closeAction, &QAction::triggered, this, [=]() -> void {
-                closeSideContextObjectRequested(item);
-            });
-            menu.addAction(closeAction);
-        }
+        // menu from specific ones to general ones
         if (TaskObject* task = qobject_cast<TaskObject*>(data.obj)) {
             if (item->parent() == mainRoot) {
                 QAction* executeAction = new QAction(tr("Execute"));
@@ -274,7 +268,33 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
                 menu.addAction(executeAction);
             }
         }
-        data.obj->appendObjectActions(menu);
+        if (FileBackedObject* fbo = qobject_cast<FileBackedObject*>(data.obj)) {
+            QAction* saveAction = new QAction(tr("Save"));
+            connect(saveAction, &QAction::triggered, this, [=]() -> void {
+                QString filePath = fbo->getFilePath();
+                if (filePath.isEmpty()) {
+                    filePath = QFileDialog::getSaveFileName(this, tr("Save File"), mainCtx.getDirectory(), fbo->getFileNameFilter());
+                    if (filePath.isEmpty())
+                        return;
+                    fbo->setFilePath(filePath);
+                }
+                if (!fbo->saveToFile()) {
+                    QMessageBox::critical(this,
+                                          tr("Save File Failed"),
+                                          tr("Failed to save to given path. Please check if file permission is correctly set and there are sufficient disk space. Path: \"%1\"")
+                                            .arg(filePath));
+                }
+            });
+            menu.addAction(saveAction);
+        }
+        if (item->parent() == sideRoot) {
+            QAction* closeAction = new QAction(tr("Close"));
+            connect(closeAction, &QAction::triggered, this, [=]() -> void {
+                closeSideContextObjectRequested(item);
+            });
+            menu.addAction(closeAction);
+        }
+
     }
 
     if (menu.isEmpty())

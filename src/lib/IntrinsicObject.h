@@ -23,6 +23,12 @@ public:
 
     virtual QWidget* getEditor() override;
 
+    virtual bool saveToFile() override final;
+
+    virtual QString getFileNameFilter() const override {
+        return tr("SUPP XML Files (*.xml)");
+    }
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter& xml) = 0;
 };

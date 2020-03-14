@@ -24,6 +24,12 @@ public:
         filePath = newFilePath;
     }
 
+    virtual bool saveToFile() = 0;
+
+    virtual QString getFileNameFilter() const {
+        return tr("All files (*.*)");
+    }
+
 private:
     QString filePath;
 
