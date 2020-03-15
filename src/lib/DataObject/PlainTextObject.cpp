@@ -38,7 +38,7 @@ const ConfigurationDeclaration* PlainTextObject::getImportConfigurationDeclarati
 
 PlainTextObject* PlainTextObject::open(const QByteArray &src, const ConfigurationData& config)
 {
-    QTextStream ts(src);
+    QTextStream ts(src, QIODevice::ReadOnly | QIODevice::Text);
     QTextCodec* codec = QTextCodec::codecForName(config(CFG_CODEC).toUtf8());
     Q_ASSERT(codec);
     ts.setCodec(codec);
@@ -50,7 +50,7 @@ PlainTextObject* PlainTextObject::open(const QByteArray &src, const Configuratio
 
 bool PlainTextObject::save(QByteArray& dest) const
 {
-    QTextStream ts(&dest, QIODevice::WriteOnly);
+    QTextStream ts(&dest, QIODevice::WriteOnly | QIODevice::Text);
     QTextCodec* codec = QTextCodec::codecForName(getImportConfigurationData()(CFG_CODEC).toUtf8());
     Q_ASSERT(codec);
     ts.setCodec(codec);
