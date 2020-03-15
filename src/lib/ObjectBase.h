@@ -42,6 +42,7 @@ public:
 
     enum ObjectType {
         Data_GeneralTree,
+        Data_PlainText,
         Data_MIME,
         Task_SimpleTreeTransform,
         Exec_SimpleTreeTransform,

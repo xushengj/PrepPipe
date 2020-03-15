@@ -59,9 +59,41 @@ private:
 class ConfigurationData : public Tree
 {
 public:
-    ConfigurationData() = default;
+    ConfigurationData();
     explicit ConfigurationData(const Tree& src);
     bool isValid(const ConfigurationDeclaration& decl) const {Q_UNUSED(decl) return true;}
+
+public:
+    class Visitor {
+    public:
+        Visitor(const ConfigurationData& cfg)
+            : config(cfg)
+        {}
+        Visitor(const ConfigurationData& cfg, int nodeIndex)
+            : config(cfg), index(nodeIndex)
+        {}
+        Visitor operator[](const QString& codeName) const;
+        QString operator()(const QString& codeName) const;
+        operator bool() const {
+            return isValid();
+        }
+        bool isValid() const {
+            return index >= 0;
+        }
+        int getNodeIndex() const {
+            return index;
+        }
+    private:
+        const ConfigurationData& config;
+        int index = 0;
+    };
+
+    Visitor operator[](const QString& codeName) const {
+        return Visitor(*this)[codeName];
+    }
+    QString operator()(const QString& codeName) const {
+        return Visitor(*this)(codeName);
+    }
 };
 
 #endif // CONFIGURATION_H

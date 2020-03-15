@@ -14,7 +14,7 @@ public:
     explicit ConfigurationInputWidget(QWidget *parent = nullptr);
     virtual ~ConfigurationInputWidget() override;
 
-    void setConfigurationDeclaration(const ConfigurationDeclaration* decl);
+    void setConfigurationDeclaration(const ConfigurationDeclaration* decl, const ConfigurationData& initialValue);
     bool getConfigurationData(ConfigurationData& result, QHash<int, int> &fieldIndexToNodeIndexMap);
     bool getConfigurationData(ConfigurationData& result);
 

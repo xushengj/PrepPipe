@@ -8,6 +8,7 @@
 #include "src/gui/ObjectTreeWidget.h"
 #include "src/lib/TaskObject.h"
 #include "src/gui/DropTestLabel.h"
+#include "src/lib/FileBackedObject.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -62,6 +63,7 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
     connect(ui->actionOpenLog, &QAction::triggered, MessageLogger::inst(), &MessageLogger::openLogFile);
+    connect(ui->actionOpen, &QAction::triggered, this, &EditorWindow::openFileRequested);
 
     connect(ui->actionQFatal, &QAction::triggered, this, []() -> void {
         qFatal("Fatal event message requested");
@@ -524,4 +526,16 @@ bool EditorWindow::launchTask(const ObjectBase::NamedReference& task)
     }
 
     return exec != nullptr;
+}
+
+void EditorWindow::openFileRequested()
+{
+    QString path = QFileDialog::getOpenFileName(this, tr("Open File"), mainCtx.getDirectory(), tr("All files (*.*)"));
+    if (path.isEmpty())
+        return;
+    FileBackedObject* obj = FileBackedObject::open(path, this);
+    if (!obj) {
+        return;
+    }
+    addToSideContext(obj);
 }

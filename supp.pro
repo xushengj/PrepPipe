@@ -32,6 +32,7 @@ SOURCES += \
     src/gui/DropTestLabel.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
+    src/gui/ImportFileDialog.cpp \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
     src/gui/TextEditor.cpp \
@@ -39,7 +40,10 @@ SOURCES += \
     src/gui/MIMEDataEditor.cpp \
     src/lib/DataObject/GeneralTreeObject.cpp \
     src/lib/DataObject/MIMEDataObject.cpp \
+    src/lib/DataObject/PlainTextObject.cpp \
     src/lib/ExecuteObject.cpp \
+    src/lib/FileBackedObject.cpp \
+    src/lib/ImportedObject.cpp \
     src/lib/IntrinsicObject.cpp \
     src/lib/ObjectBase.cpp \
     src/lib/ObjectContext.cpp \
@@ -63,6 +67,7 @@ HEADERS += \
     src/gui/EditorWindow.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
+    src/gui/ImportFileDialog.h \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
     src/gui/TextEditor.h \
@@ -70,8 +75,10 @@ HEADERS += \
     src/gui/MIMEDataEditor.h \
     src/lib/DataObject/GeneralTreeObject.h \
     src/lib/DataObject/MIMEDataObject.h \
+    src/lib/DataObject/PlainTextObject.h \
     src/lib/ExecuteObject.h \
     src/lib/FileBackedObject.h \
+    src/lib/ImportedObject.h \
     src/lib/IntrinsicObject.h \
     src/lib/ObjectBase.h \
     src/lib/ObjectContext.h \
@@ -91,6 +98,7 @@ FORMS += \
     src/gui/ExecuteOptionDialog.ui \
     src/gui/ExecuteWindow.ui \
     src/gui/GeneralTreeEditor.ui \
+    src/gui/ImportFileDialog.ui \
     src/gui/MIMEDataEditor.ui \
     src/gui/ObjectInputEdit.ui
 

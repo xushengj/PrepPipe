@@ -82,6 +82,8 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
     switch(ty){
     case ObjectType::Data_GeneralTree:
         return tr("General Tree");
+    case ObjectType::Data_PlainText:
+        return tr("Plain Text");
     case ObjectType::Data_MIME:
         return tr("MIME");
     case ObjectType::Task_SimpleTreeTransform:

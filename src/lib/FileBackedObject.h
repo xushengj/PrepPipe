@@ -26,9 +26,9 @@ public:
 
     virtual bool saveToFile() = 0;
 
-    virtual QString getFileNameFilter() const {
-        return tr("All files (*.*)");
-    }
+    virtual QString getFileNameFilter() const;
+
+    static FileBackedObject* open(const QString& filePath, QWidget* window);
 
 private:
     QString filePath;

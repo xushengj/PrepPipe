@@ -173,7 +173,7 @@ public:
     int getNumNodes() const {return nodes.size();}
     bool isEmpty() const {return nodes.isEmpty();}
 
-private:
+protected:
     QVector<Node> nodes;
 };
 

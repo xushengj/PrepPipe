@@ -84,6 +84,7 @@ private slots:
 
     void changeDirectoryRequested();
     void clipboardDumpRequested();
+    void openFileRequested();
     void dataDropped(const QMimeData* data);
     void objectDropped(const QList<ObjectBase*>& vec);
 

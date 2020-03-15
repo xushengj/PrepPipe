@@ -24,7 +24,7 @@ ConfigurationInputWidget::~ConfigurationInputWidget()
     fieldData.clear();
 }
 
-void ConfigurationInputWidget::setConfigurationDeclaration(const ConfigurationDeclaration* decl)
+void ConfigurationInputWidget::setConfigurationDeclaration(const ConfigurationDeclaration* decl, const ConfigurationData& initialValue)
 {
     // this function should only be called once
     Q_ASSERT(configDecl == nullptr);
@@ -35,24 +35,52 @@ void ConfigurationInputWidget::setConfigurationDeclaration(const ConfigurationDe
     if (numFields == 0)
         return;
 
+    QHash<int, int> fieldIndexToInitialValueNodeIndex;
+    fieldIndexToInitialValueNodeIndex.insert(-1, 0);
     fieldData.reserve(numFields);
     for (int i = 0; i < numFields; ++i) {
         const auto& field = configDecl->getField(i);
+
+        int curIndex = fieldData.size();
+        int parentIndex = curIndex - field.indexOffsetFromParent;
+        Q_ASSERT(parentIndex >= -1 && field.indexOffsetFromParent > 0);
+
+        QString defaultValue = field.defaultValue;
+        {
+            int nodeIndex = fieldIndexToInitialValueNodeIndex.value(parentIndex, -1);
+            ConfigurationData::Visitor v(initialValue, nodeIndex);
+            if (v.isValid()) {
+                if (field.ty == ConfigurationDeclaration::FieldType::Group) {
+                    auto cur = v[field.codeName];
+                    if (cur.isValid()) {
+                        fieldIndexToInitialValueNodeIndex.insert(curIndex, cur.getNodeIndex());
+                    }
+                } else {
+                    // try to get new default from initialValue
+                    QString newDefault = v(field.codeName);
+                    if (!newDefault.isEmpty()) {
+                        defaultValue = newDefault;
+                    }
+                }
+            }
+        }
+
+
         QWidget* inputWidget = nullptr;
         switch (field.ty) {
         case ConfigurationDeclaration::FieldType::String: {
-            QLineEdit* edit = new QLineEdit(field.defaultValue);
+            QLineEdit* edit = new QLineEdit(defaultValue);
             inputWidget = edit;
             connect(edit, &QLineEdit::textChanged, this, &ConfigurationInputWidget::refreshForm);
         }break;
         case ConfigurationDeclaration::FieldType::Integer: {
-            QLineEdit* edit = new QLineEdit(field.defaultValue);
+            QLineEdit* edit = new QLineEdit(defaultValue);
             edit->setValidator(new QIntValidator);
             inputWidget = edit;
             connect(edit, &QLineEdit::textChanged, this, &ConfigurationInputWidget::refreshForm);
         }break;
         case ConfigurationDeclaration::FieldType::FloatingPoint: {
-            QLineEdit* edit = new QLineEdit(field.defaultValue);
+            QLineEdit* edit = new QLineEdit(defaultValue);
             edit->setValidator(new QDoubleValidator);
             inputWidget = edit;
             connect(edit, &QLineEdit::textChanged, this, &ConfigurationInputWidget::refreshForm);
@@ -60,14 +88,15 @@ void ConfigurationInputWidget::setConfigurationDeclaration(const ConfigurationDe
         case ConfigurationDeclaration::FieldType::Enum: {
             QComboBox* cbox = new QComboBox;
             cbox->addItems(field.enumValue_DisplayValueList);
-            Q_ASSERT(field.enumValue_DisplayValueList.contains(field.defaultValue));
-            cbox->setCurrentText(field.defaultValue);
+            int entryIndex = field.enumValue_CodeValueList.indexOf(defaultValue);
+            Q_ASSERT(entryIndex >= 0);
+            cbox->setCurrentIndex(entryIndex);
             inputWidget = cbox;
             connect(cbox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ConfigurationInputWidget::refreshForm);
         }break;
         case ConfigurationDeclaration::FieldType::Boolean: {
             QCheckBox* cbox = new QCheckBox(field.displayName);
-            cbox->setChecked(field.defaultValue == field.boolValue_TrueCodeValue);
+            cbox->setChecked(defaultValue == field.boolValue_TrueCodeValue);
             inputWidget = cbox;
             connect(cbox, &QCheckBox::stateChanged, this, &ConfigurationInputWidget::refreshForm);
         }break;
@@ -83,9 +112,7 @@ void ConfigurationInputWidget::setConfigurationDeclaration(const ConfigurationDe
         if (field.ty != ConfigurationDeclaration::FieldType::Group) {
             label = new QLabel(field.displayName);
         }
-        int curIndex = fieldData.size();
-        int parentIndex = curIndex - field.indexOffsetFromParent;
-        Q_ASSERT(parentIndex >= -1 && field.indexOffsetFromParent > 0);
+
         FieldData data;
         data.isEnabled = false;
         data.label = label;
