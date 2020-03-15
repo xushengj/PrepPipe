@@ -342,9 +342,7 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
         const auto& data = editorOpenedObjects.at(i);
         if (data.origin == origin) {
             // we will close this one
-            switchToEditor(i);
-            if (!data.obj->editorNoUnsavedChanges(data.editor, this)) {
-                // close request cancelled
+            if (!closeEditorCheck(i)) {
                 return false;
             }
         } else {
@@ -386,6 +384,49 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
     return true;
 }
 
+bool EditorWindow::closeEditorCheck(int index)
+{
+    const auto& data = editorOpenedObjects.at(index);
+    if (FileBackedObject* obj = qobject_cast<FileBackedObject*>(data.obj)) {
+        if (!obj->editorNoUnsavedChanges(data.editor)) {
+            switchToEditor(index);
+            auto reply = QMessageBox::question(this,
+                                               tr("Save changes"),
+                                               tr("You have unsaved changes in %1. Do you want to discard them?").arg(obj->getFilePath()),
+                                               QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+            switch (reply) {
+            default: Q_UNREACHABLE();
+            case QMessageBox::Yes: {
+                // Do nothing
+            }break;
+            case QMessageBox::No: {
+                obj->saveDataFromEditor(data.editor);
+                if (!obj->saveToFile()) {
+                    QMessageBox::critical(this,
+                                          tr("Save file failed"),
+                                          tr("Failed to save data to %1").arg(obj->getFilePath()));
+                    // aborted; something goes wrong
+                    return false;
+                }
+            }break;
+            case QMessageBox::Cancel: {
+                return false;
+            }
+            }
+        }
+    }
+    return true;
+}
+
+bool EditorWindow::closeAllCheck()
+{
+    for (int i = 0, n = editorOpenedObjects.size(); i < n; ++i) {
+        if (!closeEditorCheck(i))
+            return false;
+    }
+    return true;
+}
+
 bool EditorWindow::tryCloseAllMainContextObjects()
 {
     if (tryCloseAllObjectsCommon(OriginContext::MainContext)) {
@@ -402,6 +443,15 @@ bool EditorWindow::tryCloseAllSideContextObjects()
         return true;
     }
     return false;
+}
+
+void EditorWindow::closeEvent(QCloseEvent* event)
+{
+    if (!closeAllCheck()) {
+        event->ignore();
+        return;
+    }
+    event->accept();
 }
 
 void EditorWindow::changeDirectory(const QString& newDirectory)
@@ -450,8 +500,7 @@ void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
         if (data.item == item) {
             // we will close this one
             int indexToSwitchTo = currentOpenedObjectIndex;
-            switchToEditor(i);
-            if (!data.obj->editorNoUnsavedChanges(data.editor, this)) {
+            if (!closeEditorCheck(i)) {
                 // close request cancelled
                 return;
             }

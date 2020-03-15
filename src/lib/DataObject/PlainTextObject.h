@@ -23,6 +23,10 @@ public:
     }
     virtual bool save(QByteArray& dest) const override;
 
+    virtual QWidget* getEditor() override;
+    virtual bool editorNoUnsavedChanges(QWidget* editor) override;
+    virtual void saveDataFromEditor(QWidget* editor) override;
+
 public:
     static const ConfigurationDeclaration *getImportConfigurationDeclaration();
     static PlainTextObject* open(const QByteArray& src, const ConfigurationData& config);

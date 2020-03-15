@@ -66,8 +66,9 @@ public:
     QString     getTypeDisplayName()    const {return getTypeDisplayName(ty);}
     QIcon       getTypeDisplayIcon()    const {return getTypeDisplayIcon(ty);}
 
+    // for objects not backed by a file, the editor can always be destroyed
+    // virtual function asking for dirty editor data is in FileBackedObject
     virtual QWidget* getEditor() {return nullptr;}
-    virtual bool editorNoUnsavedChanges(QWidget* editor, QWidget* window) {Q_UNUSED(editor) Q_UNUSED(window) return true;}
     virtual void tearDownEditor(QWidget* editor) {editor->hide(); delete editor;}
 
     StatusFlags getStatus() const {return status;}

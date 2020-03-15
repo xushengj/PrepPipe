@@ -37,3 +37,14 @@ FileBackedObject* FileBackedObject::open(const QString& filePath, QWidget* windo
     }
     return obj;
 }
+
+bool FileBackedObject::saveToFile(QWidget* dialogParent)
+{
+    if (saveToFile()) {
+        return true;
+    }
+    QMessageBox::critical(dialogParent,
+                          tr("Save file failed"),
+                          tr("Failed to save data to %1").arg(getFilePath()));
+    return false;
+}

@@ -24,6 +24,9 @@ public:
 
     const ObjectContext& getMainContext() const {return mainCtx;}
 
+protected:
+    virtual void closeEvent(QCloseEvent* event) override;
+
 private:
     enum class OriginContext : int {
         MainContext = 0,
@@ -58,6 +61,8 @@ private:
 
     void showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item, OriginContext origin);
     void switchToEditor(int index);
+    bool closeEditorCheck(int index);
+    bool closeAllCheck();
     void changeDirectory(const QString& newDirectory);
     bool tryCloseAllMainContextObjects();
 
