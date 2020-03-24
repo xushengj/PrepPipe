@@ -33,7 +33,7 @@ public:
 
         Concatenation, // concatenation of anonymous boundaries
 
-        Inheritance// inheritance based boundary types
+        ClassBased// based on inheritance
 
     };
     struct BoundaryDeclaration {
@@ -83,8 +83,12 @@ public:
 
     struct PatternElement {
         enum class ElementType {
+            // note that all anonymous boundary should be listed here
             AnonymousBoundary_StringLiteral,
             AnonymousBoundary_Regex,
+            AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace,
+            AnonymousBoundary_SpecialCharacter_WhiteSpaces,
+            AnonymousBoundary_SpecialCharacter_LineFeed,
             NamedBoundary,
             Content
         };
@@ -123,6 +127,8 @@ public:
 
         void saveToXML(QXmlStreamWriter& xml) const;
         bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
+
+        bool validate(QString& err) const;
     };
 
     struct ParseState {
@@ -175,7 +181,7 @@ private:
     std::pair<int, int> findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex);
     std::pair<int, int> findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex);
     std::pair<int, int> findBoundary_SpecialCharacter_LineFeed(int pos, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_InheritanceBasedBoundary(int pos, int boundaryIndex, int precedingContentTypeIndex);
+    std::pair<int, int> findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex);
 
     int findNextStringMatch(int startPos, const QString& str);
     std::pair<int, int> findNextRegexMatch(int startPos, const QRegularExpression& regex, QMap<int, std::pair<int, ParseState::RegexMatchData> > &positionMap);
@@ -210,7 +216,7 @@ private:
     // derived helper data
     QHash<QString, int> boundaryNameToIndexMap;
     QHash<QString, int> contentTypeNameToIndexMap;
-    QHash<int, QVector<int>> inheritanceChildList; // for inheritance based boundaries
+    QHash<int, QVector<int>> classBasedBoundaryChildList;
     QVector<QVector<int>> childNodeMatchRuleVec; // NodeMatchRuleIndex -> vec of child node match rule index
     int rootNodeRuleIndex = -1;
     // for now, white space related special character search is done by regular expressions

@@ -27,6 +27,8 @@ public:
     virtual bool editorNoUnsavedChanges(QWidget* editor) override;
     virtual void saveDataFromEditor(QWidget* editor) override;
 
+    QString getText() const {return text;}
+
 public:
     static const ConfigurationDeclaration *getImportConfigurationDeclaration();
     static PlainTextObject* open(const QByteArray& src, const ConfigurationData& config);

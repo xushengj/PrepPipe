@@ -2,6 +2,7 @@
 #include "src/lib/DataObject/GeneralTreeObject.h"
 #include "src/lib/TaskObject/TestTaskObject.h"
 #include "src/lib/TaskObject/SimpleTreeTransformObject.h"
+#include "src/lib/TaskObject/SimpleParserObject.h"
 #include "src/utils/XMLUtilities.h"
 #include <QDebug>
 #include <QSaveFile>
@@ -93,6 +94,9 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
         break;
     case ObjectType::Task_SimpleTreeTransform:
         obj = SimpleTreeTransformObject::loadFromXML(xml, strCache);
+        break;
+    case ObjectType::Task_SimpleParser:
+        obj = SimpleParserObject::loadFromXML(xml, strCache);
         break;
     }
     if (obj) {

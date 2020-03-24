@@ -49,6 +49,7 @@ SOURCES += \
     src/lib/ObjectContext.cpp \
     src/lib/StaticObjectIndexDB.cpp \
     src/lib/TaskObject.cpp \
+    src/lib/TaskObject/SimpleParserObject.cpp \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
     src/lib/TaskObject/TestTaskObject.cpp \
     src/lib/Tree/Configuration.cpp \
@@ -85,6 +86,7 @@ HEADERS += \
     src/lib/ObjectContext.h \
     src/lib/StaticObjectIndexDB.h \
     src/lib/TaskObject.h \
+    src/lib/TaskObject/SimpleParserObject.h \
     src/lib/TaskObject/SimpleTreeTransformObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \

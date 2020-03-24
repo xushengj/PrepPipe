@@ -88,6 +88,8 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
         return tr("MIME");
     case ObjectType::Task_SimpleTreeTransform:
         return tr("Tree-to-Tree Transform");
+    case ObjectType::Task_SimpleParser:
+        return tr("Plain Text Parser");
     case ObjectType::Task_Test:
         return tr("Test");
     default: qFatal("Unhandled object type"); return QString();

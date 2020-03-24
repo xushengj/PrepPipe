@@ -96,17 +96,17 @@ SimpleParser::SimpleParser(const Data& d)
     for (int i = 0, n = d.namedBoundaries.size(); i < n; ++i) {
         const auto& b = d.namedBoundaries.at(i);
         boundaryNameToIndexMap.insert(b.name, i);
-        if (b.ty == BoundaryType::Inheritance) {
-            inheritanceChildList.insert(i, QVector<int>());
+        if (b.ty == BoundaryType::ClassBased) {
+            classBasedBoundaryChildList.insert(i, QVector<int>());
         }
     }
-    for (auto iter = inheritanceChildList.begin(), iterEnd = inheritanceChildList.end(); iter != iterEnd; ++iter) {
+    for (auto iter = classBasedBoundaryChildList.begin(), iterEnd = classBasedBoundaryChildList.end(); iter != iterEnd; ++iter) {
         int index = iter.key();
         const auto& b = d.namedBoundaries.at(index);
         for (const auto& p : b.parentList) {
             int parentIndex = boundaryNameToIndexMap.value(p, -1);
-            auto parentIter = inheritanceChildList.find(parentIndex);
-            Q_ASSERT(parentIter != inheritanceChildList.end());
+            auto parentIter = classBasedBoundaryChildList.find(parentIndex);
+            Q_ASSERT(parentIter != classBasedBoundaryChildList.end());
             parentIter.value().push_back(index);
         }
     }
@@ -298,6 +298,39 @@ int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
 
 SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern, int position)
 {
+    // helper function
+    auto setDeclByPatternElement = [](BoundaryDeclaration& decl, const PatternElement& pe) -> void {
+        decl.str = pe.str;
+        switch (pe.ty) {
+        case PatternElement::ElementType::Content: {
+            qFatal("Content type pattern element enters anonymous boundary handling code");
+        }break;
+        case PatternElement::ElementType::AnonymousBoundary_StringLiteral: {
+            decl.decl = BoundaryDeclaration::DeclarationType::Value;
+            decl.ty = BoundaryType::StringLiteral;
+        }break;
+        case PatternElement::ElementType::AnonymousBoundary_Regex: {
+            decl.decl = BoundaryDeclaration::DeclarationType::Value;
+            decl.ty = BoundaryType::Regex;
+        }break;
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace: {
+            decl.decl = BoundaryDeclaration::DeclarationType::Value;
+            decl.ty = BoundaryType::SpecialCharacter_OptionalWhiteSpace;
+        }break;
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces: {
+            decl.decl = BoundaryDeclaration::DeclarationType::Value;
+            decl.ty = BoundaryType::SpecialCharacter_WhiteSpaces;
+        }break;
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_LineFeed: {
+            decl.decl = BoundaryDeclaration::DeclarationType::Value;
+            decl.ty = BoundaryType::SpecialCharacter_LineFeed;
+        }break;
+        case PatternElement::ElementType::NamedBoundary: {
+            decl.decl = BoundaryDeclaration::DeclarationType::NameReference;
+            decl.ty = BoundaryType::StringLiteral; // won't be used anyway
+        }break;
+        }
+    };
     SimpleParser::PatternMatchResult result;
     QStringList keyList;
     QVector<std::pair<int,int>> valueList; // <start position, length>
@@ -312,25 +345,8 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         int contentIndex = -1;
         QString contentExportName;
         QString boundaryExportName;
-        switch (pe.ty) {
-        case PatternElement::ElementType::AnonymousBoundary_StringLiteral: {
-            decl.decl = BoundaryDeclaration::DeclarationType::Value;
-            decl.ty = BoundaryType::StringLiteral;
-            decl.str = pe.str;
-            boundaryExportName = pe.elementName;
-        }break;
-        case PatternElement::ElementType::AnonymousBoundary_Regex: {
-            decl.decl = BoundaryDeclaration::DeclarationType::Value;
-            decl.ty = BoundaryType::Regex;
-            decl.str = pe.str;
-            boundaryExportName = pe.elementName;
-        }break;
-        case PatternElement::ElementType::NamedBoundary: {
-            decl.decl = BoundaryDeclaration::DeclarationType::NameReference;
-            decl.str = pe.str;
-            boundaryExportName = pe.elementName;
-        }break;
-        case PatternElement::ElementType::Content: {
+        if (pe.ty == PatternElement::ElementType::Content) {
+            contentExportName = pe.elementName;
             Q_ASSERT(nextElementIndex < elementCount);
             if (pe.str.isEmpty()) {
                 contentIndex = 0;
@@ -338,28 +354,15 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
                 contentIndex = contentTypeNameToIndexMap.value(pe.str, -1);
                 Q_ASSERT(contentIndex != -1);
             }
-            contentExportName = pe.elementName;
-
             const PatternElement& nextPE = pattern.pattern.at(nextElementIndex);
             nextElementIndex += 1;
             Q_ASSERT(nextPE.ty != PatternElement::ElementType::Content);
             boundaryExportName = nextPE.elementName;
-            decl.str = nextPE.str;
-            switch (nextPE.ty) {
-            case PatternElement::ElementType::Content: Q_UNREACHABLE(); break;
-            case PatternElement::ElementType::AnonymousBoundary_StringLiteral: {
-                decl.decl = BoundaryDeclaration::DeclarationType::Value;
-                decl.ty = BoundaryType::StringLiteral;
-            }break;
-            case PatternElement::ElementType::AnonymousBoundary_Regex: {
-                decl.decl = BoundaryDeclaration::DeclarationType::Value;
-                decl.ty = BoundaryType::Regex;
-            }break;
-            case PatternElement::ElementType::NamedBoundary: {
-                decl.decl = BoundaryDeclaration::DeclarationType::NameReference;
-            }break;
-            }
-        }break;
+            setDeclByPatternElement(decl, nextPE);
+        } else {
+            // this is a boundary
+            boundaryExportName = pe.elementName;
+            setDeclByPatternElement(decl, pe);
         }
 
         int currentPosition = position + totalConsumeCount;
@@ -445,7 +448,7 @@ std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaratio
             }
             return std::make_pair(firstResult.first, consumeCount - firstResult.first);
         }break;
-        case BoundaryType::Inheritance: return findBoundary_InheritanceBasedBoundary(pos, index, precedingContentTypeIndex);
+        case BoundaryType::ClassBased: return findBoundary_ClassBased(pos, index, precedingContentTypeIndex);
         default: {
             qFatal("Unhandled named boundary");
         }break;
@@ -455,10 +458,10 @@ std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaratio
     Q_UNREACHABLE();
 }
 
-std::pair<int, int> SimpleParser::findBoundary_InheritanceBasedBoundary(int pos, int boundaryIndex, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex)
 {
     const NamedBoundary& boundary = data.namedBoundaries.at(boundaryIndex);
-    Q_ASSERT(boundary.ty == BoundaryType::Inheritance);
+    Q_ASSERT(boundary.ty == BoundaryType::ClassBased);
     std::pair<int, int> bestResult(-1, 0);
     for (const auto& decl : boundary.elements) {
         std::pair<int, int> curResult = findBoundary(pos, decl, precedingContentTypeIndex);
@@ -468,10 +471,10 @@ std::pair<int, int> SimpleParser::findBoundary_InheritanceBasedBoundary(int pos,
             bestResult = curResult;
         }
     }
-    auto iter = inheritanceChildList.find(boundaryIndex);
-    Q_ASSERT(iter != inheritanceChildList.end());
+    auto iter = classBasedBoundaryChildList.find(boundaryIndex);
+    Q_ASSERT(iter != classBasedBoundaryChildList.end());
     for (int child : iter.value()) {
-        std::pair<int, int> curResult = findBoundary_InheritanceBasedBoundary(pos, child, precedingContentTypeIndex);
+        std::pair<int, int> curResult = findBoundary_ClassBased(pos, child, precedingContentTypeIndex);
         if (curResult.first < 0)
             continue;
         if ((bestResult.first == -1) || (bestResult.first > curResult.first) || (bestResult.first == curResult.first && bestResult.second < curResult.second)) {
@@ -662,6 +665,15 @@ std::pair<int, int> SimpleParser::findBoundary_Regex_Impl(int pos, int regexInde
 }
 
 // ----------------------------------------------------------------------------
+
+bool SimpleParser::Data::validate(QString& err) const
+{
+    // TODO
+    Q_UNUSED(err)
+    return true;
+}
+
+// ----------------------------------------------------------------------------
 // XML input / output
 
 namespace {
@@ -699,7 +711,7 @@ const QString XML_SPECIAL_CHARACTER_WHITESPACE_OPTIONAL = QStringLiteral("WhiteS
 const QString XML_SPECIAL_CHARACTER_WHITESPACES = QStringLiteral("WhiteSpaces");
 const QString XML_SPECIAL_CHARACTER_LINEFEED = QStringLiteral("LineFeed");
 const QString XML_CONCATENATION = QStringLiteral("Concatenation");
-const QString XML_INHERITANCE = QStringLiteral("Inheritance");
+const QString XML_CLASSBASED = QStringLiteral("ClassBased");
 const QString XML_ELEMENT_LIST = QStringLiteral("Elements");
 const QString XML_ELEMENT = QStringLiteral("Element");
 
@@ -738,7 +750,7 @@ QString getBoundaryTypeString(SimpleParser::BoundaryType ty)
     case SimpleParser::BoundaryType::SpecialCharacter_WhiteSpaces:          return XML_SPECIAL_CHARACTER_WHITESPACES;
     case SimpleParser::BoundaryType::SpecialCharacter_LineFeed:             return XML_SPECIAL_CHARACTER_LINEFEED;
     case SimpleParser::BoundaryType::Concatenation:                         return XML_CONCATENATION;
-    case SimpleParser::BoundaryType::Inheritance:                           return XML_INHERITANCE;
+    case SimpleParser::BoundaryType::ClassBased:                            return XML_CLASSBASED;
     }
     return QString();
 }
@@ -751,7 +763,7 @@ std::initializer_list<QString> getBoundaryTypeStrings()
         XML_SPECIAL_CHARACTER_WHITESPACES,
         XML_SPECIAL_CHARACTER_LINEFEED,
         XML_CONCATENATION,
-        XML_INHERITANCE
+        XML_CLASSBASED
     });
 }
 
@@ -769,8 +781,8 @@ bool getBoundaryTypeFromString(QStringRef str, SimpleParser::BoundaryType& ty)
         ty = SimpleParser::BoundaryType::SpecialCharacter_LineFeed;
     } else if (str == XML_CONCATENATION) {
         ty = SimpleParser::BoundaryType::Concatenation;
-    } else if (str == XML_INHERITANCE) {
-        ty = SimpleParser::BoundaryType::Inheritance;
+    } else if (str == XML_CLASSBASED) {
+        ty = SimpleParser::BoundaryType::ClassBased;
     } else {
         return false;
     }
@@ -786,6 +798,7 @@ void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
     writeSortedVec(xml, contentTypes,       XML_CONTENT_TYPE_LIST,          XML_CONTENT_TYPE);
     writeSortedVec(xml, parenthesis,        XML_BALANCED_PARENTHESIS_LIST,  XML_PARENTHESIS);
     XMLUtil::writeStringList(xml, whitespaceList, XML_WHITESPACE_LIST, XML_WHITESPACE, true);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -818,6 +831,7 @@ void SimpleParser::MatchRuleNode::saveToXML(QXmlStreamWriter& xml) const
     xml.writeAttribute(XML_NAME, name);
     XMLUtil::writeStringList(xml, parentNodeNameList, XML_PARENT_LIST, XML_PARENT, true);
     XMLUtil::writeLoadableList(xml, patterns, XML_PATTERN_LIST, XML_PATTERN);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::MatchRuleNode::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -840,6 +854,7 @@ void SimpleParser::Pattern::saveToXML(QXmlStreamWriter& xml) const
 {
     xml.writeAttribute(XML_TYPENAME, typeName);
     XMLUtil::writeLoadableList(xml, pattern, XML_PATTERN_ELEMENT_LIST, XML_PATTERN_ELEMENT);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::Pattern::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -864,6 +879,15 @@ void SimpleParser::PatternElement::saveToXML(QXmlStreamWriter& xml) const
     case ElementType::AnonymousBoundary_Regex: {
         xml.writeAttribute(XML_PATTERN_ELEMENT_TYPE, XML_REGEX);
     }break;
+    case ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace: {
+        xml.writeAttribute(XML_PATTERN_ELEMENT_TYPE, XML_SPECIAL_CHARACTER_WHITESPACE_OPTIONAL);
+    }break;
+    case ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces: {
+        xml.writeAttribute(XML_PATTERN_ELEMENT_TYPE, XML_SPECIAL_CHARACTER_WHITESPACES);
+    }break;
+    case ElementType::AnonymousBoundary_SpecialCharacter_LineFeed: {
+        xml.writeAttribute(XML_PATTERN_ELEMENT_TYPE, XML_SPECIAL_CHARACTER_LINEFEED);
+    }break;
     case ElementType::NamedBoundary: {
         xml.writeAttribute(XML_PATTERN_ELEMENT_TYPE, XML_NAMED_BOUNDARY);
     }break;
@@ -873,6 +897,7 @@ void SimpleParser::PatternElement::saveToXML(QXmlStreamWriter& xml) const
     }
     xml.writeTextElement(XML_STRING, str);
     xml.writeTextElement(XML_PATTERN_ELEMENT_EXPORT_NAME, elementName);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::PatternElement::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -882,6 +907,12 @@ bool SimpleParser::PatternElement::loadFromXML(QXmlStreamReader& xml, StringCach
             ty = ElementType::AnonymousBoundary_StringLiteral;
         } else if (tyStr == XML_REGEX) {
             ty = ElementType::AnonymousBoundary_Regex;
+        } else if (tyStr == XML_SPECIAL_CHARACTER_WHITESPACE_OPTIONAL) {
+            ty = ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace;
+        } else if (tyStr == XML_SPECIAL_CHARACTER_WHITESPACES) {
+            ty = ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces;
+        } else if (tyStr == XML_SPECIAL_CHARACTER_LINEFEED) {
+            ty = ElementType::AnonymousBoundary_SpecialCharacter_LineFeed;
         } else if (tyStr == XML_NAMED_BOUNDARY) {
             ty = ElementType::NamedBoundary;
         } else if (tyStr == XML_CONTENT) {
@@ -910,9 +941,10 @@ void SimpleParser::NamedBoundary::saveToXML(QXmlStreamWriter& xml) const
     xml.writeAttribute(XML_TYPE, getBoundaryTypeString(ty));
     xml.writeTextElement(XML_NAME, name);
     XMLUtil::writeLoadableList(xml, elements, XML_ELEMENT_LIST, XML_ELEMENT);
-    if (ty == BoundaryType::Inheritance) {
+    if (ty == BoundaryType::ClassBased) {
         XMLUtil::writeStringList(xml, parentList, XML_PARENT_LIST, XML_PARENT, true);
     }
+    xml.writeEndElement();
 }
 
 bool SimpleParser::NamedBoundary::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -930,7 +962,7 @@ bool SimpleParser::NamedBoundary::loadFromXML(QXmlStreamReader& xml, StringCache
     if (Q_UNLIKELY(!XMLUtil::readLoadableList(xml, curElement, XML_ELEMENT_LIST, XML_ELEMENT, elements, strCache))) {
         return false;
     }
-    if (ty == BoundaryType::Inheritance) {
+    if (ty == BoundaryType::ClassBased) {
         if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_PARENT_LIST, XML_PARENT, parentList, strCache))) {
             return false;
         }
@@ -952,6 +984,7 @@ void SimpleParser::BoundaryDeclaration::saveToXML(QXmlStreamWriter& xml) const
         xml.writeTextElement(XML_NAME, str);
     }break;
     }
+    xml.writeEndElement();
 }
 
 bool SimpleParser::BoundaryDeclaration::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -996,6 +1029,7 @@ void SimpleParser::ContentType::saveToXML(QXmlStreamWriter& xml) const
 {
     xml.writeTextElement(XML_NAME, name);
     XMLUtil::writeStringList(xml, acceptedParenthesisNest, XML_CONTENT_ACCEPTED_PARENTHESIS_LIST, XML_PARENTHESIS, true);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::ContentType::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -1016,6 +1050,7 @@ void SimpleParser::BalancedParenthesis::saveToXML(QXmlStreamWriter& xml) const
     xml.writeTextElement(XML_NAME, name);
     xml.writeTextElement(XML_OPEN, open);
     xml.writeTextElement(XML_CLOSE, close);
+    xml.writeEndElement();
 }
 
 bool SimpleParser::BalancedParenthesis::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)

@@ -46,6 +46,8 @@ public:
         Data_MIME,
         Task_SimpleTreeTransform,
         Exec_SimpleTreeTransform,
+        Task_SimpleParser,
+        Exec_SimpleParser,
         Task_Test,
         Exec_Test
     };

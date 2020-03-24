@@ -42,6 +42,11 @@ public:
         Cause cause = Cause::NoError;
         QString firstFatalErrorDescription;
         ObjectBase::NamedReference firstUnresolvedReference;
+
+        PreparationError() = default;
+        explicit PreparationError(const QString& err)
+            : cause (Cause::InvalidTask), firstFatalErrorDescription(err)
+        {}
     };
 
     enum InputFlag {
