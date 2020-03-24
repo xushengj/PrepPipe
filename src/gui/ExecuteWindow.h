@@ -10,7 +10,9 @@
 #include <QCheckBox>
 #include <QTreeWidgetItem>
 #include <QIcon>
+#ifndef SUPP_NO_THREADS
 #include <QThread>
+#endif
 
 namespace Ui {
 class ExecuteWindow;
@@ -99,7 +101,9 @@ private:
     const QHash<QString, QVector<OutputAction>> taskOutputDecl;
     ObjectContext clonedTaskInputs;
     QHash<QTreeWidgetItem*, ObjectListItemData> itemData;
+#ifndef SUPP_NO_THREADS
     QThread* executeThread = nullptr;
+#endif
     QList<ObjectBase*> pendingOutput;
     bool isRunning = false;
     bool isExitRequested = false;

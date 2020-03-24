@@ -5,8 +5,10 @@
 #include <QElapsedTimer>
 #include <QTemporaryFile>
 #include <QBuffer>
+#ifndef SUPP_NO_THREADS
 #include <QThread>
 #include <QLinkedList>
+#endif
 
 class MessageLogger : public QObject
 {
@@ -20,6 +22,7 @@ public:
 
     void bootstrapFinished(QWidget* mainWindow);
 
+#ifndef SUPP_NO_THREADS
     struct ThreadInfo {
         QThread thread;
         QString description;
@@ -32,6 +35,7 @@ public:
     // otherwise threadInfo will be corrupted
     QThread* createThread(const QString& description, std::function<void()> fatalEventCallback);
     void cleanupThread(QThread* thread);
+#endif
 
     qint64 getMSecSinceBootstrap() const {
         return timer.elapsed();
@@ -68,7 +72,9 @@ private:
     QWidget* window = nullptr;
     QTemporaryFile logFile;
     bool isFatalEventOccurred = false;
+#ifndef SUPP_NO_THREADS
     QList<ThreadInfo*> threadInfo;
+#endif
 
 friend QIODevice* getLogDestination();
 };

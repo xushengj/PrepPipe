@@ -22,7 +22,9 @@ MessageLogger::MessageLogger(QObject *parent) : QObject(parent)
 
 MessageLogger::~MessageLogger()
 {
+#ifndef SUPP_NO_THREADS
     Q_ASSERT(threadInfo.isEmpty());
+#endif
 
     if (isFatalEventOccurred) {
         logFile.setAutoRemove(false);
@@ -63,16 +65,18 @@ void MessageLogger::bootstrapFinished(QWidget* mainWindow)
     qInstallMessageHandler(MessageLogger::normalMessageHandler);
 }
 
+#ifndef SUPP_NO_THREADS
 namespace {
 QThreadStorage<QTemporaryFile*> logDestination;
 } // end of anonymous namespace
-
+#endif
 
 QIODevice* getLogDestination()
 {
+#ifndef SUPP_NO_THREADS
     if (Q_UNLIKELY(!logDestination.hasLocalData())) {
-        QThread* t = QThread::currentThread();
         MessageLogger* logger = MessageLogger::inst();
+        QThread* t = QThread::currentThread();
         for (auto& info : logger->threadInfo){
             if (&info->thread == t)
                 return &info->log;
@@ -80,6 +84,9 @@ QIODevice* getLogDestination()
         return &logger->logFile;
     }
     return logDestination.localData();
+#else
+    return &MessageLogger::inst()->logFile;
+#endif
 }
 
 void MessageLogger::openLogFile()
@@ -109,6 +116,7 @@ QIODevice *MessageLogger::startExceptionInfoDump()
 void MessageLogger::crashReportWrapup()
 {
     // step 1: find current thread
+#ifndef SUPP_NO_THREADS
     QThread* curThread = QThread::currentThread();
     for (auto& info : ptr->threadInfo) {
         if (&info->thread == curThread) {
@@ -120,11 +128,13 @@ void MessageLogger::crashReportWrapup()
             return;
         }
     }
+#endif
 
     // callee will also flush the log file
     ptr->mainThreadFatalEventWrapup_Unsafe();
 }
 
+#ifndef SUPP_NO_THREADS
 QThread* MessageLogger::createThread(const QString& description, std::function<void()> fatalEventCallback)
 {
     ThreadInfo* infoPtr = new ThreadInfo;
@@ -164,6 +174,7 @@ void MessageLogger::cleanupThread(QThread* thread)
     }
     qFatal("thread for cleanup is not found");
 }
+#endif /* SUPP_NO_THREADS */
 
 #define HEADER_BUFFER_SIZE 64
 namespace {

@@ -63,6 +63,7 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
     inputDataRoot->setExpanded(true);
     outputDataRoot->setExpanded(true);
 
+#ifndef SUPP_NO_THREADS
     executeThread = MessageLogger::inst()->createThread(tr("Execution thread"), [this]() -> void {
         // warning: this lambda will be executed in executeThread
         // when a fatal event happens, executeThread will just keep spinning in this loop
@@ -71,6 +72,7 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
         QMetaObject::invokeMethod(this, &ExecuteWindow::executionThreadFatalEventSlot, Qt::QueuedConnection);
         while(true){}
     });
+#endif
 
     // populate all dependent executable objects
     addExecuteObjects(top, executeObjectRoot);
@@ -151,7 +153,9 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
 
 void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
 {
+#ifndef SUPP_NO_THREADS
     top->moveToThread(executeThread);
+#endif
     ObjectListItemData curItemData;
     curItemData.obj = top;
     curItemData.item = item;
@@ -294,7 +298,9 @@ void ExecuteWindow::initialize()
     connect(executeRoot, &ExecuteObject::finished, this, &ExecuteWindow::finalize, Qt::QueuedConnection);
     connect(executeRoot, &ExecuteObject::outputAvailable, this, &ExecuteWindow::handleOutput, Qt::QueuedConnection);
     QMetaObject::invokeMethod(executeRoot, &ExecuteObject::start, Qt::QueuedConnection);
+#ifndef SUPP_NO_THREADS
     executeThread->start();
+#endif
     isRunning = true;
 }
 
@@ -311,9 +317,10 @@ void ExecuteWindow::executionThreadFatalEventSlot()
 void ExecuteWindow::finalize(int rootExitCode, int causeInt)
 {
     ExecuteObject::ExitCause cause = static_cast<ExecuteObject::ExitCause>(causeInt);
-    Q_ASSERT(executeThread);
     isRunning = false;
     // stop the thread first
+#ifndef SUPP_NO_THREADS
+    Q_ASSERT(executeThread);
     switch(cause) {
     case ExecuteObject::ExitCause::FatalEvent: {
         executeThread->terminate();
@@ -324,6 +331,7 @@ void ExecuteWindow::finalize(int rootExitCode, int causeInt)
     }
     }
     executeThread->wait();
+#endif
 
     qInfo() << "Execution finished with exit code " << rootExitCode << " and cause " << static_cast<int>(cause);
     switch(cause) {
@@ -346,21 +354,27 @@ void ExecuteWindow::finalize(int rootExitCode, int causeInt)
         // try to make sure the message box is shown before we start to concatenate logs (which can take a while)
         QApplication::processEvents();
         // heavy lifting
+#ifndef SUPP_NO_THREADS
         MessageLogger::inst()->cleanupThread(executeThread);
         executeThread = nullptr;
+#endif
         // done
         MessageLogger::inst()->openLogFile();
     }break;
     case ExecuteObject::ExitCause::Terminated: {
         // do nothing else; just exit
+#ifndef SUPP_NO_THREADS
         MessageLogger::inst()->cleanupThread(executeThread);
         executeThread = nullptr;
+#endif
         close();
         deleteLater();
     }break;
     case ExecuteObject::ExitCause::Completed: {
+#ifndef SUPP_NO_THREADS
         MessageLogger::inst()->cleanupThread(executeThread);
         executeThread = nullptr;
+#endif
         updateCurrentExecutionStatus(tr("Completed"), 0, 1, 1);
         bool isExecutionGood = (rootExitCode == 0);
         bool isAutoClose = isExecutionGood ? (launchOptions.flags & TaskObject::LaunchFlag::Finalize_AutoCloseIfSuccess)
@@ -432,7 +446,9 @@ void ExecuteWindow::closeEvent(QCloseEvent* event)
     isExitRequested = true;
     disconnect(executeRoot, &ExecuteObject::statusUpdate, this, &ExecuteWindow::updateCurrentExecutionStatus);
     updateCurrentExecutionStatus(tr("Waiting for termination"), 0, 0, 0);
+#ifndef SUPP_NO_THREADS
     executeThread->requestInterruption();
+#endif
     event->ignore();
 }
 
@@ -440,12 +456,14 @@ ExecuteWindow::~ExecuteWindow()
 {
     delete ui;
 
+#ifndef SUPP_NO_THREADS
     if (executeThread) {
         // we probably just exited the window without launching any task
         Q_ASSERT(!executeThread->isRunning());
         MessageLogger::inst()->cleanupThread(executeThread);
         executeThread = nullptr;
     }
+#endif
 
     if (!pendingOutput.isEmpty()) {
         writeBackOutputs();
