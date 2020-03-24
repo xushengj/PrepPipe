@@ -97,7 +97,12 @@ int Tree::nodeTraverse(int currentNodeIndex, const Node& localValueEvaluationNod
             // note: this means that when applying the filter,
             // there is no difference between "there is a key-value pair with empty value"
             // and "there is no such a key-value pair with given key"
-            if ((index == -1 && !iter.value().isEmpty()) || (node.valueList.at(index) != iter.value())) {
+            if (index == -1) {
+                if (!iter.value().isEmpty()) {
+                    isKeyValueCheckFailed = true;
+                    break;
+                }
+            } else if (node.valueList.at(index) != iter.value()) {
                 isKeyValueCheckFailed = true;
                 break;
             }
@@ -314,10 +319,14 @@ bool Tree::LocalValueExpression::loadFromXML(QXmlStreamReader& xml, StringCache 
             return false;
         }
     }
-
     if (ty != ValueType::NodeType) {
         // we need to read a string that's either the literal or the key for key value pair
-        if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+        if (Q_LIKELY(xml.readNext() == QXmlStreamReader::Characters)) {
+            str = strCache(xml.text());
+            xml.skipCurrentElement();
+        } else if (Q_LIKELY(xml.tokenType() == QXmlStreamReader::EndElement)) {
+            str.clear();
+        } else {
             auto msg = qWarning();
             switch (ty) {
             case ValueType::NodeType: Q_UNREACHABLE();
@@ -331,13 +340,11 @@ bool Tree::LocalValueExpression::loadFromXML(QXmlStreamReader& xml, StringCache 
             msg << "Unexpected xml token " << xml.tokenString() << "(Expecting Characters)";
             return false;
         }
-        str = strCache(xml.text());
-
     } else {
         str.clear();
+        xml.skipCurrentElement();
     }
 
-    xml.skipCurrentElement();
     return true;
 }
 
@@ -352,6 +359,8 @@ const QString XML_STEP_KEYVALUEFILTER = QStringLiteral("KeyValueFilter");
 const QString XML_KEY = QStringLiteral("Key");
 const QString XML_VALUE = QStringLiteral("Value");
 const QString XML_TREEINDEX = QStringLiteral("TreeIndex");
+const QString XML_INDEX_DETERMINER = QStringLiteral("IndexDeterminer");
+const QString XML_OFFSET_DETERMINER = QStringLiteral("OffsetDeterminer");
 } // end of anonymous namespace
 
 void Tree::NodeTraverseStep::saveToXML(QXmlStreamWriter& xml) const
@@ -382,6 +391,12 @@ void Tree::NodeTraverseStep::saveToXML(QXmlStreamWriter& xml) const
             xml.writeEndElement();
         }
     }
+    if (indexDeterminer != -1) {
+        xml.writeTextElement(XML_INDEX_DETERMINER, QString::number(indexDeterminer));
+    }
+    if (offsetDeterminer != 0) {
+        xml.writeTextElement(XML_OFFSET_DETERMINER, QString::number(offsetDeterminer));
+    }
     xml.writeEndElement();
 }
 
@@ -409,6 +424,8 @@ bool Tree::NodeTraverseStep::loadFromXML(QXmlStreamReader& xml, StringCache& str
     }
     childTypeFilter.clear();
     keyValueFilter.clear();
+    indexDeterminer = -1;
+    offsetDeterminer = 0;
     while (xml.readNextStartElement()) {
         Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
         if (xml.name() == XML_STEP_KEYVALUEFILTER) {
@@ -451,6 +468,38 @@ bool Tree::NodeTraverseStep::loadFromXML(QXmlStreamReader& xml, StringCache& str
             childTypeFilter = strCache(xml.text());
             if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
                 qWarning() << "When wrapping up" << XML_STEP_TYPEFILTER << ": unexpected xml token " << xml.tokenString() << "(Expecting EndElement)";
+                return false;
+            }
+        } else if (xml.name() == XML_INDEX_DETERMINER) {
+            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+                qWarning() << "When reading" << XML_INDEX_DETERMINER << ": unexpected xml token " << xml.tokenString() << "(Expecting Characters)";
+                return false;
+            }
+            bool isGood = false;
+            indexDeterminer = xml.text().toInt(&isGood);
+            if (!isGood) {
+                indexDeterminer = -1;
+                qWarning() << "When reading" << XML_INDEX_DETERMINER << ": invalid value " << xml.text() << "(Expecting Integer)";
+                return false;
+            }
+            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+                qWarning() << "When wrapping up" << XML_INDEX_DETERMINER << ": unexpected xml token " << xml.tokenString() << "(Expecting EndElement)";
+                return false;
+            }
+        } else if (xml.name() == XML_OFFSET_DETERMINER) {
+            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+                qWarning() << "When reading" << XML_OFFSET_DETERMINER << ": unexpected xml token " << xml.tokenString() << "(Expecting Characters)";
+                return false;
+            }
+            bool isGood = false;
+            offsetDeterminer = xml.text().toInt(&isGood);
+            if (!isGood) {
+                offsetDeterminer = 0;
+                qWarning() << "When reading" << XML_OFFSET_DETERMINER << ": invalid value " << xml.text() << "(Expecting Integer)";
+                return false;
+            }
+            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+                qWarning() << "When wrapping up" << XML_OFFSET_DETERMINER << ": unexpected xml token " << xml.tokenString() << "(Expecting EndElement)";
                 return false;
             }
         } else {
