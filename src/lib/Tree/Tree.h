@@ -236,6 +236,12 @@ public:
 
     void swap(TreeBuilder& rhs) {
         nodes.swap(rhs.nodes);
+        Node* tmpRoot = root;
+        int tmpSeqCounter = sequenceCounter;
+        root = rhs.root;
+        sequenceCounter = rhs.sequenceCounter;
+        rhs.root = tmpRoot;
+        rhs.sequenceCounter = tmpSeqCounter;
     }
 
     void setRoot(Node* newRoot){root = newRoot;}

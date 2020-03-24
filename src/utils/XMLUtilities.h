@@ -50,6 +50,19 @@ bool readEnum(QXmlStreamReader& xml, const char* const currentElement,
               std::initializer_list<QString> possibleValues);
 
 /**
+ * @brief readString read a string element in form of <stringElement>str</stringElement>
+ * @param xml the xml must be before the StartElement of enumElement
+ * @param currentElement a string representing the current element / class (for logging purpose only)
+ * @param stringElement the expected xml element name of the string
+ * @param str lvalue reference of string to read
+ * @param strCache the string cache
+ * @return true on success, false otherwise
+ */
+bool readString(QXmlStreamReader& xml, const char* const currentElement,
+                const QString& stringElement,
+                QString& str, StringCache &strCache);
+
+/**
  * @brief readAttribute read an attribute when current xml token is StartElement
  * @param xml the xml reader whose current token is StartElement
  * @param currentElement a string representing the current element / class (for logging purpose only)
@@ -95,6 +108,8 @@ bool readStringList(QXmlStreamReader& xml, const char* const currentElement,
                     const QString& stringListElement,
                     const QString& listEntryElementName,
                     QStringList& list, StringCache &strCache);
+
+void writeStringList(QXmlStreamWriter& xml, const QStringList& list, const QString& stringListElement, const QString& listEntryElementName, bool sort = false);
 
 /**
  * @brief readGeneralList read a general list
@@ -260,6 +275,19 @@ bool readLoadableList(QXmlStreamReader& xml, const char* const currentElement,
         return XMLError::missingEndElement(qWarning(), xml, currentElement, listElement);
     }
     return true;
+}
+
+template <typename ListOfLoadable>
+void writeLoadableList(QXmlStreamWriter& xml, const ListOfLoadable& list,
+                       const QString& listElement,
+                       const QString& listEntryElementName)
+{
+    xml.writeStartElement(listElement);
+    for (const auto& element : list) {
+        xml.writeStartElement(listEntryElementName);
+        element.saveToXML(xml);
+    }
+    xml.writeEndElement();
 }
 } // namespace XMLUtil
 

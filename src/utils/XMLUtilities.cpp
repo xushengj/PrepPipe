@@ -57,6 +57,33 @@ bool XMLUtil::readEnum(
     return true;
 }
 
+bool XMLUtil::readString(
+        QXmlStreamReader& xml, const char* const currentElement,
+        const QString& stringElement,
+        QString& str,
+        StringCache& strCache)
+{
+    if (Q_UNLIKELY(!xml.readNextStartElement())) {
+        return XMLError::missingStartElement(qWarning(), xml, currentElement, stringElement);
+    }
+    if (Q_UNLIKELY(xml.name() != stringElement)) {
+        return XMLError::unexpectedElement(qWarning(), xml, currentElement, stringElement);
+    }
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+        // also accept when string is empty
+        if (Q_LIKELY(xml.tokenType() == QXmlStreamReader::EndElement)) {
+            str.clear();
+            return true;
+        }
+        return XMLError::notHavingCharacter(qWarning(), xml, currentElement, stringElement);
+    }
+    str = strCache(xml.text());
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+        return XMLError::missingEndElement(qWarning(), xml, currentElement, stringElement);
+    }
+    return true;
+}
+
 bool XMLUtil::readAttribute(
         QXmlStreamReader& xml, const char* const currentElement,
         const QString& attributedElement,
@@ -129,6 +156,23 @@ bool XMLUtil::readStringList(QXmlStreamReader& xml, const char* const currentEle
         return XMLError::missingEndElement(qWarning(), xml, currentElement, stringListElement);
     }
     return true;
+}
+
+void XMLUtil::writeStringList(QXmlStreamWriter& xml, const QStringList& list, const QString& stringListElement, const QString& listEntryElementName, bool sort)
+{
+    xml.writeStartElement(stringListElement);
+    if (sort) {
+        QStringList tmp = list;
+        tmp.sort();
+        for (const auto& str : tmp) {
+            xml.writeTextElement(listEntryElementName, str);
+        }
+    } else {
+        for (const auto& str : list) {
+            xml.writeTextElement(listEntryElementName, str);
+        }
+    }
+    xml.writeEndElement();
 }
 
 bool XMLUtil::readGeneralList(QXmlStreamReader& xml, const char* const currentElement,
