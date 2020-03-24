@@ -145,11 +145,14 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
     struct RuleStackFrame {
         TreeBuilder::Node* ptr = nullptr;
-        const QVector<int>& childMatchRules;
+        QVector<int> childMatchRules;
 
+        RuleStackFrame() = default;
         RuleStackFrame(TreeBuilder::Node* node, const QVector<int>& child)
             : ptr(node), childMatchRules(child)
         {}
+        RuleStackFrame(const RuleStackFrame&) = default;
+        RuleStackFrame(RuleStackFrame&&) = default;
     };
     QVector<RuleStackFrame> ruleStack;
 
@@ -242,6 +245,10 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
     while (pos < src.length()) {
         QStringRef str(&src, pos, src.length() - pos);
         bool isWhiteSpaceFound = false;
+        if (str.startsWith('\n')) {
+            pos += 1;
+            continue;
+        }
         for (const auto& ws : data.whitespaceList) {
             if (str.startsWith(ws)) {
                 pos += ws.length();
@@ -254,6 +261,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
         // we find strings that are not "whitespace"
         // TODO generate a warning
+        break;
     }
 
     Tree tree(builder);
@@ -500,15 +508,18 @@ int SimpleParser::findNextStringMatch(int startPos, const QString& str)
 
     // first, check if there is already a record that covers this search
     auto iter = map.lowerBound(startPos);
-    Q_ASSERT(iter.key() >= startPos);
-    if (iter.key() == startPos || (iter.key() > startPos && iter.value() <= startPos)) {
-        if (iter.key() >= state.strLength) {
-            // this mean that the string do not appear in the rest of text
-            return -1;
+    if (iter != map.end()) {
+        Q_ASSERT(iter.key() >= startPos);
+        if (iter.key() == startPos || (iter.key() > startPos && iter.value() <= startPos)) {
+            if (iter.key() >= state.strLength) {
+                // this mean that the string do not appear in the rest of text
+                return -1;
+            }
+            // this is a valid result
+            return iter.key() - startPos;
         }
-        // this is a valid result
-        return iter.key() - startPos;
     }
+
 
     // actually do the search
     int index = state.str->indexOf(str, startPos);
@@ -516,7 +527,7 @@ int SimpleParser::findNextStringMatch(int startPos, const QString& str)
     if (index == -1) {
         key = state.strLength;
     }
-    if (key == iter.key()) {
+    if (iter != map.end() && key == iter.key()) {
         iter.value() = startPos;
     } else {
         map.insert(key, startPos);
@@ -532,14 +543,16 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
 {
     // first, check if there is already a record that covers this search
     auto iter = positionMap.lowerBound(startPos);
-    Q_ASSERT(iter.key() >= startPos);
-    if (iter.key() == startPos || (iter.key() > startPos && iter.value().first <= startPos)) {
-        if (iter.key() >= state.strLength) {
-            // this mean that the string do not appear in the rest of text
-            return std::make_pair(-1, 0);
+    if (iter != positionMap.end()) {
+        Q_ASSERT(iter.key() >= startPos);
+        if (iter.key() == startPos || (iter.key() > startPos && iter.value().first <= startPos)) {
+            if (iter.key() >= state.strLength) {
+                // this mean that the string do not appear in the rest of text
+                return std::make_pair(-1, 0);
+            }
+            // this is a valid result
+            return std::make_pair(iter.key() - startPos, iter.value().second.length);
         }
-        // this is a valid result
-        return std::make_pair(iter.key() - startPos, iter.value().second.length);
     }
 
     // actually do the match
@@ -547,8 +560,9 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
     if (match.hasMatch()) {
         int startOffset = match.capturedStart();
         int length = match.capturedEnd() - startOffset;
+        int matchPos = startOffset + startPos;
 
-        if (iter.key() == startOffset) {
+        if (iter != positionMap.end() && iter.key() == matchPos) {
             // same match
             iter.value().first = startPos;
         } else {
@@ -560,12 +574,12 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
             for (int i = 0; i < numCaptures; ++i) {
                 data.namedCaptures.push_back(match.capturedRef(i+1));
             }
-            positionMap.insert(startOffset, std::make_pair(startPos, data));
+            positionMap.insert(matchPos, std::make_pair(startPos, data));
         }
 
-        return std::make_pair(startOffset - startPos, length);
+        return std::make_pair(startOffset, length);
     } else {
-        if (iter.key() == state.strLength) {
+        if (iter != positionMap.end() && iter.key() == state.strLength) {
             iter.value().first = startPos;
         } else {
             positionMap.insert(state.strLength, std::make_pair(startPos, ParseState::RegexMatchData()));
@@ -611,7 +625,13 @@ std::pair<int, int> SimpleParser::findBoundary_Regex(int pos, const QString& str
 
 std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex)
 {
-    return findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_OptionalWhiteSpace, precedingContentTypeIndex);
+    // it seems that if the next character is \n, it will give "no match" result
+    // add workaround here
+    std::pair<int, int> result = findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_OptionalWhiteSpace, precedingContentTypeIndex);
+    if (result.first == -1) {
+        return std::make_pair(0, 0);
+    }
+    return result;
 }
 
 std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex)
