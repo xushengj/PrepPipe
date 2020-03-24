@@ -233,6 +233,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
         TreeBuilder::Node* parent = frame.ptr;
         node->setParent(parent);
         pos += curBestResult.totalConsumedLength;
+        state.curPosition = pos;
 
         const auto& childRules = childNodeMatchRuleVec.at(childNodeRuleIndex);
         if (!childRules.isEmpty()) {
@@ -288,6 +289,7 @@ void SimpleParser::ParseState::set(const QString& text)
 {
     str = &text;
     strLength = text.length();
+    curPosition = 0;
 }
 
 int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
@@ -506,7 +508,19 @@ int SimpleParser::findNextStringMatch(int startPos, const QString& str)
 {
     QMap<int, int>& map = state.stringLiteralPositionMap[str];
 
-    // first, check if there is already a record that covers this search
+    // remove "expired" entries first
+    {
+        auto iter = map.begin();
+        while (iter != map.end()) {
+            if (iter.key() < state.curPosition) {
+                iter = map.erase(iter);
+            } else {
+                break;
+            }
+        }
+    }
+
+    // check if there is already a record that covers this search
     auto iter = map.lowerBound(startPos);
     if (iter != map.end()) {
         Q_ASSERT(iter.key() >= startPos);
@@ -541,7 +555,19 @@ int SimpleParser::findNextStringMatch(int startPos, const QString& str)
 
 std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegularExpression& regex, QMap<int, std::pair<int, ParseState::RegexMatchData>>& positionMap)
 {
-    // first, check if there is already a record that covers this search
+    // remove "expired" entries first
+    {
+        auto iter = positionMap.begin();
+        while (iter != positionMap.end()) {
+            if (iter.key() < state.curPosition) {
+                iter = positionMap.erase(iter);
+            } else {
+                break;
+            }
+        }
+    }
+
+    // check if there is already a record that covers this search
     auto iter = positionMap.lowerBound(startPos);
     if (iter != positionMap.end()) {
         Q_ASSERT(iter.key() >= startPos);

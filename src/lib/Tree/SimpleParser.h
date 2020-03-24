@@ -145,6 +145,7 @@ public:
         QList<QRegularExpression> regexList;
         QList<QMap<int, std::pair<int, RegexMatchData>>> regexMatchPositionMap;
         int strLength = 0;
+        int curPosition = 0;
 
         void clear();
         void set(const QString& text);
