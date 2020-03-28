@@ -96,7 +96,9 @@ int SimpleParserExecuteObject::startImpl(ExitCause& cause)
 
     Tree treeOut;
     bool isGood = parser.performParsing(text, treeOut);
-    Q_ASSERT(isGood);
+    if (Q_UNLIKELY(!isGood)) {
+        return 1;
+    }
     GeneralTreeObject* output = new GeneralTreeObject(treeOut);
     emit outputAvailable(QString(), output);
     return 0;

@@ -145,11 +145,17 @@ bool XMLUtil::readStringList(QXmlStreamReader& xml, const char* const currentEle
             return XMLError::unexpectedElement(qWarning(), xml, currentElement, listEntryElementName);
         }
         if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
-            return XMLError::notHavingCharacter(qWarning(), xml, currentElement, listEntryElementName);
-        }
-        list.push_back(strCache(xml.text()));
-        if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
-            return XMLError::missingEndElement(qWarning(), xml, currentElement, listEntryElementName);
+            if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
+                return XMLError::notHavingCharacter(qWarning(), xml, currentElement, listEntryElementName);
+            } else {
+                // empty strinng
+                list.push_back(QString());
+            }
+        } else {
+            list.push_back(strCache(xml.text()));
+            if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+                return XMLError::missingEndElement(qWarning(), xml, currentElement, listEntryElementName);
+            }
         }
     }
     if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
@@ -173,6 +179,97 @@ void XMLUtil::writeStringList(QXmlStreamWriter& xml, const QStringList& list, co
         }
     }
     xml.writeEndElement();
+}
+
+void XMLUtil::writeStringListHash(
+        QXmlStreamWriter& xml,
+        const QHash<QString, QStringList>& hash,
+        const QString& hashName,
+        const QString& hashEntryName,
+        const QString& hashKeyAttributeName,
+        const QString& stringElementName,
+        bool sortString)
+{
+    xml.writeStartElement(hashName);
+    QStringList keys = hash.keys();
+    keys.sort();
+    for (const auto& key : keys) {
+        auto iter = hash.find(key);
+        xml.writeStartElement(hashEntryName);
+        xml.writeAttribute(hashKeyAttributeName, key);
+        QStringList list = iter.value();
+        if (sortString) {
+            QStringList tmp = list;
+            tmp.sort();
+            for (const auto& str : tmp) {
+                xml.writeTextElement(stringElementName, str);
+            }
+        } else {
+            for (const auto& str : list) {
+                xml.writeTextElement(stringElementName, str);
+            }
+        }
+        xml.writeEndElement();
+    }
+    xml.writeEndElement();
+}
+
+bool XMLUtil::readStringListHash(QXmlStreamReader& xml,
+        const char* const currentElement,
+        const QString& hashName,
+        const QString& hashEntryName,
+        const QString& hashKeyName,
+        const QString& stringElementName,
+        QHash<QString, QStringList>& hash,
+        StringCache &strCache)
+{
+    if (Q_UNLIKELY(!xml.readNextStartElement())) {
+        return XMLError::missingStartElement(qWarning(), xml, currentElement, hashName);
+    }
+    if (Q_UNLIKELY(xml.name() != hashName)) {
+        return XMLError::unexpectedElement(qWarning(), xml, currentElement, hashName);
+    }
+    hash.clear();
+    while (xml.readNextStartElement()) {
+        Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+        if (Q_UNLIKELY(xml.name() != hashEntryName)) {
+            return XMLError::unexpectedElement(qWarning(), xml, currentElement, hashEntryName);
+        }
+        QString key;
+        if (Q_UNLIKELY(!readStringAttribute(xml, currentElement, hashEntryName, hashKeyName, key, strCache))) {
+            return XMLError::failOnChild(qWarning(), currentElement, hashEntryName);
+        }
+        QStringList list;
+        {
+            while (xml.readNextStartElement()) {
+                Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+                if (Q_UNLIKELY(xml.name() != stringElementName)) {
+                    return XMLError::unexpectedElement(qWarning(), xml, currentElement, stringElementName);
+                }
+                if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+                    if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
+                        return XMLError::notHavingCharacter(qWarning(), xml, currentElement, stringElementName);
+                    } else {
+                        // empty strinng
+                        list.push_back(QString());
+                    }
+                } else {
+                    list.push_back(strCache(xml.text()));
+                    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+                        return XMLError::missingEndElement(qWarning(), xml, currentElement, stringElementName);
+                    }
+                }
+            }
+            if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
+                return XMLError::missingEndElement(qWarning(), xml, currentElement, stringElementName);
+            }
+        }
+        hash.insert(key, list);
+    }
+    if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
+        return XMLError::missingEndElement(qWarning(), xml, currentElement, hashName);
+    }
+    return true;
 }
 
 bool XMLUtil::readGeneralList(QXmlStreamReader& xml, const char* const currentElement,

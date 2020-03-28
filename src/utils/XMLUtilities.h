@@ -111,6 +111,21 @@ bool readStringList(QXmlStreamReader& xml, const char* const currentElement,
 
 void writeStringList(QXmlStreamWriter& xml, const QStringList& list, const QString& stringListElement, const QString& listEntryElementName, bool sort = false);
 
+void writeStringListHash(QXmlStreamWriter& xml,
+                         const QHash<QString, QStringList>& hash,
+                         const QString& hashName,
+                         const QString& hashEntryName,
+                         const QString& hashKeyAttributeName,
+                         const QString& stringElementName,
+                         bool sortString);
+bool readStringListHash(QXmlStreamReader& xml, const char* const currentElement,
+                        const QString& hashName,
+                        const QString& hashEntryName,
+                        const QString& hashKeyName,
+                        const QString& stringElementName,
+                        QHash<QString, QStringList>& hash,
+                        StringCache &strCache);
+
 /**
  * @brief readGeneralList read a general list
  *
@@ -286,6 +301,64 @@ void writeLoadableList(QXmlStreamWriter& xml, const ListOfLoadable& list,
     for (const auto& element : list) {
         xml.writeStartElement(listEntryElementName);
         element.saveToXML(xml);
+    }
+    xml.writeEndElement();
+}
+
+template <typename Loadable>
+bool readLoadableHash(
+        QXmlStreamReader& xml, const char* const currentElement,
+        const QString& hashName,
+        const QString& hashEntryName,
+        const QString& hashKeyName,
+        QHash<QString, Loadable>& hash,
+        StringCache& strCache)
+{
+    if (Q_UNLIKELY(!xml.readNextStartElement())) {
+        return XMLError::missingStartElement(qWarning(), xml, currentElement, hashName);
+    }
+    if (Q_UNLIKELY(xml.name() != hashName)) {
+        return XMLError::unexpectedElement(qWarning(), xml, currentElement, hashName);
+    }
+    hash.clear();
+    while (xml.readNextStartElement()) {
+        Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+        if (Q_UNLIKELY(xml.name() != hashEntryName)) {
+            return XMLError::unexpectedElement(qWarning(), xml, currentElement, hashEntryName);
+        }
+        QString key;
+        if (Q_UNLIKELY(!readStringAttribute(xml, currentElement, hashEntryName, hashKeyName, key, strCache))) {
+            return XMLError::failOnChild(qWarning(), currentElement, hashEntryName);
+        }
+        Loadable dummy;
+        auto iter = hash.insert(key, dummy);
+        if (Q_UNLIKELY(!iter.value().loadFromXML(xml, strCache))) {
+            return XMLError::failOnChild(qWarning(), currentElement, hashEntryName);
+        }
+        Q_ASSERT(xml.tokenType() == QXmlStreamReader::EndElement);
+    }
+    if (Q_UNLIKELY(xml.tokenType() != QXmlStreamReader::EndElement)) {
+        return XMLError::missingEndElement(qWarning(), xml, currentElement, hashName);
+    }
+    return true;
+}
+
+template <typename Loadable>
+void writeLoadableHash(
+        QXmlStreamWriter& xml,
+        const QHash<QString, Loadable>& hash,
+        const QString& hashName,
+        const QString& hashEntryName,
+        const QString& hashKeyName)
+{
+    xml.writeStartElement(hashName);
+    QStringList keys = hash.keys();
+    keys.sort();
+    for (const auto& key : keys) {
+        auto iter = hash.find(key);
+        xml.writeStartElement(hashEntryName);
+        xml.writeAttribute(hashKeyName, key);
+        iter.value().saveToXML(xml);
     }
     xml.writeEndElement();
 }

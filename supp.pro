@@ -53,10 +53,12 @@ SOURCES += \
     src/lib/StaticObjectIndexDB.cpp \
     src/lib/TaskObject.cpp \
     src/lib/TaskObject/SimpleParserObject.cpp \
+    src/lib/TaskObject/SimpleTextGeneratorObject.cpp \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
     src/lib/TaskObject/TestTaskObject.cpp \
     src/lib/Tree/Configuration.cpp \
     src/lib/Tree/SimpleParser.cpp \
+    src/lib/Tree/SimpleTextGenerator.cpp \
     src/lib/Tree/SimpleTreeTransform.cpp \
     src/lib/Tree/Tree.cpp \
     src/main.cpp \
@@ -90,10 +92,12 @@ HEADERS += \
     src/lib/StaticObjectIndexDB.h \
     src/lib/TaskObject.h \
     src/lib/TaskObject/SimpleParserObject.h \
+    src/lib/TaskObject/SimpleTextGeneratorObject.h \
     src/lib/TaskObject/SimpleTreeTransformObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \
     src/lib/Tree/SimpleParser.h \
+    src/lib/Tree/SimpleTextGenerator.h \
     src/lib/Tree/SimpleTreeTransform.h \
     src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \

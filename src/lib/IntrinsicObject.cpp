@@ -3,6 +3,7 @@
 #include "src/lib/TaskObject/TestTaskObject.h"
 #include "src/lib/TaskObject/SimpleTreeTransformObject.h"
 #include "src/lib/TaskObject/SimpleParserObject.h"
+#include "src/lib/TaskObject/SimpleTextGeneratorObject.h"
 #include "src/utils/XMLUtilities.h"
 #include <QDebug>
 #include <QSaveFile>
@@ -85,7 +86,7 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
     IntrinsicObject* obj = nullptr;
 
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
-    default: qFatal("Unhandled Intrinsic Object load"); break;
+    default: qFatal("Unhandled Intrinsic Object load; please update this program first."); break;
     case ObjectType::Data_GeneralTree:
         obj = GeneralTreeObject::loadFromXML(xml, strCache);
         break;
@@ -97,6 +98,9 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
         break;
     case ObjectType::Task_SimpleParser:
         obj = SimpleParserObject::loadFromXML(xml, strCache);
+        break;
+    case ObjectType::Task_SimpleTextGenerator:
+        obj = SimpleTextGeneratorObject::loadFromXML(xml, strCache);
         break;
     }
     if (obj) {

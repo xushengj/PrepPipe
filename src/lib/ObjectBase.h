@@ -48,6 +48,8 @@ public:
         Exec_SimpleTreeTransform,
         Task_SimpleParser,
         Exec_SimpleParser,
+        Task_SimpleTextGenerator,
+        Exec_SimpleTextGenerator,
         Task_Test,
         Exec_Test
     };
