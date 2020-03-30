@@ -293,6 +293,10 @@ SimpleWorkflowExecuteObject* SimpleWorkflowObject::getExecuteObject(
         ExecuteObject* exec = task->getExecuteObject(options, job.config, resolveReferenceCB);
         Q_ASSERT(exec);
 
+        if (!job.name.isEmpty()) {
+            exec->setName(job.name);
+        }
+
         int jobIndex = childExecuteObjects.size();
         // satisfy all named reference input and register the others
         for (auto iter = job.inputSpecification.begin(), iterEnd = job.inputSpecification.end(); iter != iterEnd; ++iter) {
