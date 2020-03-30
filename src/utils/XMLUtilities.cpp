@@ -84,6 +84,27 @@ bool XMLUtil::readString(
     return true;
 }
 
+bool XMLUtil::readRemainingString(
+        QXmlStreamReader& xml, const char* const currentElement,
+        QString& str, StringCache &strCache)
+{
+    Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+    QStringRef stringElement = xml.name();
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::Characters)) {
+        // also accept when string is empty
+        if (Q_LIKELY(xml.tokenType() == QXmlStreamReader::EndElement)) {
+            str.clear();
+            return true;
+        }
+        return XMLError::notHavingCharacter(qWarning(), xml, currentElement, stringElement.toString());
+    }
+    str = strCache(xml.text());
+    if (Q_UNLIKELY(xml.readNext() != QXmlStreamReader::EndElement)) {
+        return XMLError::missingEndElement(qWarning(), xml, currentElement, stringElement.toString());
+    }
+    return true;
+}
+
 bool XMLUtil::readAttribute(
         QXmlStreamReader& xml, const char* const currentElement,
         const QString& attributedElement,

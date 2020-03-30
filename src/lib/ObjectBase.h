@@ -50,6 +50,8 @@ public:
         Exec_SimpleParser,
         Task_SimpleTextGenerator,
         Exec_SimpleTextGenerator,
+        Task_SimpleWorkflow,
+        Exec_SimpleWorkflow,
         Task_Test,
         Exec_Test
     };

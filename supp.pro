@@ -55,6 +55,7 @@ SOURCES += \
     src/lib/TaskObject/SimpleParserObject.cpp \
     src/lib/TaskObject/SimpleTextGeneratorObject.cpp \
     src/lib/TaskObject/SimpleTreeTransformObject.cpp \
+    src/lib/TaskObject/SimpleWorkflowObject.cpp \
     src/lib/TaskObject/TestTaskObject.cpp \
     src/lib/Tree/Configuration.cpp \
     src/lib/Tree/SimpleParser.cpp \
@@ -94,6 +95,7 @@ HEADERS += \
     src/lib/TaskObject/SimpleParserObject.h \
     src/lib/TaskObject/SimpleTextGeneratorObject.h \
     src/lib/TaskObject/SimpleTreeTransformObject.h \
+    src/lib/TaskObject/SimpleWorkflowObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \
     src/lib/Tree/SimpleParser.h \

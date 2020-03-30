@@ -92,6 +92,8 @@ QString ObjectBase::getTypeDisplayName(ObjectType ty)
         return tr("Plain Text Parser");
     case ObjectType::Task_SimpleTextGenerator:
         return tr("Plain Text Generator");
+    case ObjectType::Task_SimpleWorkflow:
+        return tr("Workflow");
     case ObjectType::Task_Test:
         return tr("Test");
     default: qFatal("Unhandled object type"); return QString();

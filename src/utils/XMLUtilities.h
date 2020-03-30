@@ -63,6 +63,21 @@ bool readString(QXmlStreamReader& xml, const char* const currentElement,
                 QString& str, StringCache &strCache);
 
 /**
+ * @brief readRemainingString read a string element in form of <stringElement>str</stringElement>
+ *
+ * WARNING: this function will eat the EndElement token
+ *
+ * @param xml the xml must be currently AT the StartElement of enumElement, not before
+ * @param currentElement a string representing the current element / class (for logging purpose only)
+ * @param str lvalue reference of string to read
+ * @param strCache the string cache
+ * @return true on success, false otherwise
+ */
+bool readRemainingString(
+        QXmlStreamReader& xml, const char* const currentElement,
+        QString& str, StringCache &strCache);
+
+/**
  * @brief readAttribute read an attribute when current xml token is StartElement
  * @param xml the xml reader whose current token is StartElement
  * @param currentElement a string representing the current element / class (for logging purpose only)

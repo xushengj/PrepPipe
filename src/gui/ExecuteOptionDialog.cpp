@@ -92,7 +92,7 @@ void ExecuteOptionDialog::refreshTaskRequirements()
 
     taskErr = taskPtr->getInputOutputInfo(taskConfig, newTaskIn, newTaskOut, resolveReferenceCB);
 
-    if (taskErr.cause == TaskObject::PreparationError::Cause::NoError) {
+    if (!taskErr) {
         taskIn.swap(newTaskIn);
         taskOut.swap(newTaskOut);
         taskInputNameToIndex.clear();

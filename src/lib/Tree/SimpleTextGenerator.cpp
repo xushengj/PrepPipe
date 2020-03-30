@@ -155,6 +155,7 @@ void SimpleTextGenerator::Data::saveToXML(QXmlStreamWriter& xml) const
     }
     XMLUtil::writeLoadableHash(xml, expansions, XML_NODE_EXPANSION_RULE_LIST, XML_NODE_EXPANSION_RULE, XML_CANONICAL_NAME);
     XMLUtil::writeStringListHash(xml, nameAliases, XML_NAME_ALIAS_LIST, XML_NAME_ALIAS, XML_CANONICAL_NAME, XML_ALIAS_ENTRY, true);
+    xml.writeEndElement();
 }
 
 bool SimpleTextGenerator::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
@@ -201,6 +202,7 @@ void SimpleTextGenerator::NodeExpansionRule::saveToXML(QXmlStreamWriter& xml) co
     XMLUtil::writeLoadableList(xml, header, XML_HEADER, XML_EXPR);
     XMLUtil::writeLoadableList(xml, delimiter, XML_DELIMITER, XML_EXPR);
     XMLUtil::writeLoadableList(xml, tail, XML_TAIL, XML_EXPR);
+    xml.writeEndElement();
 }
 
 bool SimpleTextGenerator::NodeExpansionRule::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)

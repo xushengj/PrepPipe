@@ -167,6 +167,12 @@ public:
     static bool evaluatePredicate(const Predicate& pred, bool& isGood, const EvaluationContext& ctx);
     static QString evaluateGeneralValueExpression(const GeneralValueExpression& expr, bool& isGood, const EvaluationContext& ctx);
 
+public:
+    void saveToXML(QXmlStreamWriter& xml) const; // caller should make sure that the StartElement is written
+    bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
+
+private:
+    void saveToXMLImpl(QXmlStreamWriter& xml, int nodeIndex) const;
 
 public:
     const Node& getNode(int index) const {return nodes.at(index);}

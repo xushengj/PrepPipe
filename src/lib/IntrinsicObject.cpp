@@ -4,6 +4,7 @@
 #include "src/lib/TaskObject/SimpleTreeTransformObject.h"
 #include "src/lib/TaskObject/SimpleParserObject.h"
 #include "src/lib/TaskObject/SimpleTextGeneratorObject.h"
+#include "src/lib/TaskObject/SimpleWorkflowObject.h"
 #include "src/utils/XMLUtilities.h"
 #include <QDebug>
 #include <QSaveFile>
@@ -101,6 +102,9 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
         break;
     case ObjectType::Task_SimpleTextGenerator:
         obj = SimpleTextGeneratorObject::loadFromXML(xml, strCache);
+        break;
+    case ObjectType::Task_SimpleWorkflow:
+        obj = SimpleWorkflowObject::loadFromXML(xml, strCache);
         break;
     }
     if (obj) {

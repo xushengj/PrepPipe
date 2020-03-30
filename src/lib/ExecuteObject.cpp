@@ -9,9 +9,9 @@ void ExecuteObject::setInput(QString inputName, ObjectBase* obj)
 
 void ExecuteObject::setInput(QString inputName, QList<ObjectBase*> batch)
 {
-    Q_UNUSED(inputName)
-    Q_UNUSED(batch)
-    qFatal("No matching input");
+    for (auto* ptr : batch) {
+        setInput(inputName, ptr);
+    }
 }
 
 void ExecuteObject::start()

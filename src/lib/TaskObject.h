@@ -42,11 +42,15 @@ public:
         Cause cause = Cause::NoError;
         QString firstFatalErrorDescription;
         ObjectBase::NamedReference firstUnresolvedReference;
+        QStringList context;
 
         PreparationError() = default;
         explicit PreparationError(const QString& err)
             : cause (Cause::InvalidTask), firstFatalErrorDescription(err)
         {}
+        operator bool() const {
+            return cause != Cause::NoError;
+        }
     };
 
     enum InputFlag {
@@ -59,22 +63,21 @@ public:
     // only anonymous input should be specified
     struct TaskInput {
         QString inputName;
-        InputFlags flags;
+        InputFlags flags = InputFlag::NoInputFlag;
         QVector<ObjectType> acceptedType;
     };
 
     enum OutputFlag {
         NoOutputFlag = 0x0,
         TemporaryOutput = 0x1, // output can be safely discarded
-        ProduceBatch = 0x2,
-        ObjectTypeSameAsInput = 0x4 // which means that output object type can change for different input types
+        ProduceBatch = 0x2
     };
     Q_DECLARE_FLAGS(OutputFlags, OutputFlag)
 
     struct TaskOutput {
         QString outputName;
-        OutputFlag flags;
-        ObjectType ty; // not used if ObjectTypeSameAsInput is set
+        OutputFlags flags = OutputFlag::NoOutputFlag;
+        ObjectType ty = ObjectType::Data_GeneralTree;
     };
 
     struct TaskDependence {

@@ -1072,3 +1072,116 @@ TreeBuilder::Node* TreeBuilder::addNode(Node* parent)
     }
     return ptr;
 }
+
+// ----------------------------------------------------------------------------
+
+namespace {
+const QString XML_NODE = QStringLiteral("Node");
+const QString XML_TYPE = QStringLiteral("Type");
+const QString XML_PARAMETER_LIST = QStringLiteral("ParameterList");
+const QString XML_PARAMETER = QStringLiteral("Parameter");
+const QString XML_NAME = QStringLiteral("Name");
+const QString XML_CHILD_LIST = QStringLiteral("ChildList");
+const QString XML_EMPTY = QStringLiteral("Empty");
+} // end of anonymous namespace
+
+void Tree::saveToXML(QXmlStreamWriter &xml) const
+{
+    if (!isEmpty()) {
+        saveToXMLImpl(xml, 0);
+    } else {
+        xml.writeAttribute(XML_EMPTY, XML_YES);
+    }
+    xml.writeEndElement();
+}
+
+void Tree::saveToXMLImpl(QXmlStreamWriter& xml, int nodeIndex) const
+{
+    const Node& curNode = getNode(nodeIndex);
+    Q_ASSERT(curNode.keyList.size() == curNode.valueList.size());
+    xml.writeAttribute(XML_TYPE, curNode.typeName);
+    {
+        xml.writeStartElement(XML_PARAMETER_LIST);
+        for (int i = 0, n = curNode.keyList.size(); i < n; ++i) {
+            xml.writeStartElement(XML_PARAMETER);
+            xml.writeAttribute(XML_NAME, curNode.keyList.at(i));
+            xml.writeCharacters(curNode.valueList.at(i));
+            xml.writeEndElement();
+        }
+        xml.writeEndElement();
+    }
+    {
+        xml.writeStartElement(XML_CHILD_LIST);
+        for (int childOffset : curNode.offsetToChildren) {
+            xml.writeStartElement(XML_NODE);
+            saveToXMLImpl(xml, nodeIndex + childOffset);
+        }
+        xml.writeEndElement();
+    }
+    xml.writeEndElement();
+}
+
+namespace {
+bool loadGeneralTreeNodeFromXML(QXmlStreamReader& xml, TreeBuilder& tree, StringCache& strCache, TreeBuilder::Node* parent)
+{
+    Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+    const char* curElement = "Tree::Node";
+    auto ptr = tree.addNode(parent);
+    auto& n = *ptr;
+    if (Q_UNLIKELY(!XMLUtil::readStringAttribute(xml, curElement, QString(), XML_TYPE, n.typeName, strCache))) {
+        return false;
+    }
+    auto readKVPair = [&](QXmlStreamReader& xml, StringCache& strCache) -> bool {
+        QString key;
+        QString value;
+        if (Q_UNLIKELY(!XMLUtil::readStringAttribute(xml, curElement, QString(), XML_NAME, key, strCache))) {
+            return false;
+        }
+        if (Q_UNLIKELY(!XMLUtil::readElementText(xml, curElement, XML_NAME, value, strCache))) {
+            return false;
+        }
+        n.keyList.push_back(key);
+        n.valueList.push_back(value);
+        return true;
+    };
+
+    if (Q_UNLIKELY(!XMLUtil::readGeneralList(xml, curElement, XML_PARAMETER_LIST, XML_PARAMETER, readKVPair, strCache))) {
+        return false;
+    }
+    auto loadChild = [&](QXmlStreamReader& xml, StringCache& strCache) -> bool {
+        return loadGeneralTreeNodeFromXML(xml, tree, strCache, ptr);
+    };
+
+    if (Q_UNLIKELY(!XMLUtil::readGeneralList(
+                       xml, curElement, XML_CHILD_LIST, XML_NODE,
+                       loadChild,
+                       strCache))) {
+        return false;
+    }
+
+    xml.skipCurrentElement();
+    return true;
+}
+}
+
+bool Tree::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
+{
+    Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+    nodes.clear();
+
+    if (xml.attributes().value(XML_EMPTY) == XML_YES) {
+        // empty tree; done
+        xml.skipCurrentElement();
+        return true;
+    }
+
+    TreeBuilder tree;
+
+    if (Q_UNLIKELY(!loadGeneralTreeNodeFromXML(xml, tree, strCache, nullptr))) {
+        return false;
+    }
+
+    Tree newTree(tree);
+    swap(newTree);
+    return true;
+}
