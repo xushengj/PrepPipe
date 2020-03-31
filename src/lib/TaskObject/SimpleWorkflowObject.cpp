@@ -381,6 +381,7 @@ int SimpleWorkflowExecuteObject::startImpl(ExitCause& cause)
             auto iterSpec = job.outputSpecification.find(outputName);
             if (iterSpec == job.outputSpecification.end()) {
                 // optional output
+                obj->deleteLater();
                 return;
             }
             const auto& spec = iterSpec.value();
@@ -391,7 +392,9 @@ int SimpleWorkflowExecuteObject::startImpl(ExitCause& cause)
                 }
             }
             switch (spec.option) {
-            case SimpleWorkflow::ChildObjectOutputOption::IntermediateOutput: break;
+            case SimpleWorkflow::ChildObjectOutputOption::IntermediateOutput: {
+                obj->deleteLater();
+            }break;
             case SimpleWorkflow::ChildObjectOutputOption::ExportAsOutput: {
                 emit outputAvailable(spec.outputName, obj);
             }break;
