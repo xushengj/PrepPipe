@@ -85,32 +85,36 @@ void STGFragmentInputWidget::refreshMappingListDerivedData()
     occupiedList.reserve(replacementData.size());
 
     for (auto& repl : replacementData) {
-        const auto& mapping = repl.baseData;
-        int firstOccurrence = -1;
-        if (!mapping.exampleText.isEmpty()) {
-            QTextCursor cursor = doc->find(mapping.exampleText);
-            if (!cursor.isNull()) {
-                firstOccurrence = cursor.position();
-            }
-        }
-        if (firstOccurrence >= 0) {
-            int nextCharPos = firstOccurrence + mapping.exampleText.length();
-            for (const auto& interval : occupiedList) {
-                if (!(interval.first >= nextCharPos || interval.second <= firstOccurrence)) {
-                    // overlap found
-                    firstOccurrence = -1;
-                    break;
-                }
-            }
-            if (firstOccurrence >= 0) {
-                // no overlap
-                occupiedList.push_back(std::make_pair(firstOccurrence, nextCharPos));
-            }
-        }
-        repl.firstOccurrence = firstOccurrence;
+        repl.firstOccurrence = updateOccupiedList(occupiedList, repl.baseData, doc);
     }
 
     updateReplacementListWidget();
+}
+
+int STGFragmentInputWidget::updateOccupiedList(QList<std::pair<int,int>>& occupiedList, const EditorData::Mapping& mapping, QTextDocument* doc)
+{
+    int occurrenceTail = -1;
+    if (!mapping.exampleText.isEmpty()) {
+        // the cursor returned would point to end of string
+        QTextCursor cursor = doc->find(mapping.exampleText);
+        if (!cursor.isNull()) {
+            occurrenceTail = cursor.position();
+        } else {
+            return -1;
+        }
+    }
+
+    int occurrenceStart = occurrenceTail - mapping.exampleText.length();
+    for (const auto& interval : occupiedList) {
+        if (!(interval.first >= occurrenceTail || interval.second <= occurrenceStart)) {
+            // overlap found
+            return -1;
+        }
+    }
+
+    // no overlap
+    occupiedList.push_back(std::make_pair(occurrenceStart, occurrenceTail));
+    return occurrenceStart;
 }
 
 QMultiMap<int, int> STGFragmentInputWidget::getStartToIndexMap(const QList<MappingGUIData>& replacementData)
@@ -323,27 +327,7 @@ bool STGFragmentInputWidget::execParamEditDialog(EditorData::Mapping& data)
             if (mapping.exampleText == data.exampleText)
                 continue;
 
-            int firstOccurrence = -1;
-            if (!mapping.exampleText.isEmpty()) {
-                QTextCursor cursor = doc->find(mapping.exampleText);
-                if (!cursor.isNull()) {
-                    firstOccurrence = cursor.position();
-                }
-            }
-            if (firstOccurrence >= 0) {
-                int nextCharPos = firstOccurrence + mapping.exampleText.length();
-                for (const auto& interval : occupiedList) {
-                    if (!(interval.first >= nextCharPos || interval.second <= firstOccurrence)) {
-                        // overlap found
-                        firstOccurrence = -1;
-                        break;
-                    }
-                }
-                if (firstOccurrence >= 0) {
-                    // no overlap
-                    occupiedList.push_back(std::make_pair(firstOccurrence, nextCharPos));
-                }
-            }
+            updateOccupiedList(occupiedList, mapping, doc);
         }
     }
     STGFragmentParameterReplacementEditDialog* dialog = new STGFragmentParameterReplacementEditDialog(data.exampleText, data.replacingParam, doc, occupiedList, this);

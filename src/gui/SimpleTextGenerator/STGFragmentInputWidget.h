@@ -80,6 +80,8 @@ private:
         }
         return -1;
     }
+
+    int updateOccupiedList(QList<std::pair<int,int>>& occupiedList, const EditorData::Mapping& mapping, QTextDocument* doc); // return the pos of first occurrence; -1 if anything bad happens
 private:
     Ui::STGFragmentInputWidget *ui;
 

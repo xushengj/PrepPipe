@@ -56,8 +56,8 @@ bool STGFragmentParameterReplacementEditDialog::validateState(bool updateLabel)
         return false;
     }
 
-    int firstOccurrence = cursor.position();
-    int nextCharPos = firstOccurrence + exampleText.length();
+    int nextCharPos = cursor.position();
+    int firstOccurrence = nextCharPos - exampleText.length();
     for (const auto& interval : occupiedList) {
         if (!(interval.first >= nextCharPos || interval.second <= firstOccurrence)) {
             // overlap found
