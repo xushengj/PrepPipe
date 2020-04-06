@@ -6,6 +6,9 @@
 #include "src/lib/TaskObject/SimpleTextGeneratorObject.h"
 #include "src/lib/TaskObject/SimpleWorkflowObject.h"
 #include "src/utils/XMLUtilities.h"
+#ifndef SUPP_NO_GUI
+#include "src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h"
+#endif
 #include <QDebug>
 #include <QSaveFile>
 
@@ -89,22 +92,22 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
     default: qFatal("Unhandled Intrinsic Object load; please update this program first."); break;
     case ObjectType::Data_GeneralTree:
-        obj = GeneralTreeObject::loadFromXML(xml, strCache);
+        obj = IntrinsicObjectTrait<GeneralTreeObject>::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_Test:
-        obj = TestTaskObject::loadFromXML(xml);
+        obj = IntrinsicObjectTrait<TestTaskObject>::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_SimpleTreeTransform:
-        obj = SimpleTreeTransformObject::loadFromXML(xml, strCache);
+        obj = IntrinsicObjectTrait<SimpleTreeTransformObject>::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_SimpleParser:
-        obj = SimpleParserObject::loadFromXML(xml, strCache);
+        obj = IntrinsicObjectTrait<SimpleParserObject>::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_SimpleTextGenerator:
-        obj = SimpleTextGeneratorObject::loadFromXML(xml, strCache);
+        obj = IntrinsicObjectTrait<SimpleTextGeneratorObject>::loadFromXML(xml, strCache);
         break;
     case ObjectType::Task_SimpleWorkflow:
-        obj = SimpleWorkflowObject::loadFromXML(xml, strCache);
+        obj = IntrinsicObjectTrait<SimpleWorkflowObject>::loadFromXML(xml, strCache);
         break;
     }
     if (obj) {

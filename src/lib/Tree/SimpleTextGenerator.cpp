@@ -24,13 +24,13 @@ bool SimpleTextGenerator::generationImpl(const Tree& src, QString& dest, int nod
     if (iter != data.expansions.end()) {
         // we find the rule
         const NodeExpansionRule& rule = iter.value();
-        if (!writeFragment(src, dest, node, rule.header)) {
+        if (!writeFragment(dest, node, rule.header, data.evalFailPolicy)) {
             return false;
         }
         bool isFirst = true;
         for (int childOffset : node.offsetToChildren) {
             if (!isFirst) {
-                if (!writeFragment(src, dest, node, rule.delimiter)) {
+                if (!writeFragment(dest, node, rule.delimiter, data.evalFailPolicy)) {
                     return false;
                 }
             } else {
@@ -40,7 +40,7 @@ bool SimpleTextGenerator::generationImpl(const Tree& src, QString& dest, int nod
                 return false;
             }
         }
-        if (!writeFragment(src, dest, node, rule.tail)) {
+        if (!writeFragment(dest, node, rule.tail, data.evalFailPolicy)) {
             return false;
         }
     } else {
@@ -57,16 +57,14 @@ bool SimpleTextGenerator::generationImpl(const Tree& src, QString& dest, int nod
     return true;
 }
 
-bool SimpleTextGenerator::writeFragment(const Tree& src, QString& dest, const Tree::Node& node, const QVector<Tree::LocalValueExpression>& fragment) const
+bool SimpleTextGenerator::writeFragment(QString& dest, const Tree::Node& node, const QVector<Tree::LocalValueExpression>& fragment, EvaluationFailPolicy failPolicy)
 {
-    Q_UNUSED(src)
-
     for (int i = 0, n = fragment.size(); i < n; ++i) {
         const auto& expr = fragment.at(i);
         bool isGood = false;
         QString result = Tree::evaluateLocalValueExpression(node, expr, isGood);
         if (!isGood) {
-            switch (data.evalFailPolicy) {
+            switch (failPolicy) {
             case EvaluationFailPolicy::SkipSubExpr: {
 
             }break;
@@ -135,7 +133,7 @@ const QString XML_TAIL = QStringLiteral("Tail");
 const QString XML_EXPR = QStringLiteral("Expr");
 }
 
-void SimpleTextGenerator::Data::saveToXML(QXmlStreamWriter& xml) const
+void SimpleTextGenerator::Data::saveToXML_NoTerminate(QXmlStreamWriter& xml) const
 {
     switch (unknownNodePolicy) {
     case UnknownNodePolicy::Ignore: {
@@ -155,10 +153,9 @@ void SimpleTextGenerator::Data::saveToXML(QXmlStreamWriter& xml) const
     }
     XMLUtil::writeLoadableHash(xml, expansions, XML_NODE_EXPANSION_RULE_LIST, XML_NODE_EXPANSION_RULE, XML_CANONICAL_NAME);
     XMLUtil::writeStringListHash(xml, nameAliases, XML_NAME_ALIAS_LIST, XML_NAME_ALIAS, XML_CANONICAL_NAME, XML_ALIAS_ENTRY, true);
-    xml.writeEndElement();
 }
 
-bool SimpleTextGenerator::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
+bool SimpleTextGenerator::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCache& strCache)
 {
     auto readUnknownNodePolicyCB = [this] (QStringRef text) -> bool {
         if (text == XML_IGNORE) {
@@ -191,6 +188,20 @@ bool SimpleTextGenerator::Data::loadFromXML(QXmlStreamReader& xml, StringCache& 
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readStringListHash(xml, curElement, XML_NAME_ALIAS_LIST, XML_NAME_ALIAS, XML_CANONICAL_NAME, XML_ALIAS_ENTRY, nameAliases, strCache))) {
+        return false;
+    }
+    return true;
+}
+
+void SimpleTextGenerator::Data::saveToXML(QXmlStreamWriter& xml) const
+{
+    saveToXML_NoTerminate(xml);
+    xml.writeEndElement();
+}
+
+bool SimpleTextGenerator::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
+{
+    if (Q_UNLIKELY(!loadFromXML_NoTerminate(xml, strCache))) {
         return false;
     }
     xml.skipCurrentElement();

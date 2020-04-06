@@ -1,13 +1,13 @@
 #include "ObjectBase.h"
 
 ObjectBase::ObjectBase(ObjectType Ty)
-    : QObject(nullptr), ty(Ty), status(StatusFlag::None)
+    : QObject(nullptr), ty(Ty)
 {
 
 }
 
 ObjectBase::ObjectBase(ObjectType Ty, const QString& nameArg)
-    : QObject(nullptr), name(nameArg), ty(Ty), status(StatusFlag::None)
+    : QObject(nullptr), name(nameArg), ty(Ty)
 {
 
 }
@@ -17,8 +17,7 @@ ObjectBase::ObjectBase(const ObjectBase& src)
       name(src.name),
       comment(src.comment),
       nameSpace(src.nameSpace),
-      ty(src.ty),
-      status(src.status)
+      ty(src.ty)
 {
 
 }

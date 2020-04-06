@@ -3,6 +3,7 @@
 
 #include "src/lib/ObjectBase.h"
 #include "src/lib/FileBackedObject.h"
+#include "src/utils/XMLUtilities.h"
 
 #include <QObject>
 #include <QXmlStreamReader>
@@ -31,6 +32,16 @@ public:
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter& xml) = 0;
+};
+
+// if an intrinsic type implements editor GUI,
+// specialize this template to diverge xml load call to pick up editor data from xml
+template <typename IntrinsicTy>
+struct IntrinsicObjectTrait
+{
+    static IntrinsicTy* loadFromXML(QXmlStreamReader& xml, StringCache& strCache) {
+        return IntrinsicTy::loadFromXML(xml, strCache);
+    }
 };
 
 #endif // INTRINSICOBJECT_H

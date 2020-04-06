@@ -14,7 +14,7 @@
    <string>EditorWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,1">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,4">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,2,0">
       <item>
@@ -154,6 +154,7 @@
     </widget>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
     <addaction name="actionChangeDirectory"/>
     <addaction name="menuCapture"/>
    </widget>
@@ -208,6 +209,11 @@
   <action name="actionSegFault">
    <property name="text">
     <string>Segmentation fault</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
    </property>
   </action>
  </widget>

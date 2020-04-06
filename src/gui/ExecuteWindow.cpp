@@ -132,7 +132,6 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
                 objName.append('_');
                 objName.append(QString::number(i));
                 cloned->setName(objName);
-                cloned->lock();
                 QTreeWidgetItem* curItem = new QTreeWidgetItem(item);
                 curItem->setText(0, objName);
                 curItem->setIcon(0, cloned->getTypeDisplayIcon());

@@ -29,6 +29,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # Disable threading for now
 DEFINES += SUPP_NO_THREADS
 
+#if a build without GUI is needed, enable this define:
+# DEFINES += SUPP_NO_GUI
+
 SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
     src/gui/ConfigurationInputWidget.cpp \
@@ -38,6 +41,10 @@ SOURCES += \
     src/gui/ImportFileDialog.cpp \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
+    src/gui/SimpleTextGenerator/STGEditor.cpp \
+    src/gui/SimpleTextGenerator/STGFragmentInputWidget.cpp \
+    src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.cpp \
+    src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.cpp \
     src/gui/TextEditor.cpp \
     src/gui/GeneralTreeEditor.cpp \
     src/gui/MIMEDataEditor.cpp \
@@ -78,6 +85,10 @@ HEADERS += \
     src/gui/ImportFileDialog.h \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
+    src/gui/SimpleTextGenerator/STGEditor.h \
+    src/gui/SimpleTextGenerator/STGFragmentInputWidget.h \
+    src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.h \
+    src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h \
     src/gui/TextEditor.h \
     src/gui/GeneralTreeEditor.h \
     src/gui/MIMEDataEditor.h \
@@ -113,7 +124,10 @@ FORMS += \
     src/gui/GeneralTreeEditor.ui \
     src/gui/ImportFileDialog.ui \
     src/gui/MIMEDataEditor.ui \
-    src/gui/ObjectInputEdit.ui
+    src/gui/ObjectInputEdit.ui \
+    src/gui/SimpleTextGenerator/STGEditor.ui \
+    src/gui/SimpleTextGenerator/STGFragmentInputWidget.ui \
+    src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui
 
 TRANSLATIONS += \
     translations/supp_zh_CN.ts

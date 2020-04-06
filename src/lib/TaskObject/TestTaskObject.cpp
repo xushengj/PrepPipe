@@ -58,8 +58,9 @@ void TestTaskObject::saveToXMLImpl(QXmlStreamWriter& xml)
     xml.writeTextElement(STR_CAUSE, QString::number(settings.exitCause));
 }
 
-TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml)
+TestTaskObject* TestTaskObject::loadFromXML(QXmlStreamReader &xml, StringCache& strCache)
 {
+    Q_UNUSED(strCache)
     if (Q_UNLIKELY(!xml.readNextStartElement())) {
         XMLError::missingStartElement(qWarning(), xml, "TestTaskObject", STR_SLEEP_DURATION);
         return nullptr;

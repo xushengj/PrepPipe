@@ -7,9 +7,12 @@
 #include <QStringList>
 #include <QHash>
 #include <QMetaEnum>
-#include <QIcon>
 #include <QIODevice>
+
+#ifndef SUPP_NO_GUI
+#include <QIcon>
 #include <QMenu>
+#endif
 
 #include <functional>
 
@@ -18,14 +21,6 @@ class ObjectBase : public QObject
     Q_OBJECT
 
 public:
-    enum StatusFlag {
-        None        = 0x00,
-        Locked      = 0x01, //!< The object is read-only; users must fork a writeable copy before editing. This cannot be changed after the object is constructed.
-        Unbacked    = 0x02, //!< The object is currently not backed by a file (not subject to single-object-per-file check)
-        Invalid     = 0x04  //!< The object is in invalid state and: 1. gui should prompt user to edit it; 2. this object cannot participate in activities
-    };
-    Q_DECLARE_FLAGS(StatusFlags, StatusFlag)
-
     struct NamedReference {
         QString name;
         QStringList nameSpace;
@@ -65,19 +60,24 @@ public:
 
     static QString getTypeClassName(ObjectType ty);
     static QString getTypeDisplayName(ObjectType ty);
+#ifndef SUPP_NO_GUI
     static QIcon   getTypeDisplayIcon(ObjectType ty);
+#endif
 
     ObjectType  getType()               const {return ty;}
     QString     getTypeClassName()      const {return getTypeClassName(ty);}
     QString     getTypeDisplayName()    const {return getTypeDisplayName(ty);}
-    QIcon       getTypeDisplayIcon()    const {return getTypeDisplayIcon(ty);}
 
+#ifndef SUPP_NO_GUI
+    QIcon       getTypeDisplayIcon()    const {return getTypeDisplayIcon(ty);}
+#endif
+
+#ifndef SUPP_NO_GUI
     // for objects not backed by a file, the editor can always be destroyed
     // virtual function asking for dirty editor data is in FileBackedObject
     virtual QWidget* getEditor() {return nullptr;}
     virtual void tearDownEditor(QWidget* editor) {editor->hide(); delete editor;}
-
-    StatusFlags getStatus() const {return status;}
+#endif
 
     QString getName() const {
         return name;
@@ -94,31 +94,16 @@ public:
     virtual QString getFilePath() const {return QString();} // only overriden in FileBackedObject
 
     void setName(const QString& newName) {
-        Q_ASSERT(!(getStatus() & StatusFlag::Locked));
         name = newName;
     }
 
     void setNameSpace(const QStringList& newNamespace) {
-        Q_ASSERT(!(getStatus() & StatusFlag::Locked));
         nameSpace = newNamespace;
     }
 
     void setComment(const QString& newComment) {
-        Q_ASSERT(!(getStatus() & StatusFlag::Locked));
         comment = newComment;
     }
-
-    void setStatus(StatusFlags stat) {
-        status = stat;
-    }
-
-    // helpers
-    void lock() {
-        status |= StatusFlag::Locked;
-    }
-
-signals:
-    void statusChanged(StatusFlags stat);
 
 private:
     QString name;
@@ -126,9 +111,6 @@ private:
 
     QStringList nameSpace;
     const ObjectType ty;
-    StatusFlags status;
 };
-
-Q_DECLARE_OPERATORS_FOR_FLAGS(ObjectBase::StatusFlags)
 
 #endif // OBJECTBASE_H

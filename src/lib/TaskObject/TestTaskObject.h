@@ -50,7 +50,7 @@ public:
             std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
             ) const override;
 
-    static TestTaskObject* loadFromXML(QXmlStreamReader &xml);
+    static TestTaskObject* loadFromXML(QXmlStreamReader &xml, StringCache &strCache);
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter& xml) override;

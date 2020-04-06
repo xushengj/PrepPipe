@@ -256,47 +256,52 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
         menu.addAction(closeAllAction);
     } else {
         auto iter = itemData.find(item);
-        Q_ASSERT(iter != itemData.end());
-        auto& data = iter.value();
-        // menu from specific ones to general ones
-        if (TaskObject* task = qobject_cast<TaskObject*>(data.obj)) {
-            if (item->parent() == mainRoot) {
-                QAction* executeAction = new QAction(tr("Execute"));
-                connect(executeAction, &QAction::triggered, this, [=]() -> void {
-                    ObjectBase::NamedReference ref;
-                    ref.name = task->getName();
-                    launchTask(ref);
-                });
-                menu.addAction(executeAction);
+        if (iter != itemData.end()) {
+            auto& data = iter.value();
+            // menu from specific ones to general ones
+            if (TaskObject* task = qobject_cast<TaskObject*>(data.obj)) {
+                if (item->parent() == mainRoot) {
+                    QAction* executeAction = new QAction(tr("Execute"));
+                    connect(executeAction, &QAction::triggered, this, [=]() -> void {
+                        ObjectBase::NamedReference ref;
+                        ref.name = task->getName();
+                        launchTask(ref);
+                    });
+                    menu.addAction(executeAction);
+                }
             }
+            if (FileBackedObject* fbo = qobject_cast<FileBackedObject*>(data.obj)) {
+                QAction* saveAction = new QAction(tr("Save"));
+                connect(saveAction, &QAction::triggered, this, [=]() -> void {
+                    QString filePath = fbo->getFilePath();
+                    if (filePath.isEmpty()) {
+                        filePath = QFileDialog::getSaveFileName(this, tr("Save File"), mainCtx.getDirectory(), fbo->getFileNameFilter());
+                        if (filePath.isEmpty())
+                            return;
+                        fbo->setFilePath(filePath);
+                    }
+                    if (!fbo->saveToFile()) {
+                        QMessageBox::critical(this,
+                                              tr("Save File Failed"),
+                                              tr("Failed to save to given path. Please check if file permission is correctly set and there are sufficient disk space. Path: \"%1\"")
+                                                .arg(filePath));
+                    }
+                });
+                menu.addAction(saveAction);
+            }
+            if (item->parent() == sideRoot) {
+                QAction* closeAction = new QAction(tr("Close"));
+                connect(closeAction, &QAction::triggered, this, [=]() -> void {
+                    closeSideContextObjectRequested(item);
+                });
+                menu.addAction(closeAction);
+            }
+        } else {
+            // right clicking on nowhere
+            menu.addAction(ui->actionNew);
+            menu.addAction(ui->actionOpen);
+            menu.addAction(ui->actionSave);
         }
-        if (FileBackedObject* fbo = qobject_cast<FileBackedObject*>(data.obj)) {
-            QAction* saveAction = new QAction(tr("Save"));
-            connect(saveAction, &QAction::triggered, this, [=]() -> void {
-                QString filePath = fbo->getFilePath();
-                if (filePath.isEmpty()) {
-                    filePath = QFileDialog::getSaveFileName(this, tr("Save File"), mainCtx.getDirectory(), fbo->getFileNameFilter());
-                    if (filePath.isEmpty())
-                        return;
-                    fbo->setFilePath(filePath);
-                }
-                if (!fbo->saveToFile()) {
-                    QMessageBox::critical(this,
-                                          tr("Save File Failed"),
-                                          tr("Failed to save to given path. Please check if file permission is correctly set and there are sufficient disk space. Path: \"%1\"")
-                                            .arg(filePath));
-                }
-            });
-            menu.addAction(saveAction);
-        }
-        if (item->parent() == sideRoot) {
-            QAction* closeAction = new QAction(tr("Close"));
-            connect(closeAction, &QAction::triggered, this, [=]() -> void {
-                closeSideContextObjectRequested(item);
-            });
-            menu.addAction(closeAction);
-        }
-
     }
 
     if (menu.isEmpty())
@@ -546,7 +551,6 @@ void EditorWindow::objectDropped(const QList<ObjectBase*>& vec)
         ObjectBase* newObj = ptr->clone();
         // clear certain data
         newObj->setNameSpace(QStringList());
-        newObj->setStatus(newObj->getStatus() & ~ObjectBase::StatusFlag::Locked);
         addToSideContext(newObj);
     }
 }

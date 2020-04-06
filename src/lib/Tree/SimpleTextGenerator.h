@@ -44,16 +44,21 @@ public:
         void saveToXML(QXmlStreamWriter& xml) const;
         bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
 
+        // the variant that do not produce / consume EndElement
+        void saveToXML_NoTerminate(QXmlStreamWriter& xml) const;
+        bool loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCache& strCache);
+
         bool validate(QString& err) const;
     };
 
 public:
     explicit SimpleTextGenerator(const Data& d);
     bool performGeneration(const Tree& src, QString& dest) const;
+    static bool writeFragment(QString& dest, const Tree::Node& node, const QVector<Tree::LocalValueExpression> &fragment, EvaluationFailPolicy failPolicy);
 
 private:
     bool generationImpl(const Tree& src, QString& dest, int nodeIndex) const;
-    bool writeFragment(const Tree& src, QString& dest, const Tree::Node& node, const QVector<Tree::LocalValueExpression> &fragment) const;
+
 
 private:
     // All persistent data should be in Data
