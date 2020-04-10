@@ -28,9 +28,6 @@ public:
 
     bool saveToFile(QWidget* dialogParent);
 
-    virtual bool editorNoUnsavedChanges(QWidget* editor) {Q_UNUSED(editor) return true;}
-    virtual void saveDataFromEditor(QWidget* editor) {Q_UNUSED(editor)}
-
     virtual QString getFileNameFilter() const;
 
     static FileBackedObject* open(const QString& filePath, QWidget* window);

@@ -36,11 +36,14 @@ SOURCES += \
     src/gui/BreadcrumbWidget.cpp \
     src/gui/ConfigurationInputWidget.cpp \
     src/gui/DropTestLabel.cpp \
+    src/gui/EditorBase.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
     src/gui/ImportFileDialog.cpp \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
+    src/gui/PlainTextObjectEditor.cpp \
+    src/gui/SimpleTextGenerator/STGAliasListWidget.cpp \
     src/gui/SimpleTextGenerator/STGEditor.cpp \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.cpp \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.cpp \
@@ -79,12 +82,15 @@ HEADERS += \
     src/gui/BreadcrumbWidget.h \
     src/gui/ConfigurationInputWidget.h \
     src/gui/DropTestLabel.h \
+    src/gui/EditorBase.h \
     src/gui/EditorWindow.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
     src/gui/ImportFileDialog.h \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
+    src/gui/PlainTextObjectEditor.h \
+    src/gui/SimpleTextGenerator/STGAliasListWidget.h \
     src/gui/SimpleTextGenerator/STGEditor.h \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.h \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.h \

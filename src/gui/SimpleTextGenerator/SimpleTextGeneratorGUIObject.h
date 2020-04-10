@@ -30,8 +30,6 @@ public:
     static SimpleTextGeneratorGUIObject* loadFromXML(QXmlStreamReader& xml, StringCache &strCache);
 
     virtual QWidget* getEditor() override;
-    virtual bool editorNoUnsavedChanges(QWidget* editorArg) override;
-    virtual void saveDataFromEditor(QWidget* editorArg) override;
 
     QStringList getHeaderExampleText(const QString& canonicalName) const;
     QStringList getDelimiterExampleText(const QString& canonicalName) const;

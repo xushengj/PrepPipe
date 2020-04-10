@@ -3,6 +3,7 @@
 
 #include "src/lib/ObjectContext.h"
 #include "src/lib/TaskObject.h"
+#include "src/gui/EditorBase.h"
 #include "src/misc/Settings.h"
 
 #include <QMainWindow>
@@ -95,6 +96,8 @@ private slots:
 
     void closeSideContextObjectRequested(QTreeWidgetItem* item);
     bool tryCloseAllSideContextObjects();
+
+    void saveRequested();
 
     void processDelayedStartupAction();
 

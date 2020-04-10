@@ -1,6 +1,7 @@
 #ifndef STGEDITOR_H
 #define STGEDITOR_H
 
+#include "src/gui/EditorBase.h"
 #include "src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h"
 #include "src/gui/SimpleTextGenerator/STGFragmentInputWidget.h"
 
@@ -10,7 +11,7 @@ namespace Ui {
 class STGEditor;
 }
 
-class STGEditor : public QWidget
+class STGEditor : public EditorBase
 {
     Q_OBJECT
 
@@ -28,16 +29,16 @@ public:
 
     // functions that would be called from gui object
     void setBackingObject(SimpleTextGeneratorGUIObject* obj);
-    bool isDirty() {
-        return dirtyFlag;
-    }
-    void writeBack(SimpleTextGeneratorGUIObject* obj);
+
+    virtual void saveToObjectRequested(ObjectBase* obj) override;
 
 public slots:
     void tryGoToRule(int index);
 
 private slots:
     void allFieldCheckboxToggled(bool checked);
+
+    void setDataDirty();
 
 private:
     RuleData& getData(int index) {
@@ -51,12 +52,12 @@ private:
 
     SimpleTextGeneratorGUIObject* backedObj = nullptr;
     QHash<QString, RuleData> allData;
-    bool dirtyFlag = false;
     bool errorOnUnknownNode = true;
     bool errorOnEvaluationFail = true;
 
     QStringList canonicalNameList;
     int currentIndex = -1; // current index in the sorted canonicalNameList; -1 if none is open
+    bool isDuringRuleSwitch = false; // avoid bogus dirty signal during displayed rule switching
 };
 
 #endif // STGEDITOR_H

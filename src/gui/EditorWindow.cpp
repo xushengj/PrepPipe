@@ -9,6 +9,7 @@
 #include "src/lib/TaskObject.h"
 #include "src/gui/DropTestLabel.h"
 #include "src/lib/FileBackedObject.h"
+#include "src/gui/EditorBase.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -64,6 +65,7 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
     connect(ui->actionOpenLog, &QAction::triggered, MessageLogger::inst(), &MessageLogger::openLogFile);
     connect(ui->actionOpen, &QAction::triggered, this, &EditorWindow::openFileRequested);
+    connect(ui->actionSave, &QAction::triggered, this, &EditorWindow::saveRequested);
 
     connect(ui->actionQFatal, &QAction::triggered, this, []() -> void {
         qFatal("Fatal event message requested");
@@ -392,8 +394,13 @@ bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
 bool EditorWindow::closeEditorCheck(int index)
 {
     const auto& data = editorOpenedObjects.at(index);
+    Q_ASSERT(data.editor);
     if (FileBackedObject* obj = qobject_cast<FileBackedObject*>(data.obj)) {
-        if (!obj->editorNoUnsavedChanges(data.editor)) {
+        if (EditorBase* editor = qobject_cast<EditorBase*>(data.editor)) {
+            if (!editor->isDirty())
+                return true;
+
+            // dirty case
             switchToEditor(index);
             auto reply = QMessageBox::question(this,
                                                tr("Save changes"),
@@ -405,7 +412,9 @@ bool EditorWindow::closeEditorCheck(int index)
                 // Do nothing
             }break;
             case QMessageBox::No: {
-                obj->saveDataFromEditor(data.editor);
+                EditorBase* editor = qobject_cast<EditorBase*>(data.editor);
+                Q_ASSERT(editor);
+                editor->saveToObjectRequested(obj);
                 if (!obj->saveToFile()) {
                     QMessageBox::critical(this,
                                           tr("Save file failed"),
@@ -457,6 +466,25 @@ void EditorWindow::closeEvent(QCloseEvent* event)
         return;
     }
     event->accept();
+}
+
+void EditorWindow::saveRequested()
+{
+    if (currentOpenedObjectIndex == -1)
+        return;
+
+    Q_ASSERT(currentOpenedObjectIndex >= 0 && currentOpenedObjectIndex < editorOpenedObjects.size());
+    EditorOpenedObjectData& data = editorOpenedObjects[currentOpenedObjectIndex];
+    if (EditorBase* editor = qobject_cast<EditorBase*>(data.editor)) {
+        editor->saveToObjectRequested(data.obj);
+        if (FileBackedObject* obj = qobject_cast<FileBackedObject*>(data.obj)) {
+            if (!obj->saveToFile()) {
+                QMessageBox::critical(this,
+                                      tr("Save file failed"),
+                                      tr("Failed to save data to %1").arg(obj->getFilePath()));
+            }
+        }
+    }
 }
 
 void EditorWindow::changeDirectory(const QString& newDirectory)

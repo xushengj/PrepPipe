@@ -1,5 +1,5 @@
 #include "PlainTextObject.h"
-#include "src/gui/TextEditor.h"
+#include "src/gui/PlainTextObjectEditor.h"
 
 #include <QTextStream>
 #include <QTextCodec>
@@ -60,24 +60,8 @@ bool PlainTextObject::save(QByteArray& dest) const
 
 QWidget* PlainTextObject::getEditor()
 {
-    TextEditor* edit = new TextEditor;
-    edit->setPlainText(text);
-    edit->document()->setModified(false);
+    PlainTextObjectEditor* edit = new PlainTextObjectEditor;
+    edit->getEditor()->setPlainText(text);
+    edit->getEditor()->document()->setModified(false);
     return edit;
 }
-
-bool PlainTextObject::editorNoUnsavedChanges(QWidget* editor)
-{
-    TextEditor* edit = qobject_cast<TextEditor*>(editor);
-    Q_ASSERT(edit);
-    return !edit->document()->isModified();
-}
-
-void PlainTextObject::saveDataFromEditor(QWidget* editor)
-{
-    TextEditor* edit = qobject_cast<TextEditor*>(editor);
-    Q_ASSERT(edit);
-    text = edit->toPlainText();
-    edit->document()->setModified(false);
-}
-

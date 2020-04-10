@@ -2,7 +2,7 @@
 #include "ui_STGEditor.h"
 
 STGEditor::STGEditor(QWidget *parent) :
-    QWidget(parent),
+    EditorBase(parent),
     ui(new Ui::STGEditor)
 {
     ui->setupUi(this);
@@ -15,6 +15,10 @@ STGEditor::STGEditor(QWidget *parent) :
 
     connect(ui->canonicalNameListWidget, &QListWidget::currentRowChanged, this, &STGEditor::tryGoToRule);
     connect(ui->dtEnableCheckBox, &QCheckBox::toggled, this, &STGEditor::allFieldCheckboxToggled);
+    connect(ui->aliasListWidget, &STGAliasListWidget::dirty, this, &STGEditor::setDataDirty);
+    connect(ui->headerFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
+    connect(ui->delimiterFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
+    connect(ui->tailFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
 }
 
 STGEditor::~STGEditor()
@@ -60,24 +64,37 @@ void STGEditor::setBackingObject(SimpleTextGeneratorGUIObject* obj)
     }
 }
 
-void STGEditor::writeBack(SimpleTextGeneratorGUIObject* obj)
+void STGEditor::setDataDirty()
 {
-    Q_UNUSED(obj)
+    if (isDuringRuleSwitch)
+        return;
+    setDirty();
+}
+
+void STGEditor::saveToObjectRequested(ObjectBase* obj)
+{
+    SimpleTextGeneratorGUIObject* backObj = qobject_cast<SimpleTextGeneratorGUIObject*>(obj);
+    Q_ASSERT(backObj == backedObj);
+
+    clearDirty();
     // TODO
 }
 
 void STGEditor::tryGoToRule(int index)
 {
+    isDuringRuleSwitch =  true;
     if (currentIndex != -1) {
         // we are leaving a page; save what we have now
         Q_ASSERT(!canonicalNameList.isEmpty());
         auto& data = getData(currentIndex);
         data.isAllFieldsEnabled = ui->dtEnableCheckBox->isChecked();
+        data.aliasList = ui->aliasListWidget->getData();
         ui->headerFragmentInputWidget->getData(data.header);
         ui->delimiterFragmentInputWidget->getData(data.delimiter);
         ui->tailFragmentInputWidget->getData(data.tail);
     }
     if (index == -1) {
+        ui->aliasListWidget->setUnbacked();
         ui->headerFragmentInputWidget->setUnbacked();
         ui->delimiterFragmentInputWidget->setUnbacked();
         ui->tailFragmentInputWidget->setUnbacked();
@@ -87,6 +104,8 @@ void STGEditor::tryGoToRule(int index)
         ui->tailFragmentInputWidget->setHidden(true);
     } else {
         auto& data = getData(index);
+        ui->aliasListWidget->setCanonicalName(canonicalNameList.at(index));
+        ui->aliasListWidget->setData(data.aliasList);
         ui->dtEnableCheckBox->setEnabled(true);
         ui->dtEnableCheckBox->setChecked(data.isAllFieldsEnabled);
         ui->delimiterFragmentInputWidget->setHidden(!data.isAllFieldsEnabled);
@@ -96,6 +115,7 @@ void STGEditor::tryGoToRule(int index)
         ui->tailFragmentInputWidget->setData(data.tail);
     }
     currentIndex = index;
+    isDuringRuleSwitch = false;
 }
 
 void STGEditor::allFieldCheckboxToggled(bool checked)

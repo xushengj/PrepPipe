@@ -172,6 +172,7 @@ void STGFragmentInputWidget::updateReplacementListWidget()
 void STGFragmentInputWidget::expansionTextChanged()
 {
     refreshMappingListDerivedData();
+    emit dirty();
 }
 
 STGFragmentInputWidget::EditorData STGFragmentInputWidget::getDataFromStorage(const QVector<Tree::LocalValueExpression>& fragment, const QStringList& exampleText)

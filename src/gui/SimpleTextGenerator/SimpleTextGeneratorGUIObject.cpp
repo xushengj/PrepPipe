@@ -96,17 +96,3 @@ QWidget* SimpleTextGeneratorGUIObject::getEditor()
     editor->setBackingObject(this);
     return editor;
 }
-
-bool SimpleTextGeneratorGUIObject::editorNoUnsavedChanges(QWidget* editorArg)
-{
-    STGEditor* editor = qobject_cast<STGEditor*>(editorArg);
-    Q_ASSERT(editor);
-    return !editor->isDirty();
-}
-
-void SimpleTextGeneratorGUIObject::saveDataFromEditor(QWidget* editorArg)
-{
-    STGEditor* editor = qobject_cast<STGEditor*>(editorArg);
-    Q_ASSERT(editor);
-    editor->writeBack(this);
-}

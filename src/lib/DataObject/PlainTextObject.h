@@ -24,10 +24,9 @@ public:
     virtual bool save(QByteArray& dest) const override;
 
     virtual QWidget* getEditor() override;
-    virtual bool editorNoUnsavedChanges(QWidget* editor) override;
-    virtual void saveDataFromEditor(QWidget* editor) override;
 
     QString getText() const {return text;}
+    void setText(const QString& t) {text = t;}
 
 public:
     static const ConfigurationDeclaration *getImportConfigurationDeclaration();
