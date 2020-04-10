@@ -26,7 +26,7 @@ public:
 
     virtual bool saveToFile() = 0;
 
-    bool saveToFile(QWidget* dialogParent);
+    bool saveToFileStorage(QWidget* dialogParent, QString startDir);
 
     virtual QString getFileNameFilter() const;
 

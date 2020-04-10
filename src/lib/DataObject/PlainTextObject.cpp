@@ -7,6 +7,10 @@
 
 ConfigurationDeclaration PlainTextObject::importConfigDecl;
 
+ConfigurationData PlainTextObject::defaultConfig = {
+{QStringLiteral("codec"), QStringLiteral("UTF-8")}
+};
+
 namespace {
 const QString CFG_CODEC = QStringLiteral("codec");
 }
@@ -36,6 +40,11 @@ const ConfigurationDeclaration* PlainTextObject::getImportConfigurationDeclarati
     return &importConfigDecl;
 }
 
+const ConfigurationDeclaration* PlainTextObject::getExportConfigurationDeclaration()
+{
+    return getImportConfigurationDeclaration();
+}
+
 PlainTextObject* PlainTextObject::open(const QByteArray &src, const ConfigurationData& config)
 {
     QTextStream ts(src, QIODevice::ReadOnly | QIODevice::Text);
@@ -45,13 +54,15 @@ PlainTextObject* PlainTextObject::open(const QByteArray &src, const Configuratio
     QString text = ts.readAll();
     PlainTextObject* obj = new PlainTextObject(text);
     obj->setImportConfigurationData(config);
+    // copy to export config
+    obj->setExportConfigurationData(config);
     return obj;
 }
 
 bool PlainTextObject::save(QByteArray& dest) const
 {
     QTextStream ts(&dest, QIODevice::WriteOnly | QIODevice::Text);
-    QTextCodec* codec = QTextCodec::codecForName(getImportConfigurationData()(CFG_CODEC).toUtf8());
+    QTextCodec* codec = QTextCodec::codecForName(getExportConfigurationData()(CFG_CODEC).toUtf8());
     Q_ASSERT(codec);
     ts.setCodec(codec);
     ts << text;
@@ -63,5 +74,10 @@ QWidget* PlainTextObject::getEditor()
     PlainTextObjectEditor* edit = new PlainTextObjectEditor;
     edit->getEditor()->setPlainText(text);
     edit->getEditor()->document()->setModified(false);
+    edit->clearDirty();
     return edit;
+}
+
+QString PlainTextObject::getFileNameFilter() const {
+    return tr("Normal text files (*.txt);;All files (*.*)");
 }

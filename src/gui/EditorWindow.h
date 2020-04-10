@@ -98,6 +98,7 @@ private slots:
     bool tryCloseAllSideContextObjects();
 
     void saveRequested();
+    bool saveHelper(ObjectBase* obj, QWidget* editor);
 
     void processDelayedStartupAction();
 

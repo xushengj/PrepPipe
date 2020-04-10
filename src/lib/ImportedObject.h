@@ -7,6 +7,8 @@
 #include <QObject>
 #include <QIODevice>
 
+// note that while the import part is okay, the export part is not yet
+
 class ImportedObject : public FileBackedObject
 {
     Q_OBJECT
@@ -25,11 +27,18 @@ public:
 
     virtual bool save(QByteArray& dest) const = 0;
 
+    virtual void setExportConfigFromImportConfig() {}
+
     static ImportedObject* open(const QByteArray& src, QWidget* window);
 
     const ConfigurationData& getImportConfigurationData() const {return importConfig;}
+    const ConfigurationData& getExportConfigurationData() const {return exportConfig;}
+
     void setImportConfigurationData(const ConfigurationData& config) {
         importConfig = config;
+    }
+    void setExportConfigurationData(const ConfigurationData& config) {
+        exportConfig = config;
     }
 
     // dummy functions for ImportOptionDialog; derived types can provide better implementation
@@ -39,10 +48,11 @@ public:
         return true;
     }
     static const ConfigurationDeclaration* getImportConfigurationDeclaration() {return nullptr;}
-
+    static const ConfigurationDeclaration* getExportConfigurationDeclaration() {return nullptr;}
 
 private:
     ConfigurationData importConfig;
+    ConfigurationData exportConfig;
 };
 
 #endif // IMPORTEDOBJECT_H

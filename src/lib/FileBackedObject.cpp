@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QByteArray>
 #include <QMessageBox>
+#include <QFileDialog>
 
 QString FileBackedObject::getFileNameFilter() const {
     return tr("All files (*.*)");
@@ -38,13 +39,19 @@ FileBackedObject* FileBackedObject::open(const QString& filePath, QWidget* windo
     return obj;
 }
 
-bool FileBackedObject::saveToFile(QWidget* dialogParent)
+bool FileBackedObject::saveToFileStorage(QWidget* dialogParent, QString startDir)
 {
+    if (getFilePath().isEmpty()) {
+        QString filePath = QFileDialog::getSaveFileName(dialogParent, tr("Save file"), startDir, getFileNameFilter());
+        if (filePath.isEmpty())
+            return false;
+        setFilePath(filePath);
+    }
     if (saveToFile()) {
         return true;
     }
     QMessageBox::critical(dialogParent,
                           tr("Save file failed"),
-                          tr("Failed to save data to %1").arg(getFilePath()));
+                          tr("Failed to save data to %1. Please check if file permission is correctly set and there are sufficient disk space.").arg(getFilePath()));
     return false;
 }

@@ -9,6 +9,8 @@
 #include <QHash>
 #include <QDataStream>
 
+// Note that this is basically just a stub at this moment
+
 class StaticObjectIndexDB : public QObject
 {
     Q_OBJECT

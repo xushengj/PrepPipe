@@ -275,19 +275,7 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
             if (FileBackedObject* fbo = qobject_cast<FileBackedObject*>(data.obj)) {
                 QAction* saveAction = new QAction(tr("Save"));
                 connect(saveAction, &QAction::triggered, this, [=]() -> void {
-                    QString filePath = fbo->getFilePath();
-                    if (filePath.isEmpty()) {
-                        filePath = QFileDialog::getSaveFileName(this, tr("Save File"), mainCtx.getDirectory(), fbo->getFileNameFilter());
-                        if (filePath.isEmpty())
-                            return;
-                        fbo->setFilePath(filePath);
-                    }
-                    if (!fbo->saveToFile()) {
-                        QMessageBox::critical(this,
-                                              tr("Save File Failed"),
-                                              tr("Failed to save to given path. Please check if file permission is correctly set and there are sufficient disk space. Path: \"%1\"")
-                                                .arg(filePath));
-                    }
+                    saveHelper(fbo, data.editor);
                 });
                 menu.addAction(saveAction);
             }
@@ -412,16 +400,8 @@ bool EditorWindow::closeEditorCheck(int index)
                 // Do nothing
             }break;
             case QMessageBox::No: {
-                EditorBase* editor = qobject_cast<EditorBase*>(data.editor);
-                Q_ASSERT(editor);
-                editor->saveToObjectRequested(obj);
-                if (!obj->saveToFile()) {
-                    QMessageBox::critical(this,
-                                          tr("Save file failed"),
-                                          tr("Failed to save data to %1").arg(obj->getFilePath()));
-                    // aborted; something goes wrong
+                if (!saveHelper(obj, data.editor))
                     return false;
-                }
             }break;
             case QMessageBox::Cancel: {
                 return false;
@@ -475,16 +455,21 @@ void EditorWindow::saveRequested()
 
     Q_ASSERT(currentOpenedObjectIndex >= 0 && currentOpenedObjectIndex < editorOpenedObjects.size());
     EditorOpenedObjectData& data = editorOpenedObjects[currentOpenedObjectIndex];
-    if (EditorBase* editor = qobject_cast<EditorBase*>(data.editor)) {
-        editor->saveToObjectRequested(data.obj);
-        if (FileBackedObject* obj = qobject_cast<FileBackedObject*>(data.obj)) {
-            if (!obj->saveToFile()) {
-                QMessageBox::critical(this,
-                                      tr("Save file failed"),
-                                      tr("Failed to save data to %1").arg(obj->getFilePath()));
-            }
+    saveHelper(data.obj, data.editor);
+}
+
+bool EditorWindow::saveHelper(ObjectBase* obj, QWidget* editor)
+{
+    Q_ASSERT(obj);
+    if (editor) {
+        if (EditorBase* editorPtr = qobject_cast<EditorBase*>(editor)) {
+            editorPtr->saveToObjectRequested(obj);
         }
     }
+    if (FileBackedObject* objPtr = qobject_cast<FileBackedObject*>(obj)) {
+        return objPtr->saveToFileStorage(this, mainCtx.getDirectory());
+    }
+    return true;
 }
 
 void EditorWindow::changeDirectory(const QString& newDirectory)

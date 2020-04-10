@@ -13,7 +13,7 @@ ConfigurationDeclaration::ConfigurationDeclaration(const QVector<Field>& fieldsA
 
 ConfigurationDeclaration* ConfigurationDeclaration::get(const Tree& tree)
 {
-    // TODO
+#pragma message ( "ConfigurationDeclaration::get is not implemented yet." )
     Q_UNUSED(tree)
     return nullptr;
 }
@@ -29,6 +29,18 @@ ConfigurationData::ConfigurationData(const Tree& src)
     : Tree(src)
 {
 
+}
+
+ConfigurationData::ConfigurationData(std::initializer_list<std::pair<QString, QString>> list)
+{
+    TreeBuilder builder;
+    TreeBuilder::Node* root = builder.addNode(nullptr);
+    for (const std::pair<QString, QString>& p : list) {
+        root->keyList.push_back(p.first);
+        root->valueList.push_back(p.second);
+    }
+    Tree result(builder);
+    result.swap(*this);
 }
 
 ConfigurationData::Visitor ConfigurationData::Visitor::operator[](const QString& codeName) const
@@ -63,4 +75,11 @@ QString ConfigurationData::Visitor::operator()(const QString& codeName) const
 
     // not found
     return QString();
+}
+
+bool ConfigurationData::isValid(const ConfigurationDeclaration& decl) const
+{
+#pragma message ( "ConfigurationData::isValid() is not implemented yet." )
+    Q_UNUSED(decl)
+    return true;
 }

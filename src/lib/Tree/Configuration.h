@@ -5,6 +5,8 @@
 
 #include <QtGlobal>
 
+#include <initializer_list>
+
 class ConfigurationDeclaration
 {
     friend class ConfigurationInputWidget;
@@ -61,7 +63,8 @@ class ConfigurationData : public Tree
 public:
     ConfigurationData();
     explicit ConfigurationData(const Tree& src);
-    bool isValid(const ConfigurationDeclaration& decl) const {Q_UNUSED(decl) return true;}
+    ConfigurationData(std::initializer_list<std::pair<QString, QString>> list);
+    bool isValid(const ConfigurationDeclaration& decl) const;
 
 public:
     class Visitor {

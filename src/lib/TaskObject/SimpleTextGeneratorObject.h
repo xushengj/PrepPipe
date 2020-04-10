@@ -53,6 +53,10 @@ public:
 
     const SimpleTextGenerator::Data& getData() const {return data;}
 
+    void setData(const SimpleTextGenerator::Data& dataArg) {
+        data = dataArg;
+    }
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;
 

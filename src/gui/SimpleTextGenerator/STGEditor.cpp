@@ -76,8 +76,36 @@ void STGEditor::saveToObjectRequested(ObjectBase* obj)
     SimpleTextGeneratorGUIObject* backObj = qobject_cast<SimpleTextGeneratorGUIObject*>(obj);
     Q_ASSERT(backObj == backedObj);
 
+    int curIndex = currentIndex;
+    // copy back all data
+    tryGoToRule(-1);
+    SimpleTextGenerator::Data data;
+    backObj->clearGUIData();
+    data.unknownNodePolicy = (errorOnUnknownNode? decltype (data.unknownNodePolicy)::Error : decltype (data.unknownNodePolicy)::Ignore);
+    data.evalFailPolicy = (errorOnEvaluationFail? decltype (data.evalFailPolicy)::Error : decltype (data.evalFailPolicy)::SkipSubExpr);
+    for (auto iter = allData.begin(), iterEnd = allData.end(); iter != iterEnd; ++iter) {
+        const QString& cname = iter.key();
+        const RuleData& rData = iter.value();
+        SimpleTextGenerator::NodeExpansionRule& dest = data.expansions[cname];
+        QStringList list;
+        dest.header = STGFragmentInputWidget::getDataToStorage(list, rData.header);
+        backObj->setHeaderExampleText(cname, list);
+        list.clear();
+        dest.delimiter = STGFragmentInputWidget::getDataToStorage(list, rData.delimiter);
+        backObj->setDelimiterExampleText(cname, list);
+        list.clear();
+        dest.tail = STGFragmentInputWidget::getDataToStorage(list, rData.tail);
+        backObj->setTailExampleText(cname, list);
+        if (!rData.aliasList.isEmpty()) {
+            data.nameAliases.insert(cname, rData.aliasList);
+        }
+    }
+    backObj->setData(data);
+
+    // switch back
+    tryGoToRule(curIndex);
+
     clearDirty();
-    // TODO
 }
 
 void STGEditor::tryGoToRule(int index)

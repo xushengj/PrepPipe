@@ -11,11 +11,15 @@ class PlainTextObject : public ImportedObject
 public:
     PlainTextObject()
         : ImportedObject(ObjectBase::ObjectType::Data_PlainText)
-    {}
+    {
+        setImportConfigurationData(defaultConfig);
+        setExportConfigurationData(defaultConfig);
+    }
     explicit PlainTextObject(const QString& content)
-        : ImportedObject(ObjectBase::ObjectType::Data_PlainText),
-          text(content)
-    {}
+        : PlainTextObject()
+    {
+        text = content;
+    }
     PlainTextObject(const PlainTextObject&) = default;
 
     virtual PlainTextObject* clone() override {
@@ -28,12 +32,16 @@ public:
     QString getText() const {return text;}
     void setText(const QString& t) {text = t;}
 
+    virtual QString getFileNameFilter() const override;
+
 public:
     static const ConfigurationDeclaration *getImportConfigurationDeclaration();
+    static const ConfigurationDeclaration *getExportConfigurationDeclaration();
     static PlainTextObject* open(const QByteArray& src, const ConfigurationData& config);
 
 private:
     static ConfigurationDeclaration importConfigDecl;
+    static ConfigurationData defaultConfig;
 
 private:
     QString text;

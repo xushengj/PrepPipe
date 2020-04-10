@@ -35,6 +35,9 @@ public:
     QStringList getDelimiterExampleText(const QString& canonicalName) const;
     QStringList getTailExampleText(const QString& canonicalName) const;
 
+    void clearGUIData() {
+        guidata.clear();
+    }
     void setHeaderExampleText(const QString& canonicalName, const QStringList& textList) {
         guidata[canonicalName].headerExampleText = textList;
     }
