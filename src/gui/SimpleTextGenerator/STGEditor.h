@@ -40,12 +40,17 @@ private slots:
 
     void setDataDirty();
 
+    void canonicalNameListContextMenuRequested(const QPoint& pos);
+    void refreshCanonicalNameListWidget();
+
 private:
     RuleData& getData(int index) {
         auto iter = allData.find(canonicalNameList.at(index));
         Q_ASSERT(iter != allData.end());
         return iter.value();
     }
+
+    QString getCanonicalNameEditDialog(const QString& oldName, bool isNewInsteadofRename);
 
 private:
     Ui::STGEditor *ui;

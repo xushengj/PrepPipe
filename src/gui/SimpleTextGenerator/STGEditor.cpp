@@ -1,5 +1,7 @@
 #include "STGEditor.h"
 #include "ui_STGEditor.h"
+#include <QMessageBox>
+#include <QInputDialog>
 
 STGEditor::STGEditor(QWidget *parent) :
     EditorBase(parent),
@@ -19,6 +21,12 @@ STGEditor::STGEditor(QWidget *parent) :
     connect(ui->headerFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
     connect(ui->delimiterFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
     connect(ui->tailFragmentInputWidget, &STGFragmentInputWidget::dirty, this, &STGEditor::setDataDirty);
+
+    ui->canonicalNameListWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->canonicalNameListWidget, &QWidget::customContextMenuRequested, this, &STGEditor::canonicalNameListContextMenuRequested);
+
+    // TODO we have not yet implemented the generation settings dialog
+    ui->generalSettingsPushButton->setEnabled(false);
 }
 
 STGEditor::~STGEditor()
@@ -69,6 +77,135 @@ void STGEditor::setDataDirty()
     if (isDuringRuleSwitch)
         return;
     setDirty();
+}
+
+void STGEditor::canonicalNameListContextMenuRequested(const QPoint& pos)
+{
+    QListWidgetItem* item = ui->canonicalNameListWidget->itemAt(pos);
+
+    QMenu menu(ui->canonicalNameListWidget);
+    QString oldName;
+    if (item) {
+        oldName = item->text();
+        QAction* renameAction = new QAction(tr("Rename"));
+        connect(renameAction, &QAction::triggered, this, [=](){
+            QString newName = getCanonicalNameEditDialog(oldName, false);
+            if (newName.isEmpty() || newName == oldName)
+                return;
+            // if the name is already in use, pop up a dialog
+            int existingIndex = canonicalNameList.indexOf(newName);
+            if (existingIndex != -1) {
+                QMessageBox::warning(this, tr("Rename failed"), tr("There is already a rule named \"%1\".").arg(newName));
+                tryGoToRule(existingIndex);
+                return;
+            }
+            // switch to empty one first
+            QString currentCanonicalName;
+            if (currentIndex != -1) {
+                currentCanonicalName = canonicalNameList.at(currentIndex);
+                tryGoToRule(-1);
+            }
+            if (currentCanonicalName == oldName) {
+                currentCanonicalName = newName;
+            }
+            // now do the renaming
+            {
+                auto iter = allData.find(oldName);
+                Q_ASSERT(iter != allData.end());
+
+                // make a copy
+                auto data = iter.value();
+
+                allData.erase(iter);
+                allData.insert(newName, data);
+
+            }
+            canonicalNameList.removeOne(oldName);
+            canonicalNameList.push_back(newName);
+            canonicalNameList.sort();
+            refreshCanonicalNameListWidget();
+            // switch back
+            if (!currentCanonicalName.isEmpty()) {
+                int index = canonicalNameList.indexOf(currentCanonicalName);
+                Q_ASSERT(index != -1);
+                tryGoToRule(index);
+            }
+            setDataDirty();
+        });
+        menu.addAction(renameAction);
+
+        QAction* deleteAction = new QAction(tr("Delete"));
+        connect(deleteAction, &QAction::triggered, this, [=](){
+            if (QMessageBox::question(this,
+                                      tr("Delete rule confirmation"),
+                                      tr("Are you sure you want to delete the rule \"%1\"?").arg(oldName),
+                                      QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
+                bool isOneOpen = false;
+                if (currentIndex != -1) {
+                    isOneOpen = true;
+                    if (canonicalNameList.at(currentIndex) == oldName) {
+                        tryGoToRule(-1);
+                    }
+                }
+                allData.remove(oldName);
+                canonicalNameList.removeOne(oldName);
+                refreshCanonicalNameListWidget();
+                if (isOneOpen && !canonicalNameList.isEmpty()) {
+                    tryGoToRule(0);
+                }
+                setDataDirty();
+            }
+        });
+        menu.addAction(deleteAction);
+    }
+    QAction* newAction = new QAction(tr("New"));
+    connect(newAction, &QAction::triggered, this, [=](){
+        QString newName = getCanonicalNameEditDialog(oldName, true);
+        if (newName.isEmpty() || newName == oldName)
+            return;
+        // if the name is already in use, pop up a dialog
+        int existingIndex = canonicalNameList.indexOf(newName);
+        if (existingIndex != -1) {
+            QMessageBox::warning(this, tr("Rename failed"), tr("There is already a rule named \"%1\".").arg(newName));
+            tryGoToRule(existingIndex);
+            return;
+        }
+        tryGoToRule(-1);
+        canonicalNameList.push_back(newName);
+        canonicalNameList.sort();
+        refreshCanonicalNameListWidget();
+        int index = canonicalNameList.indexOf(newName);
+        allData.insert(newName, RuleData());
+        tryGoToRule(index);
+        setDataDirty();
+    });
+    menu.addAction(newAction);
+    menu.exec(ui->canonicalNameListWidget->mapToGlobal(pos));
+}
+
+QString STGEditor::getCanonicalNameEditDialog(const QString& oldName, bool isNewInsteadofRename)
+{
+    QString title;
+    QString prompt;
+    if (isNewInsteadofRename) {
+        title = tr("New rule");
+        prompt = tr("Please input the name of new rule:");
+    } else {
+        title = tr("Rename rule");
+        prompt = tr("Please input the new name for rule\"%1\":").arg(oldName);
+    }
+    bool ok = false;
+    QString result = QInputDialog::getText(this, title, prompt, QLineEdit::Normal, oldName, &ok);
+    if (ok) {
+        return result;
+    }
+    return QString();
+}
+
+void STGEditor::refreshCanonicalNameListWidget()
+{
+    ui->canonicalNameListWidget->clear();
+    ui->canonicalNameListWidget->addItems(canonicalNameList);
 }
 
 void STGEditor::saveToObjectRequested(ObjectBase* obj)
