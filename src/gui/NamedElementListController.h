@@ -105,19 +105,19 @@ public:
 
     // if we have non-void ElementHelperData:
     // if we have the name embedded in ElementStorageData:
-    template <typename Helper = ElementHelperData> std::enable_if_t<!std::is_void<Helper>::value, void> setData(const    QVector<ElementStorageData>& data, const    QVector<ElementHelperData>& helperData);
-    template <typename Helper = ElementHelperData> std::enable_if_t<!std::is_void<Helper>::value, void> getData(         QVector<ElementStorageData>& data,          QVector<ElementHelperData>& helperData);
+    template <typename Helper = ElementHelperData> typename std::enable_if<!std::is_void<Helper>::value, void>::type setData(const    QVector<ElementStorageData>& data, const    QVector<ElementHelperData>& helperData);
+    template <typename Helper = ElementHelperData> typename std::enable_if<!std::is_void<Helper>::value, void>::type getData(         QVector<ElementStorageData>& data,          QVector<ElementHelperData>& helperData);
     // if we have the name stored out-of-band as the key to a QHash:
-    template <typename Helper = ElementHelperData> std::enable_if_t<!std::is_void<Helper>::value, void> setData(const    QHash<QString, ElementStorageData>& data, const QHash<QString, ElementHelperData>& helperData);
-    template <typename Helper = ElementHelperData> std::enable_if_t<!std::is_void<Helper>::value, void> getData(         QHash<QString, ElementStorageData>& data,       QHash<QString, ElementHelperData>& helperData);
+    template <typename Helper = ElementHelperData> typename std::enable_if<!std::is_void<Helper>::value, void>::type setData(const    QHash<QString, ElementStorageData>& data, const QHash<QString, ElementHelperData>& helperData);
+    template <typename Helper = ElementHelperData> typename std::enable_if<!std::is_void<Helper>::value, void>::type getData(         QHash<QString, ElementStorageData>& data,       QHash<QString, ElementHelperData>& helperData);
 
     // if the ElementHelperData is void:
     // if we have the name embedded in ElementStorageData:
-    template <typename Helper = ElementHelperData> std::enable_if_t<std::is_void<Helper>::value, void> setData(const QVector<ElementStorageData>& data);
-    template <typename Helper = ElementHelperData> std::enable_if_t<std::is_void<Helper>::value, void> getData(const QVector<ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type setData(const QVector<ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(const QVector<ElementStorageData>& data);
     // if we have the name stored out-of-band as the key to a QHash:
-    template <typename Helper = ElementHelperData> std::enable_if_t<std::is_void<Helper>::value, void> setData(const QHash<QString, ElementStorageData>& data);
-    template <typename Helper = ElementHelperData> std::enable_if_t<std::is_void<Helper>::value, void> getData(const QHash<QString, ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type setData(const QHash<QString, ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(const QHash<QString, ElementStorageData>& data);
 
 
 private:
@@ -210,7 +210,7 @@ void NamedElementListController<ElementWidget, isSortElementByName>::tryGoToElem
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<!std::is_void<Helper>::value,void>
+typename std::enable_if<!std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::setData(
         const QVector<ElementStorageData>& data,
         const QVector<ElementHelperData> &helperData
@@ -244,7 +244,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(
 
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<!std::is_void<Helper>::value,void>
+typename std::enable_if<!std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::getData(
         QVector<ElementStorageData>& data,
         QVector<ElementHelperData>& helperData)
@@ -260,7 +260,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::getData(
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<!std::is_void<Helper>::value,void>
+typename std::enable_if<!std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::setData(
         const QHash<QString, ElementStorageData>& data,
         const QHash<QString, ElementHelperData>& helperData)
@@ -301,7 +301,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<!std::is_void<Helper>::value,void>
+typename std::enable_if<!std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::getData(
         QHash<QString, ElementStorageData>& data,
         QHash<QString, ElementHelperData>& helperData)
@@ -320,7 +320,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::getData(
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<std::is_void<Helper>::value,void>
+typename std::enable_if<std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::setData(const QVector<ElementStorageData>& data)
 {
     Q_ASSERT(getNameCallback);
@@ -349,7 +349,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(const QV
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<std::is_void<Helper>::value,void>
+typename std::enable_if<std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::getData(const QVector<ElementStorageData>& data)
 {
     int numElement = nameList.size();
@@ -362,7 +362,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::getData(const QV
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<std::is_void<Helper>::value,void>
+typename std::enable_if<std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::setData(const QHash<QString, ElementStorageData>& data)
 {
     int numElements = data.size();
@@ -394,7 +394,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(const QH
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
-std::enable_if_t<std::is_void<Helper>::value,void>
+typename std::enable_if<std::is_void<Helper>::value, void>::type
 NamedElementListController<ElementWidget, isSortElementByName>::getData(const QHash<QString, ElementStorageData>& data)
 {
     data.clear();
