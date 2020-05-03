@@ -84,6 +84,8 @@ SimpleTextGeneratorGUIObject* SimpleTextGeneratorGUIObject::loadFromXML(QXmlStre
         const char* curElement = "SimpleTextGeneratorGUIObject";
         if (!XMLUtil::readLoadableHash(xml, curElement, XML_EDITOR_GUI_DATA, XML_RULE_GUI_DATA, XML_CANONICAL_NAME, guidata, strCache)) {
             guidata.clear();
+        } else {
+            xml.skipCurrentElement();
         }
         return new SimpleTextGeneratorGUIObject(data, guidata);
     }

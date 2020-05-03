@@ -3,6 +3,8 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
+#include "src/utils/NameSorting.h"
+
 STGEditor::STGEditor(QWidget *parent) :
     EditorBase(parent),
     ui(new Ui::STGEditor)
@@ -66,7 +68,7 @@ void STGEditor::setBackingObject(SimpleTextGeneratorGUIObject* obj)
 
     // step 2: initialize gui
     if (!canonicalNameList.isEmpty()) {
-        canonicalNameList.sort();
+        NameSorting::sortNameList(canonicalNameList);
         ui->canonicalNameListWidget->addItems(canonicalNameList);
         tryGoToRule(0);
     }
@@ -122,7 +124,7 @@ void STGEditor::canonicalNameListContextMenuRequested(const QPoint& pos)
             }
             canonicalNameList.removeOne(oldName);
             canonicalNameList.push_back(newName);
-            canonicalNameList.sort();
+            NameSorting::sortNameList(canonicalNameList);
             refreshCanonicalNameListWidget();
             // switch back
             if (!currentCanonicalName.isEmpty()) {
@@ -172,7 +174,7 @@ void STGEditor::canonicalNameListContextMenuRequested(const QPoint& pos)
         }
         tryGoToRule(-1);
         canonicalNameList.push_back(newName);
-        canonicalNameList.sort();
+        NameSorting::sortNameList(canonicalNameList);
         refreshCanonicalNameListWidget();
         int index = canonicalNameList.indexOf(newName);
         allData.insert(newName, RuleData());

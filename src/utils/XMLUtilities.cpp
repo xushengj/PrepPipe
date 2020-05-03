@@ -190,7 +190,7 @@ void XMLUtil::writeStringList(QXmlStreamWriter& xml, const QStringList& list, co
     xml.writeStartElement(stringListElement);
     if (sort) {
         QStringList tmp = list;
-        tmp.sort();
+        NameSorting::sortNameList(tmp);
         for (const auto& str : tmp) {
             xml.writeTextElement(listEntryElementName, str);
         }
@@ -213,7 +213,7 @@ void XMLUtil::writeStringListHash(
 {
     xml.writeStartElement(hashName);
     QStringList keys = hash.keys();
-    keys.sort();
+    NameSorting::sortNameList(keys);
     for (const auto& key : keys) {
         auto iter = hash.find(key);
         xml.writeStartElement(hashEntryName);
@@ -221,7 +221,7 @@ void XMLUtil::writeStringListHash(
         QStringList list = iter.value();
         if (sortString) {
             QStringList tmp = list;
-            tmp.sort();
+            NameSorting::sortNameList(tmp);
             for (const auto& str : tmp) {
                 xml.writeTextElement(stringElementName, str);
             }

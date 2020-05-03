@@ -127,6 +127,8 @@ public:
 
         void saveToXML(QXmlStreamWriter& xml) const;
         bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
+        void saveToXML_NoTerminate(QXmlStreamWriter& xml) const;
+        bool loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCache& strCache);
 
         bool validate(QString& err) const;
     };

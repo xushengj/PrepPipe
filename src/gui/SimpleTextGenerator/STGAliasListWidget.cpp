@@ -1,4 +1,5 @@
 #include "STGAliasListWidget.h"
+#include "src/utils/NameSorting.h"
 
 #include <QMenu>
 #include <QAction>
@@ -94,7 +95,7 @@ QStringList STGAliasListWidget::getData()
     QStringList newData;
     for (int i = 0, n = count(); i < n; ++i) {
         newData.push_back(item(i)->text());
-        newData.sort();
+        NameSorting::sortNameList(newData);
         newData.removeDuplicates();
     }
     return newData;

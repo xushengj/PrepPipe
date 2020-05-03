@@ -51,10 +51,14 @@ public:
             std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
             ) const override;
 
+    const SimpleParser::Data& getData() const {
+        return data;
+    }
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;
 
-private:
+protected:
     SimpleParser::Data data;
 };
 

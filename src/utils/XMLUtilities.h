@@ -9,6 +9,8 @@
 
 #include <initializer_list>
 
+#include "src/utils/NameSorting.h"
+
 /**
  * @brief The StringCache class reduces duplicated string allocation
  *
@@ -34,6 +36,12 @@ private:
 };
 
 namespace XMLUtil {
+
+/**
+ * @brief sortNameList performs locale aware sorting on thelist
+ * @param list the list to sort
+ */
+void sortNameList(QStringList& list);
 
 /**
  * @brief readEnum read a enum in form of <enumElement>enum</enumElement>
@@ -368,7 +376,7 @@ void writeLoadableHash(
 {
     xml.writeStartElement(hashName);
     QStringList keys = hash.keys();
-    keys.sort();
+    NameSorting::sortNameList(keys);
     for (const auto& key : keys) {
         auto iter = hash.find(key);
         xml.writeStartElement(hashEntryName);

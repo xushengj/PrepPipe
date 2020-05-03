@@ -3,6 +3,7 @@
 #include "src/lib/StaticObjectIndexDB.h"
 #include "src/misc/Settings.h"
 #include "src/misc/MessageLogger.h"
+#include "src/utils/NameSorting.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -59,6 +60,7 @@ int main(int argc, char *argv[])
     if (parser.isSet(localeOpt)) {
         QString localeStr = parser.value(localeOpt);
         QLocale newLocale(localeStr);
+        QLocale::setDefault(newLocale);
 
         // remove the translator first, in case another translation file is already loaded
         if (!translator.isEmpty()) {
@@ -77,6 +79,7 @@ int main(int argc, char *argv[])
             }
         }
     }
+    NameSorting::init();
 
     QString rootDirectory;
     if (parser.isSet(rootDirOpt)) {

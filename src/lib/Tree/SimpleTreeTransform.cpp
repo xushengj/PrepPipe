@@ -1,5 +1,5 @@
 #include "src/lib/Tree/SimpleTreeTransform.h"
-
+#include "src/utils/NameSorting.h"
 #include <QDebug>
 
 namespace {
@@ -315,7 +315,7 @@ void SimpleTreeTransform::Data::saveToXML(QXmlStreamWriter& xml) const
     xml.writeStartElement(XML_NODE_TRANSFORM_LIST);
     if (!nodeTypeToRuleList.isEmpty()) {
         QStringList sortedNodeTypeList = nodeTypeToRuleList.keys();
-        sortedNodeTypeList.sort();
+        NameSorting::sortNameList(sortedNodeTypeList);
         for (const auto& tyName : sortedNodeTypeList) {
             auto iter = nodeTypeToRuleList.find(tyName);
             Q_ASSERT(iter != nodeTypeToRuleList.end());

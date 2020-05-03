@@ -8,6 +8,7 @@
 #include "src/utils/XMLUtilities.h"
 #ifndef SUPP_NO_GUI
 #include "src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h"
+#include "src/gui/SimpleParser/SimpleParserGUIObject.h"
 #endif
 #include <QDebug>
 #include <QSaveFile>

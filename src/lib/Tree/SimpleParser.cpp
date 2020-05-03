@@ -836,7 +836,7 @@ bool getBoundaryTypeFromString(QStringRef str, SimpleParser::BoundaryType& ty)
 }
 }
 
-void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
+void SimpleParser::Data::saveToXML_NoTerminate(QXmlStreamWriter& xml) const
 {
     xml.writeTextElement(XML_ROOT_NODE, rootRuleNodeName);
     writeSortedVec(xml, matchRuleNodes,     XML_MATCH_RULE_NODE_LIST,       XML_MATCH_RULE_NODE);
@@ -844,10 +844,15 @@ void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
     writeSortedVec(xml, contentTypes,       XML_CONTENT_TYPE_LIST,          XML_CONTENT_TYPE);
     writeSortedVec(xml, parenthesis,        XML_BALANCED_PARENTHESIS_LIST,  XML_PARENTHESIS);
     XMLUtil::writeStringList(xml, whitespaceList, XML_WHITESPACE_LIST, XML_WHITESPACE, true);
+}
+
+void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
+{
+    saveToXML_NoTerminate(xml);
     xml.writeEndElement();
 }
 
-bool SimpleParser::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
+bool SimpleParser::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCache& strCache)
 {
     const char* curElement = "SimpleParser::Data";
     if (Q_UNLIKELY(!XMLUtil::readString(xml, curElement, XML_ROOT_NODE, rootRuleNodeName, strCache))) {
@@ -866,6 +871,14 @@ bool SimpleParser::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCach
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_WHITESPACE_LIST, XML_WHITESPACE, whitespaceList, strCache))) {
+        return false;
+    }
+    return true;
+}
+
+bool SimpleParser::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCache)
+{
+    if (Q_UNLIKELY(!loadFromXML_NoTerminate(xml, strCache))) {
         return false;
     }
     xml.skipCurrentElement();

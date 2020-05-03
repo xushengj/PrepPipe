@@ -37,12 +37,21 @@ SOURCES += \
     src/gui/ConfigurationInputWidget.cpp \
     src/gui/DropTestLabel.cpp \
     src/gui/EditorBase.cpp \
+    src/gui/ElementListWidget.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
     src/gui/ImportFileDialog.cpp \
+    src/gui/NameListWidget.cpp \
+    src/gui/NamedElementListController.cpp \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
     src/gui/PlainTextObjectEditor.cpp \
+    src/gui/SimpleParser/SPContentInputWidget.cpp \
+    src/gui/SimpleParser/SPMarkInputWidget.cpp \
+    src/gui/SimpleParser/SPRuleInputWidget.cpp \
+    src/gui/SimpleParser/SPRulePatternInputWidget.cpp \
+    src/gui/SimpleParser/SimpleParserEditor.cpp \
+    src/gui/SimpleParser/SimpleParserGUIObject.cpp \
     src/gui/SimpleTextGenerator/STGAliasListWidget.cpp \
     src/gui/SimpleTextGenerator/STGEditor.cpp \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.cpp \
@@ -76,6 +85,7 @@ SOURCES += \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
     src/misc/Settings.cpp \
+    src/utils/NameSorting.cpp \
     src/utils/XMLUtilities.cpp
 
 HEADERS += \
@@ -84,12 +94,21 @@ HEADERS += \
     src/gui/DropTestLabel.h \
     src/gui/EditorBase.h \
     src/gui/EditorWindow.h \
+    src/gui/ElementListWidget.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
     src/gui/ImportFileDialog.h \
+    src/gui/NameListWidget.h \
+    src/gui/NamedElementListController.h \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
     src/gui/PlainTextObjectEditor.h \
+    src/gui/SimpleParser/SPContentInputWidget.h \
+    src/gui/SimpleParser/SPMarkInputWidget.h \
+    src/gui/SimpleParser/SPRuleInputWidget.h \
+    src/gui/SimpleParser/SPRulePatternInputWidget.h \
+    src/gui/SimpleParser/SimpleParserEditor.h \
+    src/gui/SimpleParser/SimpleParserGUIObject.h \
     src/gui/SimpleTextGenerator/STGAliasListWidget.h \
     src/gui/SimpleTextGenerator/STGEditor.h \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.h \
@@ -121,6 +140,7 @@ HEADERS += \
     src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h \
+    src/utils/NameSorting.h \
     src/utils/XMLUtilities.h
 
 FORMS += \
@@ -131,6 +151,11 @@ FORMS += \
     src/gui/ImportFileDialog.ui \
     src/gui/MIMEDataEditor.ui \
     src/gui/ObjectInputEdit.ui \
+    src/gui/SimpleParser/SPContentInputWidget.ui \
+    src/gui/SimpleParser/SPMarkInputWidget.ui \
+    src/gui/SimpleParser/SPRuleInputWidget.ui \
+    src/gui/SimpleParser/SPRulePatternInputWidget.ui \
+    src/gui/SimpleParser/SimpleParserEditor.ui \
     src/gui/SimpleTextGenerator/STGEditor.ui \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.ui \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui
