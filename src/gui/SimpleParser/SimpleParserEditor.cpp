@@ -13,6 +13,20 @@ SimpleParserEditor::SimpleParserEditor(QWidget *parent) :
     });
     ruleCtl.setCreateWidgetCallback(std::bind(&SimpleParserEditor::createRuleInputWidget, this, std::placeholders::_1));
     connect(ruleCtl.getObj(), &NamedElementListControllerObject::dirty, this, &EditorBase::setDirty);
+
+    markCtl.init(ui->markNameListWidget, ui->markStackedWidget);
+    markCtl.setGetNameCallback([](const SimpleParser::NamedBoundary& data) -> QString {
+        return data.name;
+    });
+    markCtl.setCreateWidgetCallback(std::bind(&SimpleParserEditor::createMarkInputWidget, this, std::placeholders::_1));
+    connect(markCtl.getObj(), &NamedElementListControllerObject::dirty, this, &EditorBase::setDirty);
+
+    contentCtl.init(ui->contentNameListWidget, ui->contentStackedWidget);
+    contentCtl.setGetNameCallback([](const SimpleParser::ContentType& data) -> QString {
+        return data.name;
+    });
+    contentCtl.setCreateWidgetCallback(std::bind(&SimpleParserEditor::createContentInputWidget, this, std::placeholders::_1));
+    connect(contentCtl.getObj(), &NamedElementListControllerObject::dirty, this, &EditorBase::setDirty);
 }
 
 SimpleParserEditor::~SimpleParserEditor()
@@ -31,6 +45,24 @@ SPRuleInputWidget* SimpleParserEditor::createRuleInputWidget(NamedElementListCon
     return w;
 }
 
+SPMarkInputWidget* SimpleParserEditor::createMarkInputWidget(NamedElementListControllerObject* obj)
+{
+    SPMarkInputWidget* w = new SPMarkInputWidget;
+    w->setNamedBoundaryCheckCallback(std::bind(&SimpleParserEditor::inputValidationCallback_NamedBoundary,  this, std::placeholders::_1));
+    w->setNamedBoundaryListModel(markCtl.getNameListModel());
+    connect(w, &SPMarkInputWidget::gotoMarkRequested, obj, &NamedElementListControllerObject::tryGoToElement);
+    return w;
+}
+
+SPContentInputWidget* SimpleParserEditor::createContentInputWidget(NamedElementListControllerObject* obj)
+{
+    // TODO
+    // currently basically a stub
+    Q_UNUSED(obj)
+    SPContentInputWidget* w = new SPContentInputWidget;
+    return w;
+}
+
 bool SimpleParserEditor::inputValidationCallback_MatchRuleNode(const QString& name)
 {
     return ruleCtl.isElementExist(name);
@@ -38,16 +70,12 @@ bool SimpleParserEditor::inputValidationCallback_MatchRuleNode(const QString& na
 
 bool SimpleParserEditor::inputValidationCallback_ContentType(const QString& name)
 {
-    // for now just a stub
-    // TODO
-    return true;
+    return contentCtl.isElementExist(name);
 }
 
 bool SimpleParserEditor::inputValidationCallback_NamedBoundary(const QString& name)
 {
-    // for now just a stub
-    // TODO
-    return true;
+    return markCtl.isElementExist(name);
 }
 
 void SimpleParserEditor::saveToObjectRequested(ObjectBase* obj)
@@ -61,5 +89,8 @@ void SimpleParserEditor::saveToObjectRequested(ObjectBase* obj)
 void SimpleParserEditor::setBackingObject(SimpleParserGUIObject* obj)
 {
     backingObj = obj;
-    ruleCtl.setData(obj->getData().matchRuleNodes);
+    const auto& data = obj->getData();
+    ruleCtl.setData(data.matchRuleNodes);
+    contentCtl.setData(data.contentTypes);
+    markCtl.setData(data.namedBoundaries);
 }

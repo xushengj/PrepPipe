@@ -33,6 +33,7 @@ DEFINES += SUPP_NO_THREADS
 # DEFINES += SUPP_NO_GUI
 
 SOURCES += \
+    src/gui/AnonymousElementListController.cpp \
     src/gui/BreadcrumbWidget.cpp \
     src/gui/ConfigurationInputWidget.cpp \
     src/gui/DropTestLabel.cpp \
@@ -46,6 +47,7 @@ SOURCES += \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
     src/gui/PlainTextObjectEditor.cpp \
+    src/gui/SimpleParser/BoundaryDeclarationEditWidget.cpp \
     src/gui/SimpleParser/SPContentInputWidget.cpp \
     src/gui/SimpleParser/SPMarkInputWidget.cpp \
     src/gui/SimpleParser/SPRuleInputWidget.cpp \
@@ -89,6 +91,7 @@ SOURCES += \
     src/utils/XMLUtilities.cpp
 
 HEADERS += \
+    src/gui/AnonymousElementListController.h \
     src/gui/BreadcrumbWidget.h \
     src/gui/ConfigurationInputWidget.h \
     src/gui/DropTestLabel.h \
@@ -103,6 +106,7 @@ HEADERS += \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
     src/gui/PlainTextObjectEditor.h \
+    src/gui/SimpleParser/BoundaryDeclarationEditWidget.h \
     src/gui/SimpleParser/SPContentInputWidget.h \
     src/gui/SimpleParser/SPMarkInputWidget.h \
     src/gui/SimpleParser/SPRuleInputWidget.h \
@@ -151,6 +155,7 @@ FORMS += \
     src/gui/ImportFileDialog.ui \
     src/gui/MIMEDataEditor.ui \
     src/gui/ObjectInputEdit.ui \
+    src/gui/SimpleParser/BoundaryDeclarationEditWidget.ui \
     src/gui/SimpleParser/SPContentInputWidget.ui \
     src/gui/SimpleParser/SPMarkInputWidget.ui \
     src/gui/SimpleParser/SPRuleInputWidget.ui \

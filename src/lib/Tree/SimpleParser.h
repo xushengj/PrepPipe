@@ -17,7 +17,7 @@ public:
     // two basic types:
     //      Anonymous boundary: StringLiteral or Regex that are unique'd by content
     //      Named boundary: other more complex expressions that are refered by name
-    enum class BoundaryType {
+    enum class BoundaryType : int{
         // ----------------------------------------------------------------
         // Anonymous boundary types
 
@@ -37,7 +37,7 @@ public:
 
     };
     struct BoundaryDeclaration {
-        enum class DeclarationType {
+        enum class DeclarationType : int {
             Value, // this declaration is an anonymous child that have entire data stored in this declaration
             NameReference // this declaration only makes a name reference to child
         };

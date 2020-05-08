@@ -15,6 +15,7 @@ void NameListWidget::setData(const QStringList& dataArg)
 {
     clear();
     addItems(dataArg);
+    data = dataArg;
 }
 
 void NameListWidget::contextMenuEvent(QContextMenuEvent *event)

@@ -168,7 +168,7 @@ void STGEditor::canonicalNameListContextMenuRequested(const QPoint& pos)
         // if the name is already in use, pop up a dialog
         int existingIndex = canonicalNameList.indexOf(newName);
         if (existingIndex != -1) {
-            QMessageBox::warning(this, tr("Rename failed"), tr("There is already a rule named \"%1\".").arg(newName));
+            QMessageBox::warning(this, tr("Creation failed"), tr("There is already a rule named \"%1\".").arg(newName));
             tryGoToRule(existingIndex);
             return;
         }

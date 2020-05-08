@@ -25,7 +25,7 @@ public:
         Q_UNUSED(name)
         setData(dataArg);
     }
-    void getData(SimpleParser::MatchRuleNode& dataArg);
+    void getData(const QString& name, SimpleParser::MatchRuleNode& dataArg);
 
     // Note: all the callback should be set before setting data
 
@@ -41,6 +41,9 @@ public:
     void setContentTypeCheckCallback(std::function<bool(const QString&)> cb) {
         contentTypeCheckCB = cb;
     }
+
+public slots:
+    void nameUpdated(const QString& name);
 
 signals:
     void dirty();

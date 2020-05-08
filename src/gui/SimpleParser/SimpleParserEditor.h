@@ -5,6 +5,8 @@
 #include "src/gui/NamedElementListController.h"
 #include "src/gui/SimpleParser/SimpleParserGUIObject.h"
 #include "src/gui/SimpleParser/SPRuleInputWidget.h"
+#include "src/gui/SimpleParser/SPMarkInputWidget.h"
+#include "src/gui/SimpleParser/SPContentInputWidget.h"
 
 #include <QWidget>
 
@@ -27,6 +29,8 @@ public:
 
 private:
     SPRuleInputWidget* createRuleInputWidget(NamedElementListControllerObject* obj);
+    SPMarkInputWidget* createMarkInputWidget(NamedElementListControllerObject* obj);
+    SPContentInputWidget* createContentInputWidget(NamedElementListControllerObject* obj);
     bool inputValidationCallback_MatchRuleNode(const QString& name);
     bool inputValidationCallback_ContentType(const QString& name);
     bool inputValidationCallback_NamedBoundary(const QString& name);
@@ -35,6 +39,8 @@ private:
     Ui::SimpleParserEditor *ui;
     SimpleParserGUIObject* backingObj = nullptr;
     NamedElementListController<SPRuleInputWidget, true> ruleCtl;
+    NamedElementListController<SPMarkInputWidget, true> markCtl;
+    NamedElementListController<SPContentInputWidget, true> contentCtl;
 };
 
 #endif // SIMPLEPARSEREDITOR_H

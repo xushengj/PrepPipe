@@ -20,6 +20,12 @@ SPRuleInputWidget::~SPRuleInputWidget()
     delete ui;
 }
 
+void SPRuleInputWidget::nameUpdated(const QString& name)
+{
+    // no-op
+    Q_UNUSED(name)
+}
+
 void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
 {
     ui->parentListWidget->setData(dataArg.parentNodeNameList);
@@ -50,10 +56,17 @@ void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
     }
 }
 
-void SPRuleInputWidget::getData(SimpleParser::MatchRuleNode& dataArg)
+void SPRuleInputWidget::getData(const QString &name, SimpleParser::MatchRuleNode& dataArg)
 {
-    Q_UNUSED(dataArg);
-    qFatal("not implemented");
+    dataArg.name = name;
+    dataArg.parentNodeNameList = ui->parentListWidget->getData();
+    dataArg.patterns.clear();
+    int numPatterns = patterns.size();
+    dataArg.patterns.resize(numPatterns);
+    for (int i = 0; i < numPatterns; ++i) {
+        SPRulePatternInputWidget* w = patterns.at(i).widget;
+        w->getData(dataArg.patterns[i]);
+    }
 }
 
 QString SPRuleInputWidget::getPatternSummaryName(int index, const QString& outputTypeName)
