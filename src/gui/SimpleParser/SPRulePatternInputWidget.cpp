@@ -101,6 +101,7 @@ void SPRulePatternInputWidget::resetPatternDisplayFromData()
     QColor anonymousBoundaryColor = getAnonymousBoundaryColor();
     QColor namedBoundaryColor = getNamedBoundaryColor();
     QColor regexBoundaryColor = getRegexBoundaryColor();
+    ui->plainTextEdit->clear();
     QTextCursor cursor(ui->plainTextEdit->document());
     QTextCharFormat fmt;
     for (auto& element : data.pattern) {

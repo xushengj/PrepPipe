@@ -2,7 +2,9 @@
 #define SPRULEINPUTWIDGET_H
 
 #include <QWidget>
+#include "src/lib/Tree/SimpleParser.h"
 #include "src/gui/SimpleParser/SPRulePatternInputWidget.h"
+#include "src/gui/SimpleParser/SPRulePatternQuickInputDialog.h"
 
 namespace Ui {
 class SPRuleInputWidget;
@@ -16,6 +18,10 @@ public:
     using StorageData = SimpleParser::MatchRuleNode;
     using HelperData = void;
 
+    // for now the only shared common helper is for the quick input
+    // we may create a struct if more than one thing shows up
+    using CommonHelperData = SPRulePatternQuickInputDialog::HelperData;
+
 public:
     explicit SPRuleInputWidget(QWidget *parent = nullptr);
     ~SPRuleInputWidget();
@@ -24,6 +30,9 @@ public:
     void setData(const QString& name, const SimpleParser::MatchRuleNode& dataArg) {
         Q_UNUSED(name)
         setData(dataArg);
+    }
+    void bindCommonHelper(CommonHelperData& helper) {
+        helperPtr = &helper;
     }
     void getData(const QString& name, SimpleParser::MatchRuleNode& dataArg);
 
@@ -60,6 +69,7 @@ private:
 private slots:
     void updatePatternName(SPRulePatternInputWidget* widget);
     void currentPatternChanged(int index);
+    void addPatternRequested();
 
 private:
     Ui::SPRuleInputWidget *ui;
@@ -68,6 +78,8 @@ private:
     std::function<bool(const QString&)> contentTypeCheckCB;
 
     QVector<PatternData> patterns;
+    CommonHelperData* helperPtr = nullptr;
+    QString defaultNodeTypeName;
 };
 
 #endif // SPRULEINPUTWIDGET_H

@@ -41,6 +41,7 @@ SPRuleInputWidget* SimpleParserEditor::createRuleInputWidget(NamedElementListCon
     w->setParentNodeNameCheckCallback   (std::bind(&SimpleParserEditor::inputValidationCallback_MatchRuleNode,  this, std::placeholders::_1));
     w->setNamedBoundaryCheckCallback    (std::bind(&SimpleParserEditor::inputValidationCallback_NamedBoundary,  this, std::placeholders::_1));
     w->setContentTypeCheckCallback      (std::bind(&SimpleParserEditor::inputValidationCallback_ContentType,    this, std::placeholders::_1));
+    w->bindCommonHelper(ruleCommonHelper);
     connect(w, &SPRuleInputWidget::gotoRuleNodeRequested, obj, &NamedElementListControllerObject::tryGoToElement);
     return w;
 }
@@ -93,4 +94,5 @@ void SimpleParserEditor::setBackingObject(SimpleParserGUIObject* obj)
     ruleCtl.setData(data.matchRuleNodes);
     contentCtl.setData(data.contentTypes);
     markCtl.setData(data.namedBoundaries);
+    // TODO get rule common helper from file
 }

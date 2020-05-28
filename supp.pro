@@ -35,10 +35,12 @@ DEFINES += SUPP_NO_THREADS
 SOURCES += \
     src/gui/AnonymousElementListController.cpp \
     src/gui/BreadcrumbWidget.cpp \
+    src/gui/ComboBoxDelegate.cpp \
     src/gui/ConfigurationInputWidget.cpp \
     src/gui/DropTestLabel.cpp \
     src/gui/EditorBase.cpp \
     src/gui/ElementListWidget.cpp \
+    src/gui/ElementTableView.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
     src/gui/ImportFileDialog.cpp \
@@ -52,6 +54,8 @@ SOURCES += \
     src/gui/SimpleParser/SPMarkInputWidget.cpp \
     src/gui/SimpleParser/SPRuleInputWidget.cpp \
     src/gui/SimpleParser/SPRulePatternInputWidget.cpp \
+    src/gui/SimpleParser/SPRulePatternQuickInputDialog.cpp \
+    src/gui/SimpleParser/SPRulePatternQuickInputSpecialBlockModel.cpp \
     src/gui/SimpleParser/SimpleParserEditor.cpp \
     src/gui/SimpleParser/SimpleParserGUIObject.cpp \
     src/gui/SimpleTextGenerator/STGAliasListWidget.cpp \
@@ -93,11 +97,13 @@ SOURCES += \
 HEADERS += \
     src/gui/AnonymousElementListController.h \
     src/gui/BreadcrumbWidget.h \
+    src/gui/ComboBoxDelegate.h \
     src/gui/ConfigurationInputWidget.h \
     src/gui/DropTestLabel.h \
     src/gui/EditorBase.h \
     src/gui/EditorWindow.h \
     src/gui/ElementListWidget.h \
+    src/gui/ElementTableView.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
     src/gui/ImportFileDialog.h \
@@ -111,6 +117,8 @@ HEADERS += \
     src/gui/SimpleParser/SPMarkInputWidget.h \
     src/gui/SimpleParser/SPRuleInputWidget.h \
     src/gui/SimpleParser/SPRulePatternInputWidget.h \
+    src/gui/SimpleParser/SPRulePatternQuickInputDialog.h \
+    src/gui/SimpleParser/SPRulePatternQuickInputSpecialBlockModel.h \
     src/gui/SimpleParser/SimpleParserEditor.h \
     src/gui/SimpleParser/SimpleParserGUIObject.h \
     src/gui/SimpleTextGenerator/STGAliasListWidget.h \
@@ -160,6 +168,7 @@ FORMS += \
     src/gui/SimpleParser/SPMarkInputWidget.ui \
     src/gui/SimpleParser/SPRuleInputWidget.ui \
     src/gui/SimpleParser/SPRulePatternInputWidget.ui \
+    src/gui/SimpleParser/SPRulePatternQuickInputDialog.ui \
     src/gui/SimpleParser/SimpleParserEditor.ui \
     src/gui/SimpleTextGenerator/STGEditor.ui \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.ui \

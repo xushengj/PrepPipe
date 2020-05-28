@@ -9,6 +9,7 @@ SPRuleInputWidget::SPRuleInputWidget(QWidget *parent) :
     ui->parentListWidget->setAcceptGotoRequest(true);
     connect(ui->parentListWidget, &NameListWidget::gotoRequested, this, &SPRuleInputWidget::gotoRuleNodeRequested);
     connect(ui->patternComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SPRuleInputWidget::currentPatternChanged);
+    connect(ui->addPatternPushButton, &QPushButton::clicked, this, &SPRuleInputWidget::addPatternRequested);
 }
 
 void SPRuleInputWidget::setParentNodeNameCheckCallback(std::function<bool(const QString&)> cb) {
@@ -22,12 +23,12 @@ SPRuleInputWidget::~SPRuleInputWidget()
 
 void SPRuleInputWidget::nameUpdated(const QString& name)
 {
-    // no-op
-    Q_UNUSED(name)
+    defaultNodeTypeName = name;
 }
 
 void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
 {
+    defaultNodeTypeName = dataArg.name;
     ui->parentListWidget->setData(dataArg.parentNodeNameList);
     for (auto& data : patterns) {
         ui->patternStackedWidget->removeWidget(data.widget);
@@ -96,4 +97,14 @@ void SPRuleInputWidget::updatePatternName(SPRulePatternInputWidget* widget)
         return;
     }
     qFatal("No backing pattern data found");
+}
+
+void SPRuleInputWidget::addPatternRequested()
+{
+    Q_ASSERT(helperPtr);
+    SPRulePatternQuickInputDialog* dialog = new SPRulePatternQuickInputDialog(*helperPtr, defaultNodeTypeName, this);
+    if (dialog->exec() == QDialog::Accepted) {
+        // TODO
+    }
+    dialog->deleteLater();
 }

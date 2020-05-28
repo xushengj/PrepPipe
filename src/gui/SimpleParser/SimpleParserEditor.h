@@ -41,6 +41,7 @@ private:
     NamedElementListController<SPRuleInputWidget, true> ruleCtl;
     NamedElementListController<SPMarkInputWidget, true> markCtl;
     NamedElementListController<SPContentInputWidget, true> contentCtl;
+    SPRuleInputWidget::CommonHelperData ruleCommonHelper;
 };
 
 #endif // SIMPLEPARSEREDITOR_H

@@ -14,7 +14,6 @@ class SPRulePatternInputWidget;
 class SPRulePatternInputWidget : public QWidget
 {
     Q_OBJECT
-
 public:
     explicit SPRulePatternInputWidget(QWidget *parent = nullptr);
     ~SPRulePatternInputWidget();
