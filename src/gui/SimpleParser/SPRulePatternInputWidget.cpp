@@ -104,6 +104,7 @@ void SPRulePatternInputWidget::resetPatternDisplayFromData()
     ui->plainTextEdit->clear();
     QTextCursor cursor(ui->plainTextEdit->document());
     QTextCharFormat fmt;
+    QChar wsDisplayChar(0x2423);
     for (auto& element : data.pattern) {
         int index = elementHighlightPosList.size();
         QListWidgetItem* item = new QListWidgetItem;
@@ -145,7 +146,9 @@ void SPRulePatternInputWidget::resetPatternDisplayFromData()
         case decltype(element.ty)::AnonymousBoundary_StringLiteral: {
             currentColor = anonymousBoundaryColor;
             itemText.append('"');
-            itemText.append(element.str);
+            QString str = element.str;
+            str.replace(' ', wsDisplayChar);
+            itemText.append(str);
             itemText.append('"');
             patternText.append(element.str);
         }break;
@@ -172,7 +175,6 @@ void SPRulePatternInputWidget::resetPatternDisplayFromData()
         case decltype(element.ty)::AnonymousBoundary_SpecialCharacter_WhiteSpaces: {
             currentColor = anonymousBoundaryColor;
             itemText.append(tr("Whitespace (Mandatory)"));
-            QChar wsDisplayChar(0x2423);
             patternText.append(wsDisplayChar);
         }break;
         case decltype(element.ty)::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace: {
