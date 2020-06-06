@@ -43,6 +43,7 @@ SPRuleInputWidget* SimpleParserEditor::createRuleInputWidget(NamedElementListCon
     w->setContentTypeCheckCallback      (std::bind(&SimpleParserEditor::inputValidationCallback_ContentType,    this, std::placeholders::_1));
     w->bindCommonHelper(ruleCommonHelper);
     connect(w, &SPRuleInputWidget::gotoRuleNodeRequested, obj, &NamedElementListControllerObject::tryGoToElement);
+    connect(w, &SPRuleInputWidget::dirty, this, &EditorBase::setDirty);
     return w;
 }
 
@@ -52,6 +53,7 @@ SPMarkInputWidget* SimpleParserEditor::createMarkInputWidget(NamedElementListCon
     w->setNamedBoundaryCheckCallback(std::bind(&SimpleParserEditor::inputValidationCallback_NamedBoundary,  this, std::placeholders::_1));
     w->setNamedBoundaryListModel(markCtl.getNameListModel());
     connect(w, &SPMarkInputWidget::gotoMarkRequested, obj, &NamedElementListControllerObject::tryGoToElement);
+    connect(w, &SPMarkInputWidget::dirty, this, &EditorBase::setDirty);
     return w;
 }
 
@@ -61,6 +63,7 @@ SPContentInputWidget* SimpleParserEditor::createContentInputWidget(NamedElementL
     // currently basically a stub
     Q_UNUSED(obj)
     SPContentInputWidget* w = new SPContentInputWidget;
+    connect(w, &SPContentInputWidget::dirty, this, &EditorBase::setDirty);
     return w;
 }
 

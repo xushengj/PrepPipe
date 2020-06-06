@@ -126,6 +126,7 @@ void SPRuleInputWidget::addPatternRequested()
             addPattern(data);
             ui->patternComboBox->setCurrentIndex(cnt);
             updateButtonState();
+            emit dirty();
         }
     }
     dialog->deleteLater();
@@ -169,4 +170,5 @@ void SPRuleInputWidget::deleteCurrentPatternRequested()
     if (!patterns.isEmpty()) {
         ui->patternComboBox->setCurrentIndex((index < patterns.size())? index : (patterns.size()-1));
     }
+    emit dirty();
 }

@@ -99,6 +99,7 @@ private slots:
 
     void saveRequested();
     bool saveHelper(ObjectBase* obj, QWidget* editor);
+    void updateWindowTitle();
 
     void processDelayedStartupAction();
 

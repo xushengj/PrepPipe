@@ -80,6 +80,8 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     ui->objectListTreeWidget->addSelfContextIndex(sideCtx.getContextIndex());
     ui->objectListTreeWidget->setAcceptDrops(true);
 
+    setWindowTitle(QApplication::applicationName());
+
     QMetaObject::invokeMethod(this, &EditorWindow::processDelayedStartupAction, Qt::QueuedConnection);
 
     // populate startup info
@@ -241,6 +243,41 @@ void EditorWindow::switchToEditor(int index)
     previousWidget->hide();
     qobject_cast<QGridLayout*>(ui->placeholderWidget->layout())->addWidget(curWidget, 0, 0);
     curWidget->show();
+
+    if (index != -1) {
+        if (EditorBase* editor = qobject_cast<EditorBase*>(curWidget)) {
+            connect(editor, &EditorBase::dirty, this, &EditorWindow::updateWindowTitle, Qt::UniqueConnection);
+        }
+    }
+
+    updateWindowTitle();
+}
+
+void EditorWindow::updateWindowTitle()
+{
+    if (currentOpenedObjectIndex == -1) {
+        setWindowTitle(QApplication::applicationName());
+    } else {
+        auto& data = editorOpenedObjects.at(currentOpenedObjectIndex);
+        ObjectBase* obj = data.obj;
+        QString objTitle;
+        if (FileBackedObject* fbo = qobject_cast<FileBackedObject*>(obj)) {
+            objTitle = fbo->getFilePath();
+        }
+        if (objTitle.isEmpty()) {
+            objTitle = obj->getName();
+        }
+        QString title = QString("%1 - %2").arg(objTitle, QApplication::applicationName());
+
+        bool isDirty = false;
+        if (EditorBase* editor = qobject_cast<EditorBase*>(data.editor)) {
+            isDirty = editor->isDirty();
+        }
+        if (isDirty) {
+            title.prepend('*');
+        }
+        setWindowTitle(title);
+    }
 }
 
 void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
@@ -276,6 +313,7 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
                 QAction* saveAction = new QAction(tr("Save"));
                 connect(saveAction, &QAction::triggered, this, [=]() -> void {
                     saveHelper(fbo, data.editor);
+                    updateWindowTitle();
                 });
                 menu.addAction(saveAction);
             }
@@ -392,16 +430,18 @@ bool EditorWindow::closeEditorCheck(int index)
             switchToEditor(index);
             auto reply = QMessageBox::question(this,
                                                tr("Save changes"),
-                                               tr("You have unsaved changes in %1. Do you want to discard them?").arg(obj->getFilePath()),
+                                               tr("You have unsaved changes in %1. Do you want to save them?").arg(obj->getFilePath()),
                                                QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
             switch (reply) {
             default: Q_UNREACHABLE();
             case QMessageBox::Yes: {
-                // Do nothing
+                bool isGood = saveHelper(obj, data.editor);
+                updateWindowTitle();
+                if (!isGood)
+                    return false;
             }break;
             case QMessageBox::No: {
-                if (!saveHelper(obj, data.editor))
-                    return false;
+                // Do nothing
             }break;
             case QMessageBox::Cancel: {
                 return false;
@@ -456,6 +496,7 @@ void EditorWindow::saveRequested()
     Q_ASSERT(currentOpenedObjectIndex >= 0 && currentOpenedObjectIndex < editorOpenedObjects.size());
     EditorOpenedObjectData& data = editorOpenedObjects[currentOpenedObjectIndex];
     saveHelper(data.obj, data.editor);
+    updateWindowTitle();
 }
 
 bool EditorWindow::saveHelper(ObjectBase* obj, QWidget* editor)
@@ -466,9 +507,17 @@ bool EditorWindow::saveHelper(ObjectBase* obj, QWidget* editor)
             editorPtr->saveToObjectRequested(obj);
         }
     }
+
     if (FileBackedObject* objPtr = qobject_cast<FileBackedObject*>(obj)) {
-        return objPtr->saveToFileStorage(this, mainCtx.getDirectory());
+        bool isSaveSuccessful = objPtr->saveToFileStorage(this, mainCtx.getDirectory());
+        if (isSaveSuccessful && editor) {
+            if (EditorBase* editorPtr = qobject_cast<EditorBase*>(editor)) {
+                editorPtr->clearDirty();
+            }
+        }
+        return isSaveSuccessful;
     }
+
     return true;
 }
 
