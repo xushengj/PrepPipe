@@ -219,11 +219,6 @@ private:
     void handleCopyAs(const QString& name, const QString& srcName, ElementWidget* src);
     void handleAddElement(const QString& name, ElementWidget* w);
 
-    template<typename... Types>
-    static QString tr(Types... arg) {
-        return NamedElementListControllerObject::tr(arg...);
-    }
-
     QVector<std::pair<QString, ElementWidget*>> getCombinedPairVec(int reserveSize);
 
 private:
@@ -624,13 +619,15 @@ void NamedElementListController<ElementWidget, isSortElementByName>::listWidgetC
         oldName = nameList.at(row);
         Q_ASSERT(oldName == item->text());
 
-        QAction* renameAction = new QAction(tr("Rename"));
+        QAction* renameAction = new QAction(NamedElementListControllerObject::tr("Rename"));
         QObject::connect(renameAction, &QAction::triggered, getObj(), [=](){
             QString newName = getNameEditDialog(oldName, false);
             if (newName.isEmpty() || newName == oldName)
                 return;
             if (isElementExist(newName)) {
-                QMessageBox::warning(dialogParent, tr("Rename failed"), tr("There is already an entry named \"%1\".").arg(newName));
+                QMessageBox::warning(dialogParent,
+                                     NamedElementListControllerObject::tr("Rename failed"),
+                                     NamedElementListControllerObject::tr("There is already an entry named \"%1\".").arg(newName));
                 tryGoToElement(newName);
                 return;
             }
@@ -638,13 +635,15 @@ void NamedElementListController<ElementWidget, isSortElementByName>::listWidgetC
         });
         menu.addAction(renameAction);
 
-        QAction* copyAsAction = new QAction(tr("Copy As"));
+        QAction* copyAsAction = new QAction(NamedElementListControllerObject::tr("Copy As"));
         QObject::connect(copyAsAction, &QAction::triggered, getObj(), [=](){
             QString newName = getNameEditDialog(oldName, true);
             if (newName.isEmpty() || newName == oldName)
                 return;
             if (isElementExist(newName)) {
-                QMessageBox::warning(dialogParent, tr("Copy failed"), tr("There is already an entry named \"%1\".").arg(newName));
+                QMessageBox::warning(dialogParent,
+                                     NamedElementListControllerObject::tr("Copy failed"),
+                                     NamedElementListControllerObject::tr("There is already an entry named \"%1\".").arg(newName));
                 tryGoToElement(newName);
                 return;
             }
@@ -652,25 +651,27 @@ void NamedElementListController<ElementWidget, isSortElementByName>::listWidgetC
         });
         menu.addAction(copyAsAction);
 
-        QAction* deleteAction = new QAction(tr("Delete"));
+        QAction* deleteAction = new QAction(NamedElementListControllerObject::tr("Delete"));
         QObject::connect(deleteAction, &QAction::triggered, getObj(), [=](){
             if (QMessageBox::question(dialogParent,
-                                      tr("Delete confirmation"),
-                                      tr("Are you sure you want to delete \"%1\"?").arg(oldName),
+                                      NamedElementListControllerObject::tr("Delete confirmation"),
+                                      NamedElementListControllerObject::tr("Are you sure you want to delete \"%1\"?").arg(oldName),
                                       QMessageBox::Yes | QMessageBox::Cancel) == QMessageBox::Yes) {
                 handleDelete(row);
             }
         });
         menu.addAction(deleteAction);
     }
-    QAction* newAction = new QAction(tr("New"));
+    QAction* newAction = new QAction(NamedElementListControllerObject::tr("New"));
     QObject::connect(newAction, &QAction::triggered, getObj(), [=](){
         QString newName = getNameEditDialog(oldName, true);
         if (newName.isEmpty() || newName == oldName)
             return;
         // if the name is already in use, pop up a dialog
         if (isElementExist(newName)) {
-            QMessageBox::warning(dialogParent, tr("Creation failed"), tr("There is already an entry named \"%1\".").arg(newName));
+            QMessageBox::warning(dialogParent,
+                                 NamedElementListControllerObject::tr("Creation failed"),
+                                 NamedElementListControllerObject::tr("There is already an entry named \"%1\".").arg(newName));
             tryGoToElement(newName);
             return;
         }
