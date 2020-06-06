@@ -9,7 +9,7 @@
 #include <QDebug>
 
 namespace {
-const QString MIME_TYPE = QStringLiteral("application/supp-object-ref");
+const QString MIME_TYPE = QStringLiteral("application/pp-object-ref");
 const QString REF_CTX_ID = QStringLiteral("ContextID");
 const QString REF_REF_ID = QStringLiteral("ReferenceID");
 }

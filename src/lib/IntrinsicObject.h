@@ -27,7 +27,7 @@ public:
     virtual bool saveToFile() override final;
 
     virtual QString getFileNameFilter() const override {
-        return tr("SUPP XML Files (*.xml)");
+        return tr("PrepPipe XML Files (*.xml)");
     }
 
 protected:

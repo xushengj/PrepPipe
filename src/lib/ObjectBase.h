@@ -9,7 +9,7 @@
 #include <QMetaEnum>
 #include <QIODevice>
 
-#ifndef SUPP_NO_GUI
+#ifndef PP_DISABLE_GUI
 #include <QIcon>
 #include <QMenu>
 #endif
@@ -60,7 +60,7 @@ public:
 
     static QString getTypeClassName(ObjectType ty);
     static QString getTypeDisplayName(ObjectType ty);
-#ifndef SUPP_NO_GUI
+#ifndef PP_DISABLE_GUI
     static QIcon   getTypeDisplayIcon(ObjectType ty);
 #endif
 
@@ -68,11 +68,11 @@ public:
     QString     getTypeClassName()      const {return getTypeClassName(ty);}
     QString     getTypeDisplayName()    const {return getTypeDisplayName(ty);}
 
-#ifndef SUPP_NO_GUI
+#ifndef PP_DISABLE_GUI
     QIcon       getTypeDisplayIcon()    const {return getTypeDisplayIcon(ty);}
 #endif
 
-#ifndef SUPP_NO_GUI
+#ifndef PP_DISABLE_GUI
     // for objects not backed by a file, the editor can always be destroyed
     // virtual function asking for dirty editor data is in FileBackedObject
     virtual QWidget* getEditor() {return nullptr;}

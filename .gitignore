@@ -71,3 +71,6 @@ Thumbs.db
 *.dll
 *.exe
 
+# local configurations
+local_config.pri
+

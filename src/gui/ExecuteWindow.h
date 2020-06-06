@@ -10,7 +10,7 @@
 #include <QCheckBox>
 #include <QTreeWidgetItem>
 #include <QIcon>
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
 #include <QThread>
 #endif
 
@@ -101,7 +101,7 @@ private:
     const QHash<QString, QVector<OutputAction>> taskOutputDecl;
     ObjectContext clonedTaskInputs;
     QHash<QTreeWidgetItem*, ObjectListItemData> itemData;
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     QThread* executeThread = nullptr;
 #endif
     QList<ObjectBase*> pendingOutput;

@@ -6,7 +6,7 @@
 #include "src/lib/TaskObject/SimpleTextGeneratorObject.h"
 #include "src/lib/TaskObject/SimpleWorkflowObject.h"
 #include "src/utils/XMLUtilities.h"
-#ifndef SUPP_NO_GUI
+#ifndef PP_DISABLE_GUI
 #include "src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h"
 #include "src/gui/SimpleParser/SimpleParserGUIObject.h"
 #endif
@@ -20,7 +20,7 @@ IntrinsicObject::IntrinsicObject(ObjectType ty)
 }
 
 namespace {
-const QString XML_TOP = QStringLiteral("SUPPIntrinsicObject");
+const QString XML_TOP = QStringLiteral("PrepPipeIntrinsicObject");
 const QString XML_TYPE = QStringLiteral("Type");
 const QString XML_NAME = QStringLiteral("Name");
 const QString XML_COMMENT = QStringLiteral("Comment");
@@ -91,7 +91,7 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
     IntrinsicObject* obj = nullptr;
 
     switch (static_cast<ObjectBase::ObjectType>(objTyEnum)) {
-    default: qFatal("Unhandled Intrinsic Object load; please update this program first."); break;
+    default: qFatal("Unhandled Intrinsic Object load; the file is likely being created by newer versions of the program. Please update this program first."); break;
     case ObjectType::Data_GeneralTree:
         obj = IntrinsicObjectTrait<GeneralTreeObject>::loadFromXML(xml, strCache);
         break;

@@ -22,7 +22,7 @@ MessageLogger::MessageLogger(QObject *parent) : QObject(parent)
 
 MessageLogger::~MessageLogger()
 {
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     Q_ASSERT(threadInfo.isEmpty());
 #endif
 
@@ -49,7 +49,7 @@ void MessageLogger::destructInstance()
 
 QString MessageLogger::getLogNameTemplate()
 {
-    return QDir::tempPath() + "/supp_" + QDateTime::currentDateTime().toString(Qt::ISODate).replace(':','_') + "_XXXXXX.log";
+    return QDir::tempPath() + "/preppipe_" + QDateTime::currentDateTime().toString(Qt::ISODate).replace(':','_') + "_XXXXXX.log";
 }
 
 void MessageLogger::bootstrapFinished(QWidget* mainWindow)
@@ -65,7 +65,7 @@ void MessageLogger::bootstrapFinished(QWidget* mainWindow)
     qInstallMessageHandler(MessageLogger::normalMessageHandler);
 }
 
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
 namespace {
 QThreadStorage<QTemporaryFile*> logDestination;
 } // end of anonymous namespace
@@ -73,7 +73,7 @@ QThreadStorage<QTemporaryFile*> logDestination;
 
 QIODevice* getLogDestination()
 {
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     if (Q_UNLIKELY(!logDestination.hasLocalData())) {
         MessageLogger* logger = MessageLogger::inst();
         QThread* t = QThread::currentThread();
@@ -116,7 +116,7 @@ QIODevice *MessageLogger::startExceptionInfoDump()
 void MessageLogger::crashReportWrapup()
 {
     // step 1: find current thread
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     QThread* curThread = QThread::currentThread();
     for (auto& info : ptr->threadInfo) {
         if (&info->thread == curThread) {
@@ -134,7 +134,7 @@ void MessageLogger::crashReportWrapup()
     ptr->mainThreadFatalEventWrapup_Unsafe();
 }
 
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
 QThread* MessageLogger::createThread(const QString& description, std::function<void()> fatalEventCallback)
 {
     ThreadInfo* infoPtr = new ThreadInfo;
@@ -174,7 +174,7 @@ void MessageLogger::cleanupThread(QThread* thread)
     }
     qFatal("thread for cleanup is not found");
 }
-#endif /* SUPP_NO_THREADS */
+#endif /* PP_ENABLE_THREADS */
 
 #define HEADER_BUFFER_SIZE 64
 namespace {

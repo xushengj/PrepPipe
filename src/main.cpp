@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
 {
     MessageLogger::createInstance();
 
-    QApplication::setOrganizationName("SUPP Development Team");
-    QApplication::setApplicationName("supp");
+    QApplication::setOrganizationName("PrepPipe Development Team");
+    QApplication::setApplicationName("PrepPipe");
 
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QApplication a(argc, argv);
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     QLocale defaultLocale = QLocale::system();
     if (defaultLocale.language() != QLocale::English) {
         qDebug() << "Trying to install translation for locale" << defaultLocale.name();
-        if (!translator.load(defaultLocale, "supp_", "", ":/translations/")) {
+        if (!translator.load(defaultLocale, "tr_", "", ":/translations/")) {
             qDebug() << "Failed to load translation for locale" << defaultLocale.name();
         } else {
             QCoreApplication::installTranslator(&translator);
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
             qDebug() << "Cannot use locale" << localeStr;
         } else if (newLocale != defaultLocale) {
             qDebug() << "Trying to install translation for locale" << newLocale.name();
-            if (!translator.load(newLocale, "supp_", "", ":/translations/")) {
+            if (!translator.load(newLocale, "tr_", "", ":/translations/")) {
                 qDebug() << "Failed to load translation for locale" << newLocale.name();
             } else {
                 QCoreApplication::installTranslator(&translator);

@@ -462,8 +462,8 @@
     <name>IntrinsicObject</name>
     <message>
         <location filename="../src/lib/IntrinsicObject.h" line="30"/>
-        <source>SUPP XML Files (*.xml)</source>
-        <translation>SUPP的XML文件(*.xml)</translation>
+        <source>PrepPipe XML Files (*.xml)</source>
+        <translation>PrepPipe的XML文件(*.xml)</translation>
     </message>
 </context>
 <context>

@@ -10,7 +10,7 @@ CONFIG += lrelease embed_translations
 QM_FILES_RESOURCE_PREFIX = translations
 
 # set version info
-VERSION = 0.0.0.0
+VERSION = 0.1.0.0
 
 # always keep track of log context
 DEFINES += QT_MESSAGELOGCONTEXT
@@ -26,11 +26,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-# Disable threading for now
-DEFINES += SUPP_NO_THREADS
+# Enable threading by default
+DEFINES += PP_ENABLE_THREADS
 
 #if a build without GUI is needed, enable this define:
-# DEFINES += SUPP_NO_GUI
+# DEFINES += PP_DISABLE_GUI
 
 SOURCES += \
     src/gui/AnonymousElementListController.cpp \
@@ -175,7 +175,7 @@ FORMS += \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui
 
 TRANSLATIONS += \
-    translations/supp_zh_CN.ts
+    translations/tr_zh_CN.ts
 
 # Platform dependent sources
 win32 {
@@ -195,3 +195,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 RESOURCES += \
     resources/resources.qrc
+
+# make your local settings in local_config.pri
+# this file will be ignored by git (rules added to .gitignore)
+exists( $$PWD/local_config.pri ){
+    include( $$PWD/local_config.pri )
+}

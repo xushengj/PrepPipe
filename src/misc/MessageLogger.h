@@ -5,7 +5,7 @@
 #include <QElapsedTimer>
 #include <QTemporaryFile>
 #include <QBuffer>
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
 #include <QThread>
 #include <QLinkedList>
 #endif
@@ -22,7 +22,7 @@ public:
 
     void bootstrapFinished(QWidget* mainWindow);
 
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     struct ThreadInfo {
         QThread thread;
         QString description;
@@ -72,7 +72,7 @@ private:
     QWidget* window = nullptr;
     QTemporaryFile logFile;
     bool isFatalEventOccurred = false;
-#ifndef SUPP_NO_THREADS
+#ifdef PP_ENABLE_THREADS
     QList<ThreadInfo*> threadInfo;
 #endif
 

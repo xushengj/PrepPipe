@@ -111,6 +111,7 @@ QString BoundaryDeclarationEditWidget::getDisplayLabel()
     SimpleParser::BoundaryDeclaration data;
     getData(data);
     switch (data.decl) {
+    default: qFatal("Unhandled boundary declaration type");
     case decltype(data.decl)::Value: {
         switch (ui->valueTypeComboBox->currentData().toInt()) {
         case static_cast<int>(SimpleParser::BoundaryType::StringLiteral): {
