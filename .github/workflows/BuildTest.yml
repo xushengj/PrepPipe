@@ -14,7 +14,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
       - name: Run QMake
-        run: qmake supp.pro
+        run: qmake preppipe.pro
       - name: Build
         run: nmake debug
   linux:
@@ -26,7 +26,7 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
       - name: Run QMake
-        run: qmake supp.pro
+        run: qmake preppipe.pro
       - name: Build
         run: make
   mac:
@@ -38,6 +38,6 @@ jobs:
       - name: Install Qt
         uses: jurplel/install-qt-action@v2
       - name: Run QMake
-        run: qmake supp.pro
+        run: qmake preppipe.pro
       - name: Build
         run: make
