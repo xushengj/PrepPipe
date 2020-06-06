@@ -20,6 +20,7 @@
 #include <QDateTime>
 #include <QString>
 #include <QStringRef>
+#include <QInputDialog>
 
 namespace {
 const QString SETTINGS_EDITOR_PLACEHOLDER_TEXT = QStringLiteral("editor/placeholder_text");
@@ -124,7 +125,7 @@ EditorWindow::~EditorWindow()
     delete ui;
 }
 
-void EditorWindow::setObjectItem(QTreeWidgetItem* item, ObjectBase* obj)
+void EditorWindow::updateObjectListItemForObject(QTreeWidgetItem* item, ObjectBase* obj)
 {
     item->setIcon(0, obj->getTypeDisplayIcon());
     item->setText(0, obj->getName());
@@ -145,7 +146,7 @@ void EditorWindow::populateObjectListTreeFromMainContext()
     for (auto objPtr : mainCtx) {
         Q_ASSERT(objPtr && !objPtr->getName().isEmpty());
         QTreeWidgetItem* item = new QTreeWidgetItem(mainRoot);
-        setObjectItem(item, objPtr);
+        updateObjectListItemForObject(item, objPtr);
         itemData.insert(item, ObjectListItemData(objPtr, nullptr, OriginContext::MainContext));
     }
     mainRoot->setExpanded(true);
@@ -318,6 +319,17 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
                 menu.addAction(saveAction);
             }
             if (item->parent() == sideRoot) {
+                ObjectBase* obj = data.obj;
+                QAction* renameAction = new QAction(tr("Rename"));
+                connect(renameAction, &QAction::triggered, this, [=]() -> void {
+                    QString name = QInputDialog::getText(this, tr("Rename Object"), tr("Please input the new name:"), QLineEdit::Normal, obj->getName());
+                    if (!name.isEmpty() && name != obj->getName()) {
+                        obj->setName(name);
+                        updateObjectListItemForObject(item, obj);
+                        updateWindowTitle();
+                    }
+                });
+                menu.addAction(renameAction);
                 QAction* closeAction = new QAction(tr("Close"));
                 connect(closeAction, &QAction::triggered, this, [=]() -> void {
                     closeSideContextObjectRequested(item);
@@ -326,7 +338,7 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
             }
         } else {
             // right clicking on nowhere
-            menu.addAction(ui->actionNew);
+
             menu.addAction(ui->actionOpen);
             menu.addAction(ui->actionSave);
         }
@@ -552,7 +564,7 @@ void EditorWindow::addToSideContext(ObjectBase* obj)
 {
     sideCtx.addObject(obj);
     QTreeWidgetItem* item = new QTreeWidgetItem(sideRoot);
-    setObjectItem(item, obj);
+    updateObjectListItemForObject(item, obj);
     itemData.insert(item, ObjectListItemData(obj, nullptr, OriginContext::SideContext));
     sideRoot->setExpanded(true);
 }

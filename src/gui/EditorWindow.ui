@@ -149,7 +149,21 @@
      </property>
      <addaction name="actionCaptureClipboard"/>
     </widget>
-    <addaction name="actionNew"/>
+    <widget class="QMenu" name="menuNew_Common_File">
+     <property name="title">
+      <string>New Common File...</string>
+     </property>
+     <addaction name="actionNewPlainText"/>
+    </widget>
+    <widget class="QMenu" name="menuNew_Intrinsic_Object">
+     <property name="title">
+      <string>New Intrinsic Object...</string>
+     </property>
+     <addaction name="actionNewParser"/>
+     <addaction name="actionNewTextGenerator"/>
+    </widget>
+    <addaction name="menuNew_Intrinsic_Object"/>
+    <addaction name="menuNew_Common_File"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionChangeDirectory"/>
@@ -173,14 +187,6 @@
    <addaction name="menuMisc"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionNew">
-   <property name="text">
-    <string>New...</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
-  </action>
   <action name="actionOpen">
    <property name="text">
     <string>Open...</string>
@@ -220,6 +226,21 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionNewPlainText">
+   <property name="text">
+    <string>Plain Text</string>
+   </property>
+  </action>
+  <action name="actionNewParser">
+   <property name="text">
+    <string>Parser</string>
+   </property>
+  </action>
+  <action name="actionNewTextGenerator">
+   <property name="text">
+    <string>Text Generator</string>
    </property>
   </action>
  </widget>

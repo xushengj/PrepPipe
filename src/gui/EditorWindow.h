@@ -58,7 +58,7 @@ private:
     void initGUI();
 
     void populateObjectListTreeFromMainContext();
-    static void setObjectItem(QTreeWidgetItem* item, ObjectBase* obj);
+    static void updateObjectListItemForObject(QTreeWidgetItem* item, ObjectBase* obj);
 
     void showObjectEditor(ObjectBase* obj, QWidget* editor, QTreeWidgetItem* item, OriginContext origin);
     void switchToEditor(int index);
