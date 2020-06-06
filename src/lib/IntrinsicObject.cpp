@@ -22,8 +22,6 @@ IntrinsicObject::IntrinsicObject(ObjectType ty)
 namespace {
 const QString XML_TOP = QStringLiteral("PrepPipeIntrinsicObject");
 const QString XML_TYPE = QStringLiteral("Type");
-const QString XML_NAME = QStringLiteral("Name");
-const QString XML_COMMENT = QStringLiteral("Comment");
 } // end of anonymous namespace
 
 void IntrinsicObject::saveToXML(QXmlStreamWriter& xml)
@@ -37,7 +35,6 @@ void IntrinsicObject::saveToXML(QXmlStreamWriter& xml)
     }
     xml.writeStartElement(XML_TOP);
     xml.writeAttribute(XML_TYPE, getTypeClassName());
-    xml.writeAttribute(XML_NAME, getName());
     saveToXMLImpl(xml);
     xml.writeEndElement();
     xml.writeEndDocument();
@@ -72,7 +69,6 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
 
 
     int objTyEnum = -1;
-    QString nameFromXML;
     {
         auto readObjectType = [&](QStringRef str) -> bool {
             bool isGood = false;
@@ -81,9 +77,6 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
         };
 
         if (Q_UNLIKELY(!XMLUtil::readAttribute(xml, curElement, QString(), XML_TYPE, readObjectType, {}, "Unrecognized object type"))) {
-            return nullptr;
-        }
-        if (Q_UNLIKELY(!XMLUtil::readStringAttribute(xml, curElement, QString(), XML_NAME, nameFromXML, strCache))) {
             return nullptr;
         }
     }
@@ -112,7 +105,6 @@ IntrinsicObject* IntrinsicObject::loadFromXML(QXmlStreamReader& xml)
         break;
     }
     if (obj) {
-        obj->setName(nameFromXML);
         obj->setComment(comment);
     }
 

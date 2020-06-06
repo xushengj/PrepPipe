@@ -12,6 +12,8 @@ ConfigurationData PlainTextObject::defaultConfig = {
 };
 
 namespace {
+PlainTextObjectImportSupportDecl importDecl;
+
 const QString CFG_CODEC = QStringLiteral("codec");
 }
 

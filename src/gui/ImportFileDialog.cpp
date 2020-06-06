@@ -6,34 +6,16 @@
 
 #include <QMessageBox>
 
-namespace {
-
-struct ImportedObjectEntryType {
-    QString fileTypeDisplayName;
-    std::function<bool(const QByteArray&, ConfigurationData&)> contentCheckCB; // return true if the file may be opened as this object type
-    std::function<const ConfigurationDeclaration*()> importConfigDeclCB;
-    std::function<ImportedObject*(const QByteArray&, const ConfigurationData&)> loadCB;
-};
-
-const ImportedObjectEntryType ImportedObjectList[] = {
-    {
-        QStringLiteral("Plain Text"),
-        ImportedObject::mayOpenAsThisObjectType,
-        PlainTextObject::getImportConfigurationDeclaration,
-        PlainTextObject::open
-    }
-};
-
-}
-
 ImportFileDialog::ImportFileDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::ImportFileDialog),
-    openTypes(sizeof(ImportedObjectList)/sizeof(ImportedObjectEntryType))
+    ui(new Ui::ImportFileDialog)
 {
     ui->setupUi(this);
     connect(ui->comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ImportFileDialog::updateCurrentInputWidget);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &ImportFileDialog::tryOpen);
+
+    int numSupportedTypes = static_cast<int>(FileImportSupportDecl::getInstanceVec().size());
+    openTypes.resize(numSupportedTypes);
 }
 
 ImportFileDialog::~ImportFileDialog()
@@ -47,11 +29,11 @@ void ImportFileDialog::setSrc(const QByteArray &srcBA)
 
     int cnt = 0;
     for(int i = 0, n = openTypes.size(); i < n; ++i) {
-        const ImportedObjectEntryType& choice = ImportedObjectList[i];
+        const auto* ptr = FileImportSupportDecl::getInstanceVec().at(i);
         auto& entry = openTypes[i];
-        if (choice.contentCheckCB(srcBA, entry.importConfig)) {
+        if (ptr->canOpen(srcBA, entry.importConfig)) {
             entry.isApplicable = true;
-            ui->comboBox->addItem(choice.fileTypeDisplayName, QVariant(i));
+            ui->comboBox->addItem(ptr->getDisplayName(), QVariant(i));
             cnt += 1;
         }
     }
@@ -66,7 +48,7 @@ void ImportFileDialog::updateCurrentInputWidget() {
     auto& entry = openTypes[index];
     Q_ASSERT(entry.isApplicable);
     if (entry.inputWidget == nullptr) {
-        const ConfigurationDeclaration* decl = ImportedObjectList[index].importConfigDeclCB();
+        const ConfigurationDeclaration* decl = FileImportSupportDecl::getInstanceVec().at(index)->getImportConfigurationDeclaration();
         if (decl && (decl->getNumFields() > 0)) {
             ConfigurationInputWidget* inputWidget = new ConfigurationInputWidget;
             inputWidget->setConfigurationDeclaration(decl, entry.importConfig);
@@ -98,7 +80,7 @@ void ImportFileDialog::tryOpen()
             return;
         }
     }
-    if (ImportedObject* obj = ImportedObjectList[index].loadCB(src, importConfig)) {
+    if (ImportedObject* obj = FileImportSupportDecl::getInstanceVec().at(index)->import(src, importConfig)) {
         result = obj;
         accept();
     } else {

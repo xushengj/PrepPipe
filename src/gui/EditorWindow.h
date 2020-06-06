@@ -69,7 +69,7 @@ private:
 
     bool tryCloseAllObjectsCommon(OriginContext origin);
 
-    void addToSideContext(ObjectBase* obj);
+    void addToSideContext(ObjectBase* obj, bool switchTo = true);
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
@@ -89,6 +89,7 @@ private slots:
     void objectListOpenEditorRequested(QTreeWidgetItem* item);
 
     void changeDirectoryRequested();
+    void reloadFromDirectoryRequested();
     void clipboardDumpRequested();
     void openFileRequested();
     void dataDropped(const QMimeData* data);

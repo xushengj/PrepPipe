@@ -63,6 +63,7 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     connect(ui->objectListTreeWidget, &QTreeWidget::customContextMenuRequested, this, &EditorWindow::objectListContextMenuRequested);
 
     connect(ui->actionChangeDirectory, &QAction::triggered, this, &EditorWindow::changeDirectoryRequested);
+    connect(ui->actionReloadDirectory, &QAction::triggered, this, &EditorWindow::reloadFromDirectoryRequested);
     connect(ui->actionCaptureClipboard, &QAction::triggered, this, &EditorWindow::clipboardDumpRequested);
     connect(ui->actionOpenLog, &QAction::triggered, MessageLogger::inst(), &MessageLogger::openLogFile);
     connect(ui->actionOpen, &QAction::triggered, this, &EditorWindow::openFileRequested);
@@ -206,6 +207,7 @@ void EditorWindow::objectListOpenEditorRequested(QTreeWidgetItem* item)
     }
     if (data.editor) {
         showObjectEditor(data.obj, data.editor, item, data.origin);
+        ui->objectListTreeWidget->setCurrentItem(item);
     } else {
         QMessageBox::information(this, tr("Feature not implemented"), tr("Sorry, editing or viewing this object is not supported."));
     }
@@ -287,9 +289,8 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
     QMenu menu(ui->objectListTreeWidget);
 
     if (item == mainRoot) {
-        QAction* cdAction = new QAction(tr("Change Directory..."));
-        connect(cdAction, &QAction::triggered, ui->actionChangeDirectory, &QAction::trigger);
-        menu.addAction(cdAction);
+        menu.addAction(ui->actionChangeDirectory);
+        menu.addAction(ui->actionReloadDirectory);
     } else if (item == sideRoot) {
         QAction* closeAllAction = new QAction(tr("Close All"));
         connect(closeAllAction, &QAction::triggered, this, &EditorWindow::tryCloseAllSideContextObjects);
@@ -338,9 +339,10 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
             }
         } else {
             // right clicking on nowhere
-
+            menu.addMenu(ui->menuNew_Intrinsic_Object);
+            menu.addMenu(ui->menuNew_Common_File);
+            menu.addMenu(ui->menuCapture);
             menu.addAction(ui->actionOpen);
-            menu.addAction(ui->actionSave);
         }
     }
 
@@ -363,6 +365,11 @@ void EditorWindow::changeDirectoryRequested()
         return;
 
     changeDirectory(newDir);
+}
+
+void EditorWindow::reloadFromDirectoryRequested()
+{
+    changeDirectory(mainCtx.getDirectory());
 }
 
 bool EditorWindow::tryCloseAllObjectsCommon(OriginContext origin)
@@ -560,13 +567,16 @@ void EditorWindow::clipboardDumpRequested()
     addToSideContext(data);
 }
 
-void EditorWindow::addToSideContext(ObjectBase* obj)
+void EditorWindow::addToSideContext(ObjectBase* obj, bool switchTo)
 {
     sideCtx.addObject(obj);
     QTreeWidgetItem* item = new QTreeWidgetItem(sideRoot);
     updateObjectListItemForObject(item, obj);
     itemData.insert(item, ObjectListItemData(obj, nullptr, OriginContext::SideContext));
     sideRoot->setExpanded(true);
+    if (switchTo) {
+        objectListOpenEditorRequested(item);
+    }
 }
 
 void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)

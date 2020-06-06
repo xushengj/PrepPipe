@@ -167,6 +167,7 @@
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionChangeDirectory"/>
+    <addaction name="actionReloadDirectory"/>
     <addaction name="menuCapture"/>
    </widget>
    <widget class="QMenu" name="menuMisc">
@@ -241,6 +242,11 @@
   <action name="actionNewTextGenerator">
    <property name="text">
     <string>Text Generator</string>
+   </property>
+  </action>
+  <action name="actionReloadDirectory">
+   <property name="text">
+    <string>Reload from directory</string>
    </property>
   </action>
  </widget>

@@ -3,6 +3,24 @@
 #include <functional>
 #include <QSaveFile>
 
+namespace {
+std::vector<const FileImportSupportDecl*>* instanceVecPtr = nullptr;
+}
+
+FileImportSupportDecl::FileImportSupportDecl()
+{
+    if (!instanceVecPtr) {
+        instanceVecPtr = new std::vector<const FileImportSupportDecl*>;
+    }
+    instanceVecPtr->push_back(this);
+}
+
+const std::vector<const FileImportSupportDecl*>& FileImportSupportDecl::getInstanceVec()
+{
+    Q_ASSERT(instanceVecPtr);
+    return *instanceVecPtr;
+}
+
 ImportedObject* ImportedObject::open(const QByteArray &src, QWidget* window)
 {
     ImportFileDialog* dialog = new ImportFileDialog(window);

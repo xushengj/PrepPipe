@@ -47,4 +47,23 @@ private:
     QString text;
 };
 
+class PlainTextObjectImportSupportDecl : public FileImportSupportDecl
+{
+public:
+    PlainTextObjectImportSupportDecl() = default;
+    virtual ~PlainTextObjectImportSupportDecl() = default;
+
+protected:
+    // functions that derived class should implement
+    virtual QString getDisplayName() const override {
+        return PlainTextObject::tr("Plain Text");
+    }
+    virtual const ConfigurationDeclaration* getImportConfigurationDeclaration() const override {
+        return PlainTextObject::getImportConfigurationDeclaration();
+    }
+    virtual ImportedObject* import(const QByteArray& data, const ConfigurationData& config) const override {
+        return PlainTextObject::open(data, config);
+    }
+};
+
 #endif // PLAINTEXTOBJECT_H
