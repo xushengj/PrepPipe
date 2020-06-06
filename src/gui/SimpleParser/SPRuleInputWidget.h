@@ -66,10 +66,15 @@ private:
 
     static QString getPatternSummaryName(int index, const QString& outputTypeName);
 
+private:
+    void addPattern(const SimpleParser::Pattern& patternData);
+    void updateButtonState();
+
 private slots:
     void updatePatternName(SPRulePatternInputWidget* widget);
     void currentPatternChanged(int index);
     void addPatternRequested();
+    void deleteCurrentPatternRequested();
 
 private:
     Ui::SPRuleInputWidget *ui;

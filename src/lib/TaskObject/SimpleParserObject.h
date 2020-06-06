@@ -55,6 +55,10 @@ public:
         return data;
     }
 
+    void setData(const SimpleParser::Data& dataArg) {
+        data = dataArg;
+    }
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;
 

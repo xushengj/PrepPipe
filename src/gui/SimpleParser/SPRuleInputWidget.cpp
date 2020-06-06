@@ -1,6 +1,8 @@
 #include "SPRuleInputWidget.h"
 #include "ui_SPRuleInputWidget.h"
 
+#include <QMessageBox>
+
 SPRuleInputWidget::SPRuleInputWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::SPRuleInputWidget)
@@ -10,6 +12,8 @@ SPRuleInputWidget::SPRuleInputWidget(QWidget *parent) :
     connect(ui->parentListWidget, &NameListWidget::gotoRequested, this, &SPRuleInputWidget::gotoRuleNodeRequested);
     connect(ui->patternComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SPRuleInputWidget::currentPatternChanged);
     connect(ui->addPatternPushButton, &QPushButton::clicked, this, &SPRuleInputWidget::addPatternRequested);
+    connect(ui->deletePatternPushButton, &QPushButton::clicked, this, &SPRuleInputWidget::deleteCurrentPatternRequested);
+    updateButtonState();
 }
 
 void SPRuleInputWidget::setParentNodeNameCheckCallback(std::function<bool(const QString&)> cb) {
@@ -37,24 +41,35 @@ void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
     patterns.clear();
     ui->patternComboBox->clear();
     for (const auto& p : dataArg.patterns) {
-        int index = patterns.size();
-        SPRulePatternInputWidget* w = new SPRulePatternInputWidget;
-        w->setContentTypeCheckCallback(contentTypeCheckCB);
-        w->setNamedBoundaryCheckCallback(namedBoundaryCheckCB);
-        w->setData(p);
-        PatternData data;
-        data.widget = w;
-        patterns.push_back(data);
-        connect(w, &SPRulePatternInputWidget::dirty, this, &SPRuleInputWidget::dirty);
-        connect(w, &SPRulePatternInputWidget::patternTypeNameChanged, this, [=](){
-            updatePatternName(w);
-        });//updatePatternName
-        ui->patternStackedWidget->addWidget(w);
-        ui->patternComboBox->addItem(getPatternSummaryName(index, p.typeName));
+        addPattern(p);
     }
     if (!patterns.isEmpty()) {
         ui->patternComboBox->setCurrentIndex(0);
     }
+    updateButtonState();
+}
+
+void SPRuleInputWidget::addPattern(const SimpleParser::Pattern& patternData)
+{
+    int index = patterns.size();
+    SPRulePatternInputWidget* w = new SPRulePatternInputWidget;
+    w->setContentTypeCheckCallback(contentTypeCheckCB);
+    w->setNamedBoundaryCheckCallback(namedBoundaryCheckCB);
+    w->setData(patternData);
+    PatternData data;
+    data.widget = w;
+    patterns.push_back(data);
+    connect(w, &SPRulePatternInputWidget::dirty, this, &SPRuleInputWidget::dirty);
+    connect(w, &SPRulePatternInputWidget::patternTypeNameChanged, this, [=](){
+        updatePatternName(w);
+    });//updatePatternName
+    ui->patternStackedWidget->addWidget(w);
+    ui->patternComboBox->addItem(getPatternSummaryName(index, patternData.typeName));
+}
+
+void SPRuleInputWidget::updateButtonState()
+{
+    ui->deletePatternPushButton->setEnabled(!patterns.isEmpty());
 }
 
 void SPRuleInputWidget::getData(const QString &name, SimpleParser::MatchRuleNode& dataArg)
@@ -104,7 +119,54 @@ void SPRuleInputWidget::addPatternRequested()
     Q_ASSERT(helperPtr);
     SPRulePatternQuickInputDialog* dialog = new SPRulePatternQuickInputDialog(*helperPtr, defaultNodeTypeName, this);
     if (dialog->exec() == QDialog::Accepted) {
-        // TODO
+        SimpleParser::Pattern data;
+        dialog->getData(data);
+        if (!data.pattern.isEmpty()) {
+            int cnt = ui->patternComboBox->count();
+            addPattern(data);
+            ui->patternComboBox->setCurrentIndex(cnt);
+            updateButtonState();
+        }
     }
     dialog->deleteLater();
+}
+
+void SPRuleInputWidget::deleteCurrentPatternRequested()
+{
+    Q_ASSERT(!patterns.isEmpty());
+    Q_ASSERT(ui->patternComboBox->count() > 0);
+    int index = ui->patternComboBox->currentIndex();
+
+    // should be impossible, but just make sure
+    if (index < 0)
+        return;
+
+    if (QMessageBox::question(
+                this,
+                tr("Delete pattern confirmation"),
+                tr("Delete current pattern \"%1\"?").arg(
+                    ui->patternComboBox->currentText()
+                ),
+                QMessageBox::Yes | QMessageBox::Cancel
+        ) != QMessageBox::Yes) {
+        return;
+    }
+
+
+    {
+        auto& data = patterns.at(index);
+        ui->patternStackedWidget->removeWidget(data.widget);
+        delete data.widget;
+    }
+    patterns.removeAt(index);
+
+    // refresh all pattern display name
+    ui->patternComboBox->clear();
+    for (int i = 0, n = patterns.size(); i < n; ++i) {
+        ui->patternComboBox->addItem(getPatternSummaryName(i, patterns.at(i).widget->getPatternTypeName()));
+    }
+
+    if (!patterns.isEmpty()) {
+        ui->patternComboBox->setCurrentIndex((index < patterns.size())? index : (patterns.size()-1));
+    }
 }

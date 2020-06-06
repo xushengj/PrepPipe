@@ -140,10 +140,10 @@ public:
     // if the ElementHelperData is void:
     // if we have the name embedded in ElementStorageData:
     template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type setData(const QVector<ElementStorageData>& data);
-    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(const QVector<ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(      QVector<ElementStorageData>& data);
     // if we have the name stored out-of-band as the key to a QHash:
     template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type setData(const QHash<QString, ElementStorageData>& data);
-    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(const QHash<QString, ElementStorageData>& data);
+    template <typename Helper = ElementHelperData> typename std::enable_if<std::is_void<Helper>::value, void>::type getData(      QHash<QString, ElementStorageData>& data);
 
 
 private:
@@ -287,7 +287,7 @@ void NamedElementListController<ElementWidget, isSortElementByName>::finalizeSet
 {
     nameListModel->setStringList(nameList);
     if (!widgetList.isEmpty()) {
-        stackedWidget->setCurrentWidget(widgetList.front());
+        listWidget->setCurrentRow(0);
     }
 }
 
@@ -449,7 +449,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(const QV
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
 typename std::enable_if<std::is_void<Helper>::value, void>::type
-NamedElementListController<ElementWidget, isSortElementByName>::getData(const QVector<ElementStorageData>& data)
+NamedElementListController<ElementWidget, isSortElementByName>::getData(QVector<ElementStorageData> &data)
 {
     int numElement = nameList.size();
     Q_ASSERT(numElement == widgetList.size());
@@ -492,7 +492,7 @@ NamedElementListController<ElementWidget, isSortElementByName>::setData(const QH
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
 typename std::enable_if<std::is_void<Helper>::value, void>::type
-NamedElementListController<ElementWidget, isSortElementByName>::getData(const QHash<QString, ElementStorageData>& data)
+NamedElementListController<ElementWidget, isSortElementByName>::getData(QHash<QString, ElementStorageData> &data)
 {
     data.clear();
     for (int i = 0, numElements = nameList.size(); i < numElements; ++i) {

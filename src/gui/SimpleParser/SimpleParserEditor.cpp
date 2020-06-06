@@ -84,7 +84,12 @@ void SimpleParserEditor::saveToObjectRequested(ObjectBase* obj)
     SimpleParserGUIObject* castedObj = qobject_cast<SimpleParserGUIObject*>(obj);
     Q_ASSERT(backingObj == castedObj);
 
-    // TODO
+    // TODO add settings and others
+    auto data = castedObj->getData();
+    ruleCtl.getData(data.matchRuleNodes);
+    contentCtl.getData(data.contentTypes);
+    markCtl.getData(data.namedBoundaries);
+    castedObj->setData(data);
 }
 
 void SimpleParserEditor::setBackingObject(SimpleParserGUIObject* obj)

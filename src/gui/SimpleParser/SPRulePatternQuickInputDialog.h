@@ -2,6 +2,7 @@
 #define SPRULEPATTERNQUICKINPUTDIALOG_H
 
 #include <QDialog>
+#include "src/lib/Tree/SimpleParser.h"
 #include "src/gui/SimpleParser/SPRulePatternQuickInputSpecialBlockModel.h"
 
 namespace Ui {
@@ -22,6 +23,8 @@ public:
 public:
     explicit SPRulePatternQuickInputDialog(HelperData& helperRef, QString defaultNodeTypeName, QWidget *parent = nullptr);
     ~SPRulePatternQuickInputDialog();
+
+    void getData(SimpleParser::Pattern& data);
 
 private slots:
     void textEditContextMenuEventHandler(const QPoint& p);

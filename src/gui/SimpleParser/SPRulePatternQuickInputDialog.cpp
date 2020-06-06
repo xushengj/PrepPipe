@@ -275,6 +275,11 @@ void SPRulePatternQuickInputDialog::regeneratePattern()
     ui->rulePreviewWidget->setData(result);
 }
 
+void SPRulePatternQuickInputDialog::getData(SimpleParser::Pattern& data)
+{
+    ui->rulePreviewWidget->getData(data);
+}
+
 namespace {
 void pass_breakStringWithEOL(QList<PatternElementData>& pattern)
 {
