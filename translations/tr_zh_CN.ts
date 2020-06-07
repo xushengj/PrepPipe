@@ -1343,6 +1343,19 @@ The log is saved at </source>
     </message>
 </context>
 <context>
+    <name>SimpleParserGUIObject</name>
+    <message>
+        <location filename="../src/gui/SimpleParser/SimpleParserGUIObject.cpp" line="57"/>
+        <source>root</source>
+        <translation>根结点</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/SimpleParser/SimpleParserGUIObject.cpp" line="66"/>
+        <source>Example</source>
+        <translation>样例</translation>
+    </message>
+</context>
+<context>
     <name>SimpleTextGenerator</name>
     <message>
         <location filename="../src/lib/Tree/SimpleTextGenerator.cpp" line="107"/>

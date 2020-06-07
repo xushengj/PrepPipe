@@ -39,3 +39,39 @@ QWidget* SimpleParserGUIObject::getEditor()
     editor->setBackingObject(this);
     return editor;
 }
+
+// ----------------------------------------------------------------------------
+
+class SimpleParserDecl : public IntrinsicObjectDecl
+{
+public:
+    SimpleParserDecl() = default;
+    virtual ~SimpleParserDecl() = default;
+
+    virtual ObjectBase::ObjectType getObjectType() const override {
+        return ObjectBase::ObjectType::Task_SimpleParser;
+    }
+
+    virtual IntrinsicObject* create(const QString& name) const override {
+        // create the initial (default) data
+        QString rootName = SimpleParserGUIObject::tr("root");
+        SimpleParser::Data data;
+        data.rootRuleNodeName = rootName;
+        data.whitespaceList.push_back(QStringLiteral(" "));
+        data.whitespaceList.push_back(QStringLiteral("\t"));
+        SimpleParser::MatchRuleNode rootRule;
+        rootRule.name = rootName;
+        data.matchRuleNodes.push_back(rootRule);
+        SimpleParser::MatchRuleNode exampleRule;
+        exampleRule.name = SimpleParserGUIObject::tr("Example");
+        exampleRule.parentNodeNameList.push_back(rootName);
+        data.matchRuleNodes.push_back(exampleRule);
+
+        SimpleParserGUIObject* obj = new SimpleParserGUIObject(data);
+        obj->setName(name);
+        return obj;
+    }
+};
+namespace {
+SimpleParserDecl objDecl;
+}
