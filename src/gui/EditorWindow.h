@@ -20,7 +20,7 @@ class EditorWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    EditorWindow(QString startDirectory, QString startTask, QStringList presets, QWidget *parent = nullptr);
+    EditorWindow(QString startDirectory, QString startTask, QString startPath, QStringList presets, QWidget *parent = nullptr);
     virtual ~EditorWindow() override;
 
     const ObjectContext& getMainContext() const {return mainCtx;}
@@ -93,6 +93,7 @@ private slots:
     void reloadFromDirectoryRequested();
     void clipboardDumpRequested();
     void openFileRequested();
+    void openFileRequestedOnPath(const QString& path);
     void dataDropped(const QMimeData* data);
     void objectDropped(const QList<ObjectBase*>& vec);
 
@@ -115,6 +116,7 @@ private:
         QString startDirectory;
         QHash<QString, QString> presets;
         ObjectBase::NamedReference startTask;
+        QString startFile;
         bool isStartTaskSpecified;
     } startup;
 

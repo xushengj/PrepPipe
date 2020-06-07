@@ -38,7 +38,7 @@ QString getPlaceHolderText()
 }
 }
 
-EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringList presets, QWidget *parent)
+EditorWindow::EditorWindow(QString startDirectory, QString startTask, QString startPath, QStringList presets, QWidget *parent)
     : QMainWindow(parent), ui(new Ui::EditorWindow), mainCtx(), sideCtx()
 {
     ui->setupUi(this);
@@ -94,6 +94,7 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
 
     // populate startup info
     startup.startDirectory = startDirectory;
+    startup.startFile = startPath;
     startup.isStartTaskSpecified = false;
 
     if (!startTask.isEmpty()) {
@@ -673,6 +674,10 @@ void EditorWindow::processDelayedStartupAction()
     mainCtx.setDirectory(startup.startDirectory);
     populateObjectListTreeFromMainContext();
 
+    if (!startup.startFile.isEmpty()) {
+        openFileRequestedOnPath(startup.startFile);
+    }
+
     if (startup.isStartTaskSpecified) {
         if (!launchTask(startup.startTask))
             close();
@@ -699,6 +704,28 @@ void EditorWindow::openFileRequested()
     QString path = QFileDialog::getOpenFileName(this, tr("Open File"), mainCtx.getDirectory(), tr("All files (*.*)"));
     if (path.isEmpty())
         return;
+
+    openFileRequestedOnPath(path);
+}
+
+void EditorWindow::openFileRequestedOnPath(const QString& path)
+{
+    QFileInfo f(path);
+    if (f.dir() == QDir(mainCtx.getDirectory())) {
+        ObjectBase* obj = mainCtx.getObject(f.completeBaseName());
+        if (obj != nullptr) {
+            // this file is already opened in main context
+            // just switch to it
+            for (auto iter = itemData.begin(), iterEnd = itemData.end(); iter != iterEnd; ++iter) {
+                if (iter.value().obj == obj) {
+                    objectListOpenEditorRequested(iter.key());
+                    return;
+                }
+            }
+            qFatal("EditorWindow not showing item for object in main context!");
+        }
+    }
+
     FileBackedObject* obj = FileBackedObject::open(path, this);
     if (!obj) {
         return;
@@ -715,7 +742,6 @@ void EditorWindow::createRequest_PlainText()
 
 void EditorWindow::createRequest_IntrinsicObject()
 {
-    // TODO
     IntrinsicObjectCreationDialog* dialog = new IntrinsicObjectCreationDialog(mainCtx, this);
     connect(dialog, &QDialog::accepted, this, [=](){
         addToMainContext(dialog->getObject());

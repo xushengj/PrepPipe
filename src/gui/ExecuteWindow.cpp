@@ -168,7 +168,7 @@ void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
             requestSwitchToExecuteObject(item, top);
         }
     };
-    Q_ASSERT(connect(top, &ExecuteObject::started, this, startHandlerLambda, Qt::QueuedConnection));
+    connect(top, &ExecuteObject::started, this, startHandlerLambda, Qt::QueuedConnection);
 
     auto finishHandlerLambda = [this, top, item](int status, int causeInt)->void {
         ExecuteObject::ExitCause cause = static_cast<ExecuteObject::ExitCause>(causeInt);
@@ -193,7 +193,7 @@ void ExecuteWindow::addExecuteObjects(ExecuteObject* top, QTreeWidgetItem* item)
             followExecObjectCheckBox->setCheckable(false);
         }
     };
-    Q_ASSERT(connect(top, &ExecuteObject::finished, this, finishHandlerLambda, Qt::QueuedConnection));
+    connect(top, &ExecuteObject::finished, this, finishHandlerLambda, Qt::QueuedConnection);
 
     executeObjects.insert(item, top);
 

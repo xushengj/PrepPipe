@@ -64,7 +64,7 @@ void IntrinsicObjectCreationDialog::buildIntrinsicObjectList()
             }
 
             item->addChild(childItem);
-            Q_ASSERT(childItem->parent());
+            Q_ASSERT(childItem->parent() != nullptr);
         }
     }
 

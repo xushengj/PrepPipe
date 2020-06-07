@@ -26,8 +26,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-# Enable threading by default
-DEFINES += PP_ENABLE_THREADS
+# Enable threading unless in debug build
+CONFIG(debug) {
+
+} else {
+    DEFINES += PP_ENABLE_THREADS
+}
 
 #if a build without GUI is needed, enable this define:
 # DEFINES += PP_DISABLE_GUI

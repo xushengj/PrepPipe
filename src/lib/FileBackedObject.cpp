@@ -26,7 +26,7 @@ FileBackedObject* FileBackedObject::open(const QString& filePath, QWidget* windo
     if (file.suffix() == "xml") {
         QXmlStreamReader xml(ba);
         if (IntrinsicObject* obj = IntrinsicObject::loadFromXML(xml)) {
-            obj->setName(file.baseName());
+            obj->setName(file.completeBaseName());
             obj->setFilePath(filePath);
             return obj;
         }
@@ -35,7 +35,7 @@ FileBackedObject* FileBackedObject::open(const QString& filePath, QWidget* windo
     ImportedObject* obj = ImportedObject::open(ba, window);
     if (obj) {
         obj->setFilePath(filePath);
-        obj->setName(file.baseName());
+        obj->setName(file.completeBaseName());
     }
     return obj;
 }

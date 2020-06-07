@@ -151,7 +151,7 @@
     </message>
     <message>
         <location filename="../src/gui/EditorWindow.ui" line="219"/>
-        <location filename="../src/gui/EditorWindow.cpp" line="321"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="322"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
@@ -201,97 +201,97 @@
         <translation>其他</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="218"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="219"/>
         <source>Feature not implemented</source>
         <translation>功能未完成</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="218"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="219"/>
         <source>Sorry, editing or viewing this object is not supported.</source>
         <translation>抱歉，程序还不支持对当前对象进行操作。</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="301"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="302"/>
         <source>Close All</source>
         <translation>全部关闭</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="311"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="312"/>
         <source>Execute</source>
         <translation>执行</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="332"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="333"/>
         <source>Open containing directory</source>
         <translation>打开文件所在目录</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="341"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="342"/>
         <source>Rename</source>
         <translation>重命名</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="343"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="344"/>
         <source>Rename Object</source>
         <translation>重命名对象</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="343"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="344"/>
         <source>Please input the new name:</source>
         <translation>请输入新的名称：</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="351"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="352"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="380"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="381"/>
         <source>Set new working directory</source>
         <translation>选择新的当前目录</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="468"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="469"/>
         <source>Save changes</source>
         <translation>保存改动</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="469"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="470"/>
         <source>You have unsaved changes in %1. Do you want to save them?</source>
         <translation>在%1中的改动还没保存。保存吗？</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="580"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="581"/>
         <source>No data</source>
         <translation>无数据</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="580"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="581"/>
         <source>Clipboard is empty and no data is captured.</source>
         <translation>剪切板是空的，什么都没捕获。</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="656"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="657"/>
         <source>Drop</source>
         <translation>拖拽结果</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="657"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="658"/>
         <source>Time: %1</source>
         <translation>时间： %1</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="699"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="704"/>
         <source>Open File</source>
         <translation>打开文件</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="699"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="704"/>
         <source>All files (*.*)</source>
         <translation>所有文件(*.*)</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="712"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="739"/>
         <source>Unnamed</source>
         <translation>未命名</translation>
     </message>
@@ -399,7 +399,7 @@
     <message>
         <location filename="../src/gui/ExecuteWindow.cpp" line="344"/>
         <source>Sorry, a fatal event has occurred and the execution is failed. If it is not due to external factors (e.g. insufficient memory or disk space), please submit a bug report. The program is in an unstable state, and please consider saving your work and restarting the program before any further actions. (Note: If the log is large, this program may freeze for a while, and please wait.)</source>
-        <translation>抱歉，现在出现了一个程序无法自己解决的错误，任务执行失败。如果这不是由外部因素（比如内存或硬盘空间不足）所导致的话，请上报该错误。程序可能在一个不稳定的状态，请先保存当前的改动并重启该程序，再使用其他功能。（提示：如果日志文件很大，此程序可能会无响应一小段时间，请耐心等待。）</translation>
+        <translation>抱歉，现在出现了一个程序无法自己解决的错误，任务执行失败。如果这不是由外部因素（比如内存或硬盘空间不足）所导致的话，请报告该错误。程序可能在一个不稳定的状态，请先保存当前的改动并重启该程序，再使用其他功能。（提示：如果日志文件很大，此程序可能会无响应一小段时间，请耐心等待。）</translation>
     </message>
     <message>
         <location filename="../src/gui/ExecuteWindow.cpp" line="377"/>
@@ -628,15 +628,15 @@
 <context>
     <name>MessageLogger</name>
     <message>
-        <location filename="../src/misc/MessageLogger.cpp" line="102"/>
+        <location filename="../src/misc/MessageLogger.cpp" line="104"/>
         <source>Fatal error occured</source>
         <translation>发生了无法自行解决的错误</translation>
     </message>
     <message>
-        <location filename="../src/misc/MessageLogger.cpp" line="103"/>
+        <location filename="../src/misc/MessageLogger.cpp" line="105"/>
         <source>Sorry, a fatal error has occurred and the program cannot continue. If it is not due to insufficient memory or disk space, please submit a bug report.
 The log is saved at </source>
-        <translation>抱歉，发生了一个程序无法自行解决的错误，程序无法继续执行下去。如果这不是因为内存或硬盘空间不足，请上报该问题。
+        <translation>抱歉，发生了一个程序无法自行解决的错误，程序无法继续执行下去。如果这不是因为内存或硬盘空间不足，请报告该问题。
 日志文件保存在 </translation>
     </message>
 </context>
@@ -971,6 +971,11 @@ The log is saved at </source>
         <location filename="../src/gui/SimpleParser/SPRulePatternInputWidget.ui" line="22"/>
         <source>Node Type Name:</source>
         <translation>模板匹配后生成结点的类型名：</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/SimpleParser/SPRulePatternInputWidget.ui" line="29"/>
+        <source>(If empty, exit current rule node upon matching this pattern)</source>
+        <translation>（若为空，则匹配此模板时将退出该规则结点而不是创建新的子结点）</translation>
     </message>
     <message>
         <location filename="../src/gui/SimpleParser/SPRulePatternInputWidget.cpp" line="157"/>
@@ -1488,8 +1493,22 @@ The log is saved at </source>
     </message>
     <message>
         <location filename="../src/main.cpp" line="54"/>
+        <source>Override start directory</source>
+        <translation>覆盖设置起始目录</translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="58"/>
+        <source>path</source>
+        <translation>路径</translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="59"/>
+        <source>The directory or file to open</source>
+        <translation>需要打开的目录或文件</translation>
+    </message>
+    <message>
         <source>Set object root directory</source>
-        <translation>设置对象起始目录</translation>
+        <translation type="vanished">设置对象起始目录</translation>
     </message>
     <message>
         <location filename="../src/main.cpp" line="55"/>

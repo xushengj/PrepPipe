@@ -50,10 +50,14 @@ int main(int argc, char *argv[])
                               QCoreApplication::translate("main", "task"));
     parser.addOption(taskOpt);
 
-    QCommandLineOption rootDirOpt({"r", "root"},
-                               QCoreApplication::translate("main", "Set object root directory"),
+    QCommandLineOption startDirOpt({"d", "dir"},
+                               QCoreApplication::translate("main", "Override start directory"),
                                QCoreApplication::translate("main", "directory"));
-    parser.addOption(rootDirOpt);
+    parser.addOption(startDirOpt);
+
+    parser.addPositionalArgument(QCoreApplication::translate("main", "path"),
+                                 QCoreApplication::translate("main", "The directory or file to open"));
+
 
     parser.process(a);
 
@@ -81,11 +85,9 @@ int main(int argc, char *argv[])
     }
     NameSorting::init();
 
-    QString rootDirectory;
-    if (parser.isSet(rootDirOpt)) {
-        rootDirectory = parser.value(rootDirOpt);
-    } else {
-        rootDirectory = QDir::currentPath();
+    QString startDirectory;
+    if (parser.isSet(startDirOpt)) {
+        startDirectory = parser.value(startDirOpt);
     }
 
     QString startTask;
@@ -93,7 +95,35 @@ int main(int argc, char *argv[])
         startTask = parser.value(taskOpt);
     }
 
-    EditorWindow w(rootDirectory, startTask, parser.positionalArguments());
+    QString startPath;
+    QStringList presets;
+    if (!parser.positionalArguments().empty()) {
+        QStringList posArgs = parser.positionalArguments();
+        startPath = posArgs.front();
+        presets = posArgs;
+        presets.pop_front();
+    }
+
+    // special handling if startPath is a directory instead of a file
+    // if rootDirectory is empty, then rootDirectory is set to startPath
+    QFileInfo startPathInfo(startPath);
+    if (startPathInfo.isDir()) {
+        if (startDirectory.isEmpty()) {
+            startDirectory = startPath;
+        }
+        startPath.clear();
+    } else if (startPathInfo.isFile()) {
+        if (startDirectory.isEmpty()) {
+            startDirectory = startPathInfo.dir().absolutePath();
+        }
+    }
+    qDebug() << "Start configurations: \n"
+             << "\tStart directory: " << startDirectory
+             << "\n\tStart task: " << startTask
+             << "\n\tStart file path: " << startPath
+             << "\n\tPresets: " << presets;
+
+    EditorWindow w(startDirectory, startTask, startPath, presets);
     MessageLogger::inst()->bootstrapFinished(&w);
     w.show();
 

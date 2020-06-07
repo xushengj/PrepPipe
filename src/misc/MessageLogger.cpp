@@ -56,7 +56,9 @@ void MessageLogger::bootstrapFinished(QWidget* mainWindow)
 {
     window = mainWindow;
     logFile.setFileTemplate(getLogNameTemplate());
-    Q_ASSERT(logFile.open());
+    bool isOpenSuccessful = logFile.open();
+    (void) isOpenSuccessful;
+    Q_ASSERT(isOpenSuccessful);
     qInfo() << "Log file opened at" << logFile.fileName();
     // dump all contents from bootstrap log
     QByteArray log = bootstrapLog.toUtf8();
@@ -142,7 +144,9 @@ QThread* MessageLogger::createThread(const QString& description, std::function<v
     infoPtr->fatalEventCallback = fatalEventCallback;
     infoPtr->isFatalEventOccurred = false;
     infoPtr->log.setFileTemplate(getLogNameTemplate());
-    Q_ASSERT(infoPtr->log.open());
+    bool isOpenSuccessful = infoPtr->log.open();
+    (void) isOpenSuccessful;
+    Q_ASSERT(isOpenSuccessful);
     threadInfo.push_back(infoPtr);
     qInfo() << "Thread" << description << "is created with log file at" << infoPtr->log.fileName();
     return &infoPtr->thread;
