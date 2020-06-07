@@ -79,18 +79,22 @@ QString ObjectBase::NamedReference::prettyPrint(const QStringList& mainNameSpace
 QString ObjectBase::getTypeDisplayName(ObjectType ty)
 {
     switch(ty){
+    case ObjectType::DATA_START:
+        return tr("Data");
     case ObjectType::Data_GeneralTree:
         return tr("General Tree");
     case ObjectType::Data_PlainText:
         return tr("Plain Text");
     case ObjectType::Data_MIME:
         return tr("MIME");
+    case ObjectType::TASK_START:
+        return tr("Task");
     case ObjectType::Task_SimpleTreeTransform:
         return tr("Tree-to-Tree Transform");
     case ObjectType::Task_SimpleParser:
-        return tr("Plain Text Parser");
+        return tr("Text Parser");
     case ObjectType::Task_SimpleTextGenerator:
-        return tr("Plain Text Generator");
+        return tr("Text Generator");
     case ObjectType::Task_SimpleWorkflow:
         return tr("Workflow");
     case ObjectType::Task_Test:

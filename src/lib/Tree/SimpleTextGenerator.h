@@ -28,6 +28,7 @@ public:
     };
     enum class UnknownNodePolicy {
         Ignore,
+        DefaultExpand,
         Error
     };
     enum class EvaluationFailPolicy {
@@ -36,8 +37,8 @@ public:
     };
 
     struct Data {
-        UnknownNodePolicy unknownNodePolicy;
-        EvaluationFailPolicy evalFailPolicy;
+        UnknownNodePolicy unknownNodePolicy = UnknownNodePolicy::DefaultExpand;
+        EvaluationFailPolicy evalFailPolicy = EvaluationFailPolicy::Error;
         QHash<QString, NodeExpansionRule> expansions; // canonical name -> rule
         QHash<QString, QStringList> nameAliases; // canonical name -> list of aliases
 

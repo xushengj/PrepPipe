@@ -98,3 +98,26 @@ QWidget* SimpleTextGeneratorGUIObject::getEditor()
     editor->setBackingObject(this);
     return editor;
 }
+
+// ----------------------------------------------------------------------------
+
+class SimpleTextGeneratorDecl : public IntrinsicObjectDecl
+{
+public:
+    SimpleTextGeneratorDecl() = default;
+    virtual ~SimpleTextGeneratorDecl() = default;
+
+    virtual ObjectBase::ObjectType getObjectType() const override {
+        return ObjectBase::ObjectType::Task_SimpleTextGenerator;
+    }
+
+    virtual IntrinsicObject* create(const QString& name) const override {
+        SimpleTextGeneratorGUIObject* obj = new SimpleTextGeneratorGUIObject;
+        obj->setName(name);
+        return obj;
+    }
+};
+namespace {
+SimpleTextGeneratorDecl objDecl;
+}
+

@@ -134,3 +134,22 @@ QWidget* IntrinsicObject::getEditor()
     ui->setReadOnly(true);
     return ui;
 }
+
+// ----------------------------------------------------------------------------
+
+std::vector<const IntrinsicObjectDecl*>* IntrinsicObjectDecl::instancePtrVec = nullptr;
+
+const std::vector<const IntrinsicObjectDecl*>& IntrinsicObjectDecl::getInstancePtrVec()
+{
+    Q_ASSERT(instancePtrVec);
+    return *instancePtrVec;
+}
+
+IntrinsicObjectDecl::IntrinsicObjectDecl()
+{
+    if (!instancePtrVec) {
+        instancePtrVec = new std::vector<const IntrinsicObjectDecl*>;
+    }
+    instancePtrVec->push_back(this);
+}
+

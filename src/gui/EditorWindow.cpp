@@ -10,6 +10,8 @@
 #include "src/gui/DropTestLabel.h"
 #include "src/lib/FileBackedObject.h"
 #include "src/gui/EditorBase.h"
+#include "src/lib/DataObject/PlainTextObject.h"
+#include "src/gui/IntrinsicObjectCreationDialog.h"
 
 #include <QDebug>
 #include <QSettings>
@@ -21,6 +23,7 @@
 #include <QString>
 #include <QStringRef>
 #include <QInputDialog>
+#include <QDesktopServices>
 
 namespace {
 const QString SETTINGS_EDITOR_PLACEHOLDER_TEXT = QStringLiteral("editor/placeholder_text");
@@ -75,6 +78,9 @@ EditorWindow::EditorWindow(QString startDirectory, QString startTask, QStringLis
     connect(ui->actionSegFault, &QAction::triggered, this, []() -> void {
         *(volatile char*)nullptr;
     });
+
+    connect(ui->actionNewIntrinsicObject,   &QAction::triggered, this, &EditorWindow::createRequest_IntrinsicObject);
+    connect(ui->actionNewPlainText,         &QAction::triggered, this, &EditorWindow::createRequest_PlainText);
 
     connect(ui->dropTestLabel, &DropTestLabel::dataDropped, this, &EditorWindow::dataDropped);
     connect(ui->objectListTreeWidget, &ObjectTreeWidget::objectDropped, this, &EditorWindow::objectDropped);
@@ -318,6 +324,17 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
                     updateWindowTitle();
                 });
                 menu.addAction(saveAction);
+
+                QString filePath = fbo->getFilePath();
+                if (!filePath.isEmpty()) {
+                    QFileInfo f(filePath);
+                    QString dir = f.dir().absolutePath();
+                    QAction* openDirectoryAction = new QAction(tr("Open containing directory"));
+                    connect(openDirectoryAction, &QAction::triggered, this, [=]() -> void {
+                        QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+                    });
+                    menu.addAction(openDirectoryAction);
+                }
             }
             if (item->parent() == sideRoot) {
                 ObjectBase* obj = data.obj;
@@ -339,7 +356,7 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
             }
         } else {
             // right clicking on nowhere
-            menu.addMenu(ui->menuNew_Intrinsic_Object);
+            menu.addAction(ui->actionNewIntrinsicObject);
             menu.addMenu(ui->menuNew_Common_File);
             menu.addMenu(ui->menuCapture);
             menu.addAction(ui->actionOpen);
@@ -579,6 +596,18 @@ void EditorWindow::addToSideContext(ObjectBase* obj, bool switchTo)
     }
 }
 
+void EditorWindow::addToMainContext(IntrinsicObject* obj, bool switchTo)
+{
+    mainCtx.addObject(obj);
+    Q_ASSERT(mainCtx.getObject(obj->getName()) == obj);
+    QTreeWidgetItem* item = new QTreeWidgetItem(mainRoot);
+    updateObjectListItemForObject(item, obj);
+    itemData.insert(item, ObjectListItemData(obj, nullptr, OriginContext::MainContext));
+    if (switchTo) {
+        objectListOpenEditorRequested(item);
+    }
+}
+
 void EditorWindow::closeSideContextObjectRequested(QTreeWidgetItem* item)
 {
     Q_ASSERT(item->parent() == sideRoot);
@@ -675,4 +704,22 @@ void EditorWindow::openFileRequested()
         return;
     }
     addToSideContext(obj);
+}
+
+void EditorWindow::createRequest_PlainText()
+{
+    PlainTextObject* obj = new PlainTextObject;
+    obj->setName(tr("Unnamed"));
+    addToSideContext(obj);
+}
+
+void EditorWindow::createRequest_IntrinsicObject()
+{
+    // TODO
+    IntrinsicObjectCreationDialog* dialog = new IntrinsicObjectCreationDialog(mainCtx, this);
+    connect(dialog, &QDialog::accepted, this, [=](){
+        addToMainContext(dialog->getObject());
+    });
+    connect(dialog, &QDialog::finished, dialog, &QObject::deleteLater);
+    dialog->show();
 }

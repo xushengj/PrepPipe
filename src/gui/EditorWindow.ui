@@ -155,14 +155,7 @@
      </property>
      <addaction name="actionNewPlainText"/>
     </widget>
-    <widget class="QMenu" name="menuNew_Intrinsic_Object">
-     <property name="title">
-      <string>New Intrinsic Object...</string>
-     </property>
-     <addaction name="actionNewParser"/>
-     <addaction name="actionNewTextGenerator"/>
-    </widget>
-    <addaction name="menuNew_Intrinsic_Object"/>
+    <addaction name="actionNewIntrinsicObject"/>
     <addaction name="menuNew_Common_File"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
@@ -247,6 +240,11 @@
   <action name="actionReloadDirectory">
    <property name="text">
     <string>Reload from directory</string>
+   </property>
+  </action>
+  <action name="actionNewIntrinsicObject">
+   <property name="text">
+    <string>New Intrinsic Object...</string>
    </property>
   </action>
  </widget>

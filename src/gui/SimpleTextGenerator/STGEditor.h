@@ -1,6 +1,7 @@
 #ifndef STGEDITOR_H
 #define STGEDITOR_H
 
+#include "src/lib/Tree/SimpleTextGenerator.h"
 #include "src/gui/EditorBase.h"
 #include "src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h"
 #include "src/gui/SimpleTextGenerator/STGFragmentInputWidget.h"
@@ -57,8 +58,8 @@ private:
 
     SimpleTextGeneratorGUIObject* backedObj = nullptr;
     QHash<QString, RuleData> allData;
-    bool errorOnUnknownNode = true;
-    bool errorOnEvaluationFail = true;
+    SimpleTextGenerator::UnknownNodePolicy unknownNodePolicy;
+    SimpleTextGenerator::EvaluationFailPolicy evalFailPolicy;
 
     QStringList canonicalNameList;
     int currentIndex = -1; // current index in the sorted canonicalNameList; -1 if none is open

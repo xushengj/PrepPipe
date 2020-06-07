@@ -63,8 +63,8 @@ void STGEditor::setBackingObject(SimpleTextGeneratorGUIObject* obj)
         allData.insert(canonicalName, rData);
     }
 
-    errorOnUnknownNode = (data.unknownNodePolicy != decltype (data.unknownNodePolicy) ::Ignore);
-    errorOnEvaluationFail = (data.evalFailPolicy != decltype (data.evalFailPolicy) ::SkipSubExpr);
+    unknownNodePolicy = data.unknownNodePolicy;
+    evalFailPolicy = data.evalFailPolicy;
 
     // step 2: initialize gui
     if (!canonicalNameList.isEmpty()) {
@@ -220,8 +220,8 @@ void STGEditor::saveToObjectRequested(ObjectBase* obj)
     tryGoToRule(-1);
     SimpleTextGenerator::Data data;
     backObj->clearGUIData();
-    data.unknownNodePolicy = (errorOnUnknownNode? decltype (data.unknownNodePolicy)::Error : decltype (data.unknownNodePolicy)::Ignore);
-    data.evalFailPolicy = (errorOnEvaluationFail? decltype (data.evalFailPolicy)::Error : decltype (data.evalFailPolicy)::SkipSubExpr);
+    data.unknownNodePolicy = unknownNodePolicy;
+    data.evalFailPolicy = evalFailPolicy;
     for (auto iter = allData.begin(), iterEnd = allData.end(); iter != iterEnd; ++iter) {
         const QString& cname = iter.key();
         const RuleData& rData = iter.value();

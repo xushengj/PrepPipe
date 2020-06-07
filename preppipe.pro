@@ -44,6 +44,7 @@ SOURCES += \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
     src/gui/ImportFileDialog.cpp \
+    src/gui/IntrinsicObjectCreationDialog.cpp \
     src/gui/NameListWidget.cpp \
     src/gui/NamedElementListController.cpp \
     src/gui/ObjectInputEdit.cpp \
@@ -107,6 +108,7 @@ HEADERS += \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
     src/gui/ImportFileDialog.h \
+    src/gui/IntrinsicObjectCreationDialog.h \
     src/gui/NameListWidget.h \
     src/gui/NamedElementListController.h \
     src/gui/ObjectInputEdit.h \
@@ -161,6 +163,7 @@ FORMS += \
     src/gui/ExecuteWindow.ui \
     src/gui/GeneralTreeEditor.ui \
     src/gui/ImportFileDialog.ui \
+    src/gui/IntrinsicObjectCreationDialog.ui \
     src/gui/MIMEDataEditor.ui \
     src/gui/ObjectInputEdit.ui \
     src/gui/SimpleParser/BoundaryDeclarationEditWidget.ui \

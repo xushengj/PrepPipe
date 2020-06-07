@@ -35,20 +35,32 @@ public:
 
     static QString prettyPrintNameSpace(const QStringList& nameSpace);
 
+    // this enum determines the sort order among object types
+    // any value with all-capital name should not be used on object instances
     enum ObjectType {
+        INVALID,
+
+        TASK_START,
+        Task_SimpleParser,
+        Task_SimpleTextGenerator,
+        Task_SimpleTreeTransform,
+        Task_SimpleWorkflow,
+        Task_Test,
+        TASK_END,
+
+        DATA_START,
         Data_GeneralTree,
         Data_PlainText,
         Data_MIME,
-        Task_SimpleTreeTransform,
-        Exec_SimpleTreeTransform,
-        Task_SimpleParser,
+        DATA_END,
+
+        EXEC_START,
         Exec_SimpleParser,
-        Task_SimpleTextGenerator,
         Exec_SimpleTextGenerator,
-        Task_SimpleWorkflow,
+        Exec_SimpleTreeTransform,
         Exec_SimpleWorkflow,
-        Task_Test,
-        Exec_Test
+        Exec_Test,
+        EXEC_END
     };
     Q_ENUM(ObjectType)
 

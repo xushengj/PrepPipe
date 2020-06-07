@@ -70,6 +70,7 @@ private:
     bool tryCloseAllObjectsCommon(OriginContext origin);
 
     void addToSideContext(ObjectBase* obj, bool switchTo = true);
+    void addToMainContext(IntrinsicObject* obj, bool switchTo = true);
 
     virtual void contextMenuEvent(QContextMenuEvent *event) override; // right click menu
 
@@ -103,6 +104,11 @@ private slots:
     void updateWindowTitle();
 
     void processDelayedStartupAction();
+
+private slots:
+    // new object creation slots
+    void createRequest_IntrinsicObject();
+    void createRequest_PlainText();
 
 private:
     struct StartupInfo {

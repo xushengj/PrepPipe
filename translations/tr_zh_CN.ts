@@ -73,7 +73,7 @@
     <message>
         <location filename="../src/gui/EditorWindow.ui" line="36"/>
         <source>(No comment for current object)</source>
-        <translation type="unfinished"></translation>
+        <translation>（当前对象没有备注）</translation>
     </message>
     <message>
         <location filename="../src/gui/EditorWindow.ui" line="79"/>
@@ -96,17 +96,17 @@
         <translation>新建常见文件...</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="160"/>
+        <location filename="../src/gui/EditorWindow.ui" line="247"/>
         <source>New Intrinsic Object...</source>
         <translation>新建内置对象...</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="175"/>
+        <location filename="../src/gui/EditorWindow.ui" line="168"/>
         <source>?</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="181"/>
+        <location filename="../src/gui/EditorWindow.ui" line="174"/>
         <source>Crash</source>
         <translation>程序崩溃测试</translation>
     </message>
@@ -115,175 +115,185 @@
         <translation type="vanished">新建...</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="193"/>
+        <location filename="../src/gui/EditorWindow.ui" line="186"/>
         <source>Open...</source>
         <translation>打开...</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="196"/>
+        <location filename="../src/gui/EditorWindow.ui" line="189"/>
         <source>Ctrl+O</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="201"/>
+        <location filename="../src/gui/EditorWindow.ui" line="194"/>
         <source>Change Directory...</source>
         <translation>变更当前目录...</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="206"/>
+        <location filename="../src/gui/EditorWindow.ui" line="199"/>
         <source>Clipboard</source>
         <translation>剪切板</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="211"/>
+        <location filename="../src/gui/EditorWindow.ui" line="204"/>
         <source>Open log file</source>
         <translation>打开日志文件</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="216"/>
+        <location filename="../src/gui/EditorWindow.ui" line="209"/>
         <source>qFatal()</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="221"/>
+        <location filename="../src/gui/EditorWindow.ui" line="214"/>
         <source>Segmentation fault</source>
         <translation>段错误</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="226"/>
-        <location filename="../src/gui/EditorWindow.cpp" line="314"/>
+        <location filename="../src/gui/EditorWindow.ui" line="219"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="321"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="229"/>
+        <location filename="../src/gui/EditorWindow.ui" line="222"/>
         <source>Ctrl+S</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="234"/>
+        <location filename="../src/gui/EditorWindow.ui" line="227"/>
         <source>Plain Text</source>
         <translation>纯文本</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="239"/>
+        <location filename="../src/gui/EditorWindow.ui" line="232"/>
         <source>Parser</source>
         <translation>文本解析任务</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="244"/>
+        <location filename="../src/gui/EditorWindow.ui" line="237"/>
         <source>Text Generator</source>
         <translation>文本生成任务</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.ui" line="249"/>
+        <location filename="../src/gui/EditorWindow.ui" line="242"/>
         <source>Reload from directory</source>
         <translation>重新载入当前目录</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="32"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="35"/>
         <source>No object is currently opening.</source>
         <translation>目前没有已打开的对象。</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="45"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="48"/>
         <source>(No object is opened)</source>
         <translation>(没有已打开的对象)</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="49"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="52"/>
         <source>In Directory</source>
         <translation>当前目录内</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="52"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="55"/>
         <source>Other</source>
         <translation>其他</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="211"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="218"/>
         <source>Feature not implemented</source>
         <translation>功能未完成</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="211"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="218"/>
         <source>Sorry, editing or viewing this object is not supported.</source>
         <translation>抱歉，程序还不支持对当前对象进行操作。</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="294"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="301"/>
         <source>Close All</source>
         <translation>全部关闭</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="304"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="311"/>
         <source>Execute</source>
         <translation>执行</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="323"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="332"/>
+        <source>Open containing directory</source>
+        <translation>打开文件所在目录</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/EditorWindow.cpp" line="341"/>
         <source>Rename</source>
         <translation>重命名</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="325"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="343"/>
         <source>Rename Object</source>
         <translation>重命名对象</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="325"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="343"/>
         <source>Please input the new name:</source>
         <translation>请输入新的名称：</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="333"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="351"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="362"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="380"/>
         <source>Set new working directory</source>
         <translation>选择新的当前目录</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="450"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="468"/>
         <source>Save changes</source>
         <translation>保存改动</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="451"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="469"/>
         <source>You have unsaved changes in %1. Do you want to save them?</source>
         <translation>在%1中的改动还没保存。保存吗？</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="562"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="580"/>
         <source>No data</source>
         <translation>无数据</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="562"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="580"/>
         <source>Clipboard is empty and no data is captured.</source>
         <translation>剪切板是空的，什么都没捕获。</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="623"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="656"/>
         <source>Drop</source>
         <translation>拖拽结果</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="624"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="657"/>
         <source>Time: %1</source>
         <translation>时间： %1</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="666"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="699"/>
         <source>Open File</source>
         <translation>打开文件</translation>
     </message>
     <message>
-        <location filename="../src/gui/EditorWindow.cpp" line="666"/>
+        <location filename="../src/gui/EditorWindow.cpp" line="699"/>
         <source>All files (*.*)</source>
         <translation>所有文件(*.*)</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/EditorWindow.cpp" line="712"/>
+        <source>Unnamed</source>
+        <translation>未命名</translation>
     </message>
 </context>
 <context>
@@ -499,9 +509,79 @@
 <context>
     <name>IntrinsicObject</name>
     <message>
-        <location filename="../src/lib/IntrinsicObject.h" line="30"/>
+        <location filename="../src/lib/IntrinsicObject.h" line="34"/>
         <source>PrepPipe XML Files (*.xml)</source>
         <translation>PrepPipe的XML文件(*.xml)</translation>
+    </message>
+    <message>
+        <location filename="../src/lib/IntrinsicObject.h" line="62"/>
+        <source>Sorry, no documentation is available yet.</source>
+        <translation>抱歉，现在文档还没有写。</translation>
+    </message>
+</context>
+<context>
+    <name>IntrinsicObjectCreationDialog</name>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.ui" line="14"/>
+        <source>Dialog</source>
+        <translation>对话框</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.ui" line="24"/>
+        <source>Set the name and type of intrinsic object</source>
+        <translation>选择新建内置对象的名称和类型</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.ui" line="32"/>
+        <source>Name:</source>
+        <translation>名称：</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.ui" line="61"/>
+        <source>(No object type selected)</source>
+        <translation>（暂未选择对象类型）</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="110"/>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="114"/>
+        <source>Invalid type selection</source>
+        <translation>无效的类型选择</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="110"/>
+        <source>Please select a concrete object type instead of a category.</source>
+        <translation>请选择一个具体的对象类型而不是笼统的类别。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="114"/>
+        <source>Please select the intended object type from the list.</source>
+        <translation>请从列表中选择所需的对象类型。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="121"/>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="125"/>
+        <source>Invalid name</source>
+        <translation>名称无效</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="121"/>
+        <source>New object name cannot be empty.</source>
+        <translation>新对象的名称不能为空。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="125"/>
+        <source>There is already an object with the same name.</source>
+        <translation>已经有一个使用相同名称的对象了。</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="139"/>
+        <source>Save failed</source>
+        <translation>保存失败</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/IntrinsicObjectCreationDialog.cpp" line="139"/>
+        <source>Cannot save the new object with the given name. Please check if the name satisfy file name requirement.</source>
+        <translation>无法使用指定的名称来保存新对象。请检查名称是否符合文件名要求。</translation>
     </message>
 </context>
 <context>
@@ -678,41 +758,59 @@ The log is saved at </source>
     <name>ObjectBase</name>
     <message>
         <location filename="../src/lib/ObjectBase.cpp" line="83"/>
+        <source>Data</source>
+        <translation>数据</translation>
+    </message>
+    <message>
+        <location filename="../src/lib/ObjectBase.cpp" line="85"/>
         <source>General Tree</source>
         <translation>通用树</translation>
     </message>
     <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="85"/>
+        <location filename="../src/lib/ObjectBase.cpp" line="87"/>
         <source>Plain Text</source>
         <translation>纯文本</translation>
     </message>
     <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="87"/>
+        <location filename="../src/lib/ObjectBase.cpp" line="89"/>
         <source>MIME</source>
         <translation>MIME数据</translation>
     </message>
     <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="89"/>
+        <location filename="../src/lib/ObjectBase.cpp" line="91"/>
+        <source>Task</source>
+        <translation>任务</translation>
+    </message>
+    <message>
+        <location filename="../src/lib/ObjectBase.cpp" line="93"/>
         <source>Tree-to-Tree Transform</source>
         <translation>树转换</translation>
     </message>
     <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="91"/>
-        <source>Plain Text Parser</source>
-        <translation>纯文本解析</translation>
-    </message>
-    <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="93"/>
-        <source>Plain Text Generator</source>
-        <translation>纯文本生成</translation>
-    </message>
-    <message>
         <location filename="../src/lib/ObjectBase.cpp" line="95"/>
+        <source>Text Parser</source>
+        <translation>文本解析</translation>
+    </message>
+    <message>
+        <location filename="../src/lib/ObjectBase.cpp" line="97"/>
+        <source>Text Generator</source>
+        <translation>文本生成</translation>
+    </message>
+    <message>
+        <source>Plain Text Parser</source>
+        <translation type="vanished">纯文本解析</translation>
+    </message>
+    <message>
+        <source>Plain Text Generator</source>
+        <translation type="vanished">纯文本生成</translation>
+    </message>
+    <message>
+        <location filename="../src/lib/ObjectBase.cpp" line="99"/>
         <source>Workflow</source>
         <translation>任务链</translation>
     </message>
     <message>
-        <location filename="../src/lib/ObjectBase.cpp" line="97"/>
+        <location filename="../src/lib/ObjectBase.cpp" line="101"/>
         <source>Test</source>
         <translation>内部测试</translation>
     </message>
@@ -1247,7 +1345,7 @@ The log is saved at </source>
 <context>
     <name>SimpleTextGenerator</name>
     <message>
-        <location filename="../src/lib/Tree/SimpleTextGenerator.cpp" line="99"/>
+        <location filename="../src/lib/Tree/SimpleTextGenerator.cpp" line="107"/>
         <source>Multiple definition for alias &quot;%1&quot;; first for canonical name &quot;%2&quot; and second for &quot;%3&quot;</source>
         <translation>别名“%1”有重复使用；第一个正式名为“%2”，第二个为“%3”</translation>
     </message>

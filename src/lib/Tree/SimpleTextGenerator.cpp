@@ -46,6 +46,14 @@ bool SimpleTextGenerator::generationImpl(const Tree& src, QString& dest, int nod
     } else {
         // no rules found
         switch (data.unknownNodePolicy) {
+        case UnknownNodePolicy::DefaultExpand: {
+            for (int childOffset : node.offsetToChildren) {
+                if (!generationImpl(src, dest, nodeIndex + childOffset)) {
+                    return false;
+                }
+            }
+            return true;
+        }
         case UnknownNodePolicy::Ignore: {
             return true;
         }
@@ -117,6 +125,7 @@ const QString XML_UNKNOWN_NODE_POLICY = QStringLiteral("UnknownNodePolicy");
 const QString XML_EVALUATION_FAIL_POLICY = QStringLiteral("EvaluationFailPolicy");
 const QString XML_ERROR = QStringLiteral("Error");
 const QString XML_IGNORE = QStringLiteral("Ignore");
+const QString XML_DEFAULT_EXPAND = QStringLiteral("DefaultExpand");
 const QString XML_SKIP_SUBEXPR = QStringLiteral("SkipSubExpression");
 
 const QString XML_NODE_EXPANSION_RULE_LIST = QStringLiteral("ModeExpansionRules");
@@ -139,6 +148,9 @@ void SimpleTextGenerator::Data::saveToXML_NoTerminate(QXmlStreamWriter& xml) con
     case UnknownNodePolicy::Ignore: {
         xml.writeTextElement(XML_UNKNOWN_NODE_POLICY, XML_IGNORE);
     }break;
+    case UnknownNodePolicy::DefaultExpand: {
+        xml.writeTextElement(XML_UNKNOWN_NODE_POLICY, XML_DEFAULT_EXPAND);
+    }break;
     case UnknownNodePolicy::Error: {
         xml.writeTextElement(XML_UNKNOWN_NODE_POLICY, XML_ERROR);
     }break;
@@ -160,6 +172,8 @@ bool SimpleTextGenerator::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, S
     auto readUnknownNodePolicyCB = [this] (QStringRef text) -> bool {
         if (text == XML_IGNORE) {
             unknownNodePolicy = UnknownNodePolicy::Ignore;
+        } else if (text == XML_DEFAULT_EXPAND) {
+            unknownNodePolicy = UnknownNodePolicy::DefaultExpand;
         } else if (text == XML_ERROR) {
             unknownNodePolicy = UnknownNodePolicy::Error;
         } else {

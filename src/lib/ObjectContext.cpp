@@ -40,9 +40,6 @@ ObjectContext::ObjectContext(const QString& directory)
 
 void ObjectContext::setDirectory(const QString& newDirectory)
 {
-    if (mainDirectory == newDirectory)
-        return;
-
     clear();
     mainDirectory = newDirectory;
     if (!newDirectory.isEmpty())
