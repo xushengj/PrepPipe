@@ -174,6 +174,9 @@ bool readGeneralList(QXmlStreamReader& xml, const char* const currentElement,
                      StringCache &strCache);
 
 bool readElementText(QXmlStreamReader& xml, const char* const currentElement, const QString &textElement, QString& str, StringCache &strCache);
+
+void writeFlagElement(QXmlStreamWriter& xml, std::initializer_list<std::pair<bool, QString>> flags, const QString& flagElementName);
+bool readFlagElement(QXmlStreamReader& xml, const char* const currentElement, std::initializer_list<std::pair<bool&, QString>> flags, const QString& flagElementName, StringCache &strCache);
 }
 
 namespace XMLError {

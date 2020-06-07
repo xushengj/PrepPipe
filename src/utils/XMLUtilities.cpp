@@ -332,3 +332,37 @@ bool XMLUtil::readElementText(QXmlStreamReader& xml, const char* const currentEl
     }
     return true;
 }
+
+void XMLUtil::writeFlagElement(QXmlStreamWriter& xml, std::initializer_list<std::pair<bool, QString>> flags, const QString& flagElementName)
+{
+    xml.writeStartElement(flagElementName);
+    for (auto& f : flags) {
+        xml.writeAttribute(f.second, (f.first? QStringLiteral("Yes"): QStringLiteral("No")));
+    }
+    xml.writeEndElement();
+}
+
+bool XMLUtil::readFlagElement(QXmlStreamReader& xml, const char* const currentElement, std::initializer_list<std::pair<bool&, QString>> flags, const QString& flagElementName, StringCache &strCache)
+{
+    if (Q_UNLIKELY(!xml.readNextStartElement())) {
+        return XMLError::missingStartElement(qWarning(), xml, currentElement, flagElementName);
+    }
+    if (Q_UNLIKELY(xml.name() != flagElementName)) {
+        return XMLError::unexpectedElement(qWarning(), xml, currentElement, flagElementName);
+    }
+    auto attrs = xml.attributes();
+    for (auto& f : flags) {
+        if (attrs.hasAttribute(f.second)) {
+            QStringRef text = attrs.value(f.second);
+            if (text == QStringLiteral("Yes")) {
+                f.first = true;
+            } else if (text == QStringLiteral("No")) {
+                f.first = false;
+            } else {
+                return XMLError::invalidValue(qWarning(), xml, currentElement, f.second, text, "value should be either \"Yes\" or \"No\"");
+            }
+        }
+    }
+    xml.skipCurrentElement();
+    return true;
+}

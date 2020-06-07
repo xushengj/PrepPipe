@@ -66,6 +66,7 @@ public:
         exampleRule.name = SimpleParserGUIObject::tr("Example");
         exampleRule.parentNodeNameList.push_back(rootName);
         data.matchRuleNodes.push_back(exampleRule);
+        data.flag_skipEmptyLineBeforeMatching = true;
 
         SimpleParserGUIObject* obj = new SimpleParserGUIObject(data);
         obj->setName(name);

@@ -792,6 +792,9 @@ const QString XML_CONTENT_ACCEPTED_PARENTHESIS_LIST = QStringLiteral("AcceptedPa
 const QString XML_OPEN = QStringLiteral("Open");
 const QString XML_CLOSE = QStringLiteral("Close");
 
+const QString XML_FLAGS = QStringLiteral("Flags");
+const QString XML_FLAG_SKIP_EMPTY_LINE_BEFORE_MATCHING = QStringLiteral("SkipEmptyLineBeforeMatching");
+
 template<typename ElTy>
 void writeSortedVec(QXmlStreamWriter& xml, const QVector<ElTy>& vec, const QString& listName, const QString& elementName)
 {
@@ -866,6 +869,7 @@ void SimpleParser::Data::saveToXML_NoTerminate(QXmlStreamWriter& xml) const
     writeSortedVec(xml, contentTypes,       XML_CONTENT_TYPE_LIST,          XML_CONTENT_TYPE);
     writeSortedVec(xml, parenthesis,        XML_BALANCED_PARENTHESIS_LIST,  XML_PARENTHESIS);
     XMLUtil::writeStringList(xml, whitespaceList, XML_WHITESPACE_LIST, XML_WHITESPACE, true);
+    XMLUtil::writeFlagElement(xml, {{flag_skipEmptyLineBeforeMatching, XML_FLAG_SKIP_EMPTY_LINE_BEFORE_MATCHING}}, XML_FLAGS);
 }
 
 void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
@@ -893,6 +897,9 @@ bool SimpleParser::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCa
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_WHITESPACE_LIST, XML_WHITESPACE, whitespaceList, strCache))) {
+        return false;
+    }
+    if (Q_UNLIKELY(!XMLUtil::readFlagElement(xml, curElement, {{flag_skipEmptyLineBeforeMatching, XML_FLAG_SKIP_EMPTY_LINE_BEFORE_MATCHING}}, XML_FLAGS, strCache))) {
         return false;
     }
     return true;
