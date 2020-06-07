@@ -91,6 +91,7 @@ SimpleParser::SimpleParser(const Data& d)
     QString basePattern = getWhiteSpaceRegexPattern(d.whitespaceList);
     regexIndex_SpecialCharacter_OptionalWhiteSpace = state.getRegexIndex(basePattern + '*');
     regexIndex_SpecialCharacter_WhiteSpaces = state.getRegexIndex(basePattern + '+');
+    emptyLineRegex = QRegularExpression("^(" + basePattern + "*\n)+");
 
     // build the boundary name mapping
     for (int i = 0, n = d.namedBoundaries.size(); i < n; ++i) {
@@ -159,6 +160,19 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
     int pos = 0;
     int length = src.length();
 
+    auto skipEmptyLines = [&]() -> void {
+        QStringRef str = src.midRef(pos);
+        auto match = emptyLineRegex.match(str, 0, QRegularExpression::NormalMatch, QRegularExpression::AnchoredMatchOption);
+        if (match.hasMatch()) {
+            int matchStart = match.capturedStart();
+            int matchEnd = match.capturedEnd();
+            Q_ASSERT(matchStart == 0);
+            int dist = matchEnd;
+            pos += dist;
+            state.curPosition = pos;
+        }
+    };
+
     // bootstrap the first node
     {
         const MatchRuleNode& rootRule = data.matchRuleNodes.at(rootNodeRuleIndex);
@@ -170,9 +184,12 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
             root->typeName = rootRule.name;
         } else {
             // try all patterns
+            if (data.flag_skipEmptyLineBeforeMatching) {
+                skipEmptyLines();
+            }
             PatternMatchResult curBestResult;
             for (const auto& p : rootRule.patterns) {
-                PatternMatchResult curResult = tryPattern(p, 0);
+                PatternMatchResult curResult = tryPattern(p, pos);
                 if (!curResult) {
                     continue;
                 }
@@ -183,7 +200,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
             if (!curBestResult) {
                 return false;
             }
-            pos = curBestResult.totalConsumedLength;
+            pos += curBestResult.totalConsumedLength;
             root = curBestResult.node;
         }
         const auto& rootChildRules = childNodeMatchRuleVec.at(rootNodeRuleIndex);
@@ -198,6 +215,10 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
         PatternMatchResult curBestResult;
         int childNodeRuleIndex = -1;
+
+        if (data.flag_skipEmptyLineBeforeMatching) {
+            skipEmptyLines();
+        }
 
         for (int childRuleIndex : frame.childMatchRules) {
             const MatchRuleNode& rule = data.matchRuleNodes.at(childRuleIndex);
@@ -223,6 +244,9 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
         TreeBuilder::Node* node = curBestResult.node;
         Q_ASSERT(node);
 
+        pos += curBestResult.totalConsumedLength;
+        state.curPosition = pos;
+
         // if the best match is an early exit pattern, we also go to parent
         if (curBestResult.node->typeName.isEmpty()) {
             ruleStack.pop_back();
@@ -232,8 +256,6 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
         // we found the best match
         TreeBuilder::Node* parent = frame.ptr;
         node->setParent(parent);
-        pos += curBestResult.totalConsumedLength;
-        state.curPosition = pos;
 
         const auto& childRules = childNodeMatchRuleVec.at(childNodeRuleIndex);
         if (!childRules.isEmpty()) {
@@ -262,7 +284,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
         // we find strings that are not "whitespace"
         // TODO generate a warning
-        break;
+        return false;
     }
 
     Tree tree(builder);

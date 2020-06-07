@@ -24,7 +24,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="typeNameLineEdit"/>
+      <widget class="QLineEdit" name="typeNameLineEdit">
+       <property name="placeholderText">
+        <string>(If empty, exit current rule node upon matching this pattern)</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

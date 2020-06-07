@@ -124,6 +124,7 @@ public:
         QVector<BalancedParenthesis> parenthesis;
         QStringList whitespaceList; // even we mean for list of single characters, QChar only has 16 bits and we need a QString to represent arbitrary (say UTF-32) characters
         QString rootRuleNodeName;
+        bool flag_skipEmptyLineBeforeMatching = true;
 
         void saveToXML(QXmlStreamWriter& xml) const;
         bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
@@ -227,6 +228,8 @@ private:
     int regexIndex_SpecialCharacter_WhiteSpaces = -1;
     // line feed search is done by string literal
 
+    // empty line skip is done using dedicated regex
+    QRegularExpression emptyLineRegex;
 
     // runtime data
     ParseState state;
