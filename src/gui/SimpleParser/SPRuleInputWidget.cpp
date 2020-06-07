@@ -30,6 +30,13 @@ void SPRuleInputWidget::nameUpdated(const QString& name)
     defaultNodeTypeName = name;
 }
 
+void SPRuleInputWidget::otherDataUpdated()
+{
+    for (auto& d : patterns) {
+        d.widget->otherDataUpdated();
+    }
+}
+
 void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
 {
     defaultNodeTypeName = dataArg.name;

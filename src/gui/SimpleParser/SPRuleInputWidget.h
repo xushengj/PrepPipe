@@ -54,6 +54,9 @@ public:
 public slots:
     void nameUpdated(const QString& name);
 
+    // request to refresh check results
+    void otherDataUpdated();
+
 signals:
     void dirty();
     void gotoRuleNodeRequested(const QString& nodeName);

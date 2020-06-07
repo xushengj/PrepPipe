@@ -44,6 +44,9 @@ SPRuleInputWidget* SimpleParserEditor::createRuleInputWidget(NamedElementListCon
     w->bindCommonHelper(ruleCommonHelper);
     connect(w, &SPRuleInputWidget::gotoRuleNodeRequested, obj, &NamedElementListControllerObject::tryGoToElement);
     connect(w, &SPRuleInputWidget::dirty, this, &EditorBase::setDirty);
+    connect(markCtl.getObj(),       &NamedElementListControllerObject::listUpdated, w, &SPRuleInputWidget::otherDataUpdated);
+    connect(contentCtl.getObj(),    &NamedElementListControllerObject::listUpdated, w, &SPRuleInputWidget::otherDataUpdated);
+    connect(this,                   &SimpleParserEditor::initComplete,              w, &SPRuleInputWidget::otherDataUpdated);
     return w;
 }
 
@@ -102,5 +105,6 @@ void SimpleParserEditor::setBackingObject(SimpleParserGUIObject* obj)
     ruleCtl.setData(data.matchRuleNodes);
     contentCtl.setData(data.contentTypes);
     markCtl.setData(data.namedBoundaries);
+    emit initComplete();
     // TODO get rule common helper from file
 }

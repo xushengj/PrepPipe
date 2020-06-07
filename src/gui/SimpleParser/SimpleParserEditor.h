@@ -27,6 +27,10 @@ public:
 
     virtual void saveToObjectRequested(ObjectBase* obj) override;
 
+signals:
+    // private signal; should not be used outside
+    void initComplete();
+
 private:
     SPRuleInputWidget* createRuleInputWidget(NamedElementListControllerObject* obj);
     SPMarkInputWidget* createMarkInputWidget(NamedElementListControllerObject* obj);
