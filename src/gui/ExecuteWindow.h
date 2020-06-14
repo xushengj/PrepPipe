@@ -66,6 +66,8 @@ private slots:
     void writeBackOutputs();
     void updateCurrentExecutionStatus(const QString& description, int start, int end, int value);
     void handleOutput(const QString &outputName, ObjectBase* obj);
+    void objectListSelectionChangeHandler();
+    void openObjectViewerRequested(QTreeWidgetItem* item);
     
 protected:
     virtual void closeEvent(QCloseEvent* event) override;

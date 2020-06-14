@@ -27,6 +27,7 @@ public:
 
     // provide a default implementation (just dump the xml)
     virtual QWidget* getEditor() override;
+    virtual QWidget* getViewer() override;
 
     virtual bool saveToFile() override final;
 

@@ -135,6 +135,11 @@ QWidget* IntrinsicObject::getEditor()
     return ui;
 }
 
+QWidget* IntrinsicObject::getViewer()
+{
+    return getEditor();
+}
+
 // ----------------------------------------------------------------------------
 
 std::vector<const IntrinsicObjectDecl*>* IntrinsicObjectDecl::instancePtrVec = nullptr;

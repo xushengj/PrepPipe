@@ -28,6 +28,7 @@ public:
     virtual bool save(QByteArray& dest) const override;
 
     virtual QWidget* getEditor() override;
+    virtual QWidget* getViewer() override;
 
     QString getText() const {return text;}
     void setText(const QString& t) {text = t;}

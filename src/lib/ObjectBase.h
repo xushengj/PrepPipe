@@ -85,10 +85,15 @@ public:
 #endif
 
 #ifndef PP_DISABLE_GUI
+    // for use in EditorWindow
     // for objects not backed by a file, the editor can always be destroyed
     // virtual function asking for dirty editor data is in FileBackedObject
     virtual QWidget* getEditor() {return nullptr;}
     virtual void tearDownEditor(QWidget* editor) {editor->hide(); delete editor;}
+
+    // for use in ExecuteWindow
+    // viewers should be able to get destructed properly by just invoking destructor
+    virtual QWidget* getViewer() {return nullptr;}
 #endif
 
     QString getName() const {

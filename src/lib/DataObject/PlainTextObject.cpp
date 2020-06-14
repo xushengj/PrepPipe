@@ -80,6 +80,15 @@ QWidget* PlainTextObject::getEditor()
     return edit;
 }
 
+QWidget* PlainTextObject::getViewer()
+{
+    TextEditor* viewer = new TextEditor;
+    viewer->setPlainText(text);
+    viewer->document()->setModified(false);
+    viewer->setReadOnly(true);
+    return viewer;
+}
+
 QString PlainTextObject::getFileNameFilter() const {
     return tr("Normal text files (*.txt);;All files (*.*)");
 }

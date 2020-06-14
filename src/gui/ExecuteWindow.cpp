@@ -12,6 +12,7 @@
 #include <QCloseEvent>
 #include <QEventLoop>
 #include <QDateTime>
+#include <QLabel>
 
 #include <functional>
 
@@ -62,6 +63,9 @@ ExecuteWindow::ExecuteWindow(ExecuteObject *top, const ObjectBase::NamedReferenc
     executeObjectRoot->setExpanded(true);
     inputDataRoot->setExpanded(true);
     outputDataRoot->setExpanded(true);
+
+    ui->objectTreeWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    connect(ui->objectTreeWidget, &QTreeWidget::itemSelectionChanged, this, &ExecuteWindow::objectListSelectionChangeHandler);
 
 #ifdef PP_ENABLE_THREADS
     executeThread = MessageLogger::inst()->createThread(tr("Execution thread"), [this]() -> void {
@@ -518,4 +522,41 @@ void ExecuteWindow::handleOutput(const QString& outputName, ObjectBase* obj)
     curItemData.item = item;
     curItemData.origin = OriginContext::OutputContext;
     itemData.insert(item, curItemData);
+}
+
+void ExecuteWindow::objectListSelectionChangeHandler()
+{
+    QList<QTreeWidgetItem*> items = ui->objectTreeWidget->selectedItems();
+    if (items.size() != 1)
+        return;
+
+    QTreeWidgetItem* item = items.front();
+
+    if (item == inputDataRoot || item == outputDataRoot)
+        return;
+
+    openObjectViewerRequested(item);
+}
+
+void ExecuteWindow::openObjectViewerRequested(QTreeWidgetItem* item)
+{
+    auto iter = itemData.find(item);
+    Q_ASSERT(iter != itemData.end());
+    ObjectListItemData& data = iter.value();
+
+    if (!data.widget) {
+        // we need to create the viewer widget
+        QWidget* viewer = data.obj->getViewer();
+        if (!viewer) {
+            // create a label that says currently viewing this object is not supported
+            QLabel* label = new QLabel(tr("Sorry, viewing for this object is not supported yet."));
+            label->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+            viewer = label;
+        }
+        data.widget = viewer;
+        ui->placeholderStackedWidget->addWidget(viewer);
+
+    }
+
+    ui->placeholderStackedWidget->setCurrentWidget(data.widget);
 }
