@@ -311,6 +311,8 @@ void EditorWindow::objectListContextMenuRequested(const QPoint& pos)
                 if (item->parent() == mainRoot) {
                     QAction* executeAction = new QAction(tr("Execute"));
                     connect(executeAction, &QAction::triggered, this, [=]() -> void {
+                        saveHelper(task, data.editor);
+                        updateWindowTitle();
                         ObjectBase::NamedReference ref;
                         ref.name = task->getName();
                         launchTask(ref);

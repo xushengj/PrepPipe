@@ -377,6 +377,9 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         int contentIndex = -1;
         QString contentExportName;
         QString boundaryExportName;
+        QString wsAfterContentExportName;
+        bool chopWSAfterContent = false;;
+        bool mandatoryWSAfterContent = false;
         if (pe.ty == PatternElement::ElementType::Content) {
             contentExportName = pe.elementName;
             Q_ASSERT(nextElementIndex < elementCount);
@@ -389,8 +392,42 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
             const PatternElement& nextPE = pattern.pattern.at(nextElementIndex);
             nextElementIndex += 1;
             Q_ASSERT(nextPE.ty != PatternElement::ElementType::Content);
-            boundaryExportName = nextPE.elementName;
-            setDeclByPatternElement(decl, nextPE);
+
+            // set to true if the exportnames and boundary declaration is specially handled
+            bool isWSScenaro = false;
+
+            if ((nextPE.ty == PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace
+              || nextPE.ty == PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces)
+                    && nextElementIndex < elementCount) {
+                // the next element is a white space, which should be checked AFTER its next element is found
+                const PatternElement& nextNextPE = pattern.pattern.at(nextElementIndex);
+                bool isFallback = false;
+                switch (nextNextPE.ty) {
+                default:
+                    isFallback = false;
+                    break;
+                case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace:
+                case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces:
+                case PatternElement::ElementType::Content:
+                    isFallback = true;
+                    break;
+                }
+                if (!isFallback) {
+                    // we can check the next pattern
+                    isWSScenaro = true;
+                    nextElementIndex += 1;
+                    boundaryExportName = nextNextPE.elementName;
+                    setDeclByPatternElement(decl, nextNextPE);
+                    wsAfterContentExportName = nextPE.elementName;
+                    chopWSAfterContent = true;
+                    mandatoryWSAfterContent = (nextPE.ty == PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces);
+                }
+                // do nothing if we really cannot find a better way of matching the whitespace
+            }
+            if (!isWSScenaro) {
+                boundaryExportName = nextPE.elementName;
+                setDeclByPatternElement(decl, nextPE);
+            }
         } else {
             // this is a boundary
             boundaryExportName = pe.elementName;
@@ -398,7 +435,7 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         }
 
         int currentPosition = position + totalConsumeCount;
-        std::pair<int, int> pos = findBoundary(currentPosition, decl, contentIndex);
+        std::pair<int, int> pos = findBoundary(currentPosition, decl, contentIndex, chopWSAfterContent);
         if (pos.first < 0) {
             // no matches
             return result;
@@ -411,9 +448,24 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         if (contentIndex == -1) {
             Q_ASSERT(pos.first == 0);
         } else {
+            int contentStart = currentPosition;
+            int contentEnd = pos.first;
+            int wsEnd = pos.first;
+            if (chopWSAfterContent) {
+                int tailChopLen = getWhitespaceTailChopLength(currentPosition, pos.first);
+               contentEnd -= tailChopLen;
+               if (tailChopLen == 0 && mandatoryWSAfterContent) {
+                   // no matches
+                   return result;
+               }
+            }
             if (!contentExportName.isEmpty()) {
                 keyList.push_back(contentExportName);
-                valueList.push_back(std::make_pair(currentPosition, pos.first));
+                valueList.push_back(std::make_pair(contentStart, contentEnd));
+            }
+            if (!wsAfterContentExportName.isEmpty()) {
+                keyList.push_back(wsAfterContentExportName);
+                valueList.push_back(std::make_pair(contentEnd, wsEnd));
             }
         }
         if (!boundaryExportName.isEmpty()) {
@@ -439,17 +491,36 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
     return result;
 }
 
-std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaration& decl, int precedingContentTypeIndex)
+int SimpleParser::getWhitespaceTailChopLength(int startPos, int endPos)
+{
+    int totalLength = 0;
+    QStringRef strRef = state.str->midRef(startPos, endPos - startPos);
+    bool isChanged = true;
+    while (isChanged) {
+        isChanged = false;
+        for (const auto& ws : data.whitespaceList) {
+            if (strRef.endsWith(ws)) {
+                int len = ws.length();
+                totalLength += len;
+                strRef.chop(len);
+                isChanged = true;
+            }
+        }
+    }
+    return totalLength;
+}
+
+std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaration& decl, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
     switch (decl.decl) {
     case BoundaryDeclaration::DeclarationType::Value: {
         switch (decl.ty) {
-        case BoundaryType::StringLiteral:   return findBoundary_StringLiteral   (pos, decl.str, precedingContentTypeIndex);
-        case BoundaryType::Regex:           return findBoundary_Regex           (pos, decl.str, precedingContentTypeIndex);
+        case BoundaryType::StringLiteral:   return findBoundary_StringLiteral   (pos, decl.str, precedingContentTypeIndex, chopWSAfterContent);
+        case BoundaryType::Regex:           return findBoundary_Regex           (pos, decl.str, precedingContentTypeIndex, chopWSAfterContent);
 
-        case BoundaryType::SpecialCharacter_OptionalWhiteSpace: return findBoundary_SpecialCharacter_OptionalWhiteSpace (pos, precedingContentTypeIndex);
-        case BoundaryType::SpecialCharacter_WhiteSpaces:        return findBoundary_SpecialCharacter_WhiteSpaces        (pos, precedingContentTypeIndex);
-        case BoundaryType::SpecialCharacter_LineFeed:           return findBoundary_SpecialCharacter_LineFeed           (pos, precedingContentTypeIndex);
+        case BoundaryType::SpecialCharacter_OptionalWhiteSpace: return findBoundary_SpecialCharacter_OptionalWhiteSpace (pos, precedingContentTypeIndex, chopWSAfterContent);
+        case BoundaryType::SpecialCharacter_WhiteSpaces:        return findBoundary_SpecialCharacter_WhiteSpaces        (pos, precedingContentTypeIndex, chopWSAfterContent);
+        case BoundaryType::SpecialCharacter_LineFeed:           return findBoundary_SpecialCharacter_LineFeed           (pos, precedingContentTypeIndex, chopWSAfterContent);
 
         default: {
             qFatal("Unhandled value based boundary");
@@ -464,13 +535,13 @@ std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaratio
             if (b.elements.isEmpty()) {
                 return std::make_pair(-1, 0);
             }
-            std::pair<int, int> firstResult = findBoundary(pos, b.elements.front(), precedingContentTypeIndex);
+            std::pair<int, int> firstResult = findBoundary(pos, b.elements.front(), precedingContentTypeIndex, chopWSAfterContent);
             if (firstResult.first < 0) {
                 return std::make_pair(-1, 0);
             }
             int consumeCount = firstResult.first + firstResult.second;
             for (int i = 1, n = b.elements.size(); i < n; ++i) {
-                std::pair<int, int> result = findBoundary(pos + consumeCount, b.elements.at(i), -1);
+                std::pair<int, int> result = findBoundary(pos + consumeCount, b.elements.at(i), -1, chopWSAfterContent);
                 Q_ASSERT(result.first <= 0);
                 if (result.first == 0) {
                     consumeCount += result.second;
@@ -480,7 +551,7 @@ std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaratio
             }
             return std::make_pair(firstResult.first, consumeCount - firstResult.first);
         }break;
-        case BoundaryType::ClassBased: return findBoundary_ClassBased(pos, index, precedingContentTypeIndex);
+        case BoundaryType::ClassBased: return findBoundary_ClassBased(pos, index, precedingContentTypeIndex, chopWSAfterContent);
         default: {
             qFatal("Unhandled named boundary");
         }break;
@@ -490,13 +561,13 @@ std::pair<int, int> SimpleParser::findBoundary(int pos, const BoundaryDeclaratio
     Q_UNREACHABLE();
 }
 
-std::pair<int, int> SimpleParser::findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
     const NamedBoundary& boundary = data.namedBoundaries.at(boundaryIndex);
     Q_ASSERT(boundary.ty == BoundaryType::ClassBased);
     std::pair<int, int> bestResult(-1, 0);
     for (const auto& decl : boundary.elements) {
-        std::pair<int, int> curResult = findBoundary(pos, decl, precedingContentTypeIndex);
+        std::pair<int, int> curResult = findBoundary(pos, decl, precedingContentTypeIndex, chopWSAfterContent);
         if (curResult.first < 0)
             continue;
         if ((bestResult.first == -1) || (bestResult.first > curResult.first) || (bestResult.first == curResult.first && bestResult.second < curResult.second)) {
@@ -506,7 +577,7 @@ std::pair<int, int> SimpleParser::findBoundary_ClassBased(int pos, int boundaryI
     auto iter = classBasedBoundaryChildList.find(boundaryIndex);
     Q_ASSERT(iter != classBasedBoundaryChildList.end());
     for (int child : iter.value()) {
-        std::pair<int, int> curResult = findBoundary_ClassBased(pos, child, precedingContentTypeIndex);
+        std::pair<int, int> curResult = findBoundary_ClassBased(pos, child, precedingContentTypeIndex, chopWSAfterContent);
         if (curResult.first < 0)
             continue;
         if ((bestResult.first == -1) || (bestResult.first > curResult.first) || (bestResult.first == curResult.first && bestResult.second < curResult.second)) {
@@ -517,12 +588,16 @@ std::pair<int, int> SimpleParser::findBoundary_ClassBased(int pos, int boundaryI
     return bestResult;
 }
 
-int SimpleParser::contentCheck(const ContentType& content, int startPos, int length)
+int SimpleParser::contentCheck(const ContentType& content, int startPos, int length, bool chopWSAfterContent)
 {
+    int actualLength = length;
+    if (actualLength > 0 && chopWSAfterContent) {
+        actualLength -= getWhitespaceTailChopLength(startPos, startPos + length);
+    }
     // TODO
     Q_UNUSED(content)
     Q_UNUSED(startPos)
-    Q_UNUSED(length)
+    Q_UNUSED(actualLength)
     return 0;
 }
 
@@ -637,7 +712,7 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
     Q_UNREACHABLE();
 }
 
-std::pair<int, int> SimpleParser::findBoundary_StringLiteral(int pos, const QString& str, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_StringLiteral(int pos, const QString& str, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
     if (precedingContentTypeIndex == -1) {
         if (state.str->midRef(pos).startsWith(str)) {
@@ -653,7 +728,7 @@ std::pair<int, int> SimpleParser::findBoundary_StringLiteral(int pos, const QStr
         if (dist == -1) {
             return std::make_pair(-1, 0);
         }
-        int result = contentCheck(c, curPos, dist);
+        int result = contentCheck(c, curPos, dist, chopWSAfterContent);
         if (result < 0) {
             return std::make_pair(-1, 0);
         } else if (result == 0) {
@@ -666,33 +741,33 @@ std::pair<int, int> SimpleParser::findBoundary_StringLiteral(int pos, const QStr
     }
 }
 
-std::pair<int, int> SimpleParser::findBoundary_Regex(int pos, const QString& str, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_Regex(int pos, const QString& str, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
-    return findBoundary_Regex_Impl(pos, state.getRegexIndex(str), precedingContentTypeIndex);
+    return findBoundary_Regex_Impl(pos, state.getRegexIndex(str), precedingContentTypeIndex, chopWSAfterContent);
 }
 
-std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
     // it seems that if the next character is \n, it will give "no match" result
     // add workaround here
-    std::pair<int, int> result = findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_OptionalWhiteSpace, precedingContentTypeIndex);
+    std::pair<int, int> result = findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_OptionalWhiteSpace, precedingContentTypeIndex, chopWSAfterContent);
     if (result.first == -1) {
         return std::make_pair(0, 0);
     }
     return result;
 }
 
-std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
-    return findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_WhiteSpaces, precedingContentTypeIndex);
+    return findBoundary_Regex_Impl(pos, regexIndex_SpecialCharacter_WhiteSpaces, precedingContentTypeIndex, chopWSAfterContent);
 }
 
-std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_LineFeed(int pos, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_SpecialCharacter_LineFeed(int pos, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
-    return findBoundary_StringLiteral(pos, QStringLiteral("\n"), precedingContentTypeIndex);
+    return findBoundary_StringLiteral(pos, QStringLiteral("\n"), precedingContentTypeIndex, chopWSAfterContent);
 }
 
-std::pair<int, int> SimpleParser::findBoundary_Regex_Impl(int pos, int regexIndex, int precedingContentTypeIndex)
+std::pair<int, int> SimpleParser::findBoundary_Regex_Impl(int pos, int regexIndex, int precedingContentTypeIndex, bool chopWSAfterContent)
 {
     const QRegularExpression& regex = state.regexList.at(regexIndex);
     auto& positionMap = state.regexMatchPositionMap[regexIndex];
@@ -706,7 +781,7 @@ std::pair<int, int> SimpleParser::findBoundary_Regex_Impl(int pos, int regexInde
     }
 
     const ContentType& c = data.contentTypes.at(precedingContentTypeIndex);
-    int firstResult = contentCheck(c, pos, dists.first);
+    int firstResult = contentCheck(c, pos, dists.first, chopWSAfterContent);
     if (firstResult < 0) {
         return std::make_pair(-1, 0);
     } else if (firstResult == 0) {
@@ -720,7 +795,7 @@ std::pair<int, int> SimpleParser::findBoundary_Regex_Impl(int pos, int regexInde
         if (curDist.first == -1) {
             return std::make_pair(-1, 0);
         }
-        int result = contentCheck(c, curPos, curDist.second);
+        int result = contentCheck(c, curPos, curDist.second, chopWSAfterContent);
         if (result < 0) {
             return std::make_pair(-1, 0);
         } else if (result == 0) {

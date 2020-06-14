@@ -174,25 +174,29 @@ private:
      * @param text the input string
      * @param decl the boundary to search for
      * @param precedingContentTypeIndex the type index of content that precedes the boundary; -1 if no content is accepted at current position
+     * @param chopWSAfterContent whether there is a whitespace pattern after content, making it required to chop off whitespaces
      * @return a pair: <match start index (offset from current head of text), match length>. return (-1, 0) if there is no match
      */
-    std::pair<int, int> findBoundary(int pos, const BoundaryDeclaration& decl, int precedingContentTypeIndex);
+    std::pair<int, int> findBoundary(int pos, const BoundaryDeclaration& decl, int precedingContentTypeIndex, bool chopWSAfterContent);
 
 
-    std::pair<int, int> findBoundary_StringLiteral(int pos, const QString& str, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_Regex(int pos, const QString& str, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_Regex_Impl(int pos, int regexIndex, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_SpecialCharacter_LineFeed(int pos, int precedingContentTypeIndex);
-    std::pair<int, int> findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex);
+    std::pair<int, int> findBoundary_StringLiteral(int pos, const QString& str, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_Regex(int pos, const QString& str, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_Regex_Impl(int pos, int regexIndex, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_SpecialCharacter_OptionalWhiteSpace(int pos, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_SpecialCharacter_WhiteSpaces(int pos, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_SpecialCharacter_LineFeed(int pos, int precedingContentTypeIndex, bool chopWSAfterContent);
+    std::pair<int, int> findBoundary_ClassBased(int pos, int boundaryIndex, int precedingContentTypeIndex, bool chopWSAfterContent);
 
     int findNextStringMatch(int startPos, const QString& str);
     std::pair<int, int> findNextRegexMatch(int startPos, const QRegularExpression& regex, QMap<int, std::pair<int, ParseState::RegexMatchData> > &positionMap);
 
     // incremental check (this function would be called on pieces of contents)
     // return -1 if check fails, 0 if passes, positive distance (ret > length) if the content must be extended
-    int contentCheck(const ContentType& content, int startPos, int length);
+    int contentCheck(const ContentType& content, int startPos, int length, bool chopWSAfterContent);
+
+    // for the substring, what's the length of whitespace in the tail
+    int getWhitespaceTailChopLength(int startPos, int endPos);
 
     struct PatternMatchResult {
         TreeBuilder::Node* node = nullptr;
