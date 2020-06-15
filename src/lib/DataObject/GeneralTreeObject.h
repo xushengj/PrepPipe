@@ -28,6 +28,9 @@ public:
 
     const Tree& getTreeData() const {return treeData;}
 
+    virtual QWidget* getEditor() override;
+    virtual QWidget* getViewer() override;
+
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;
 

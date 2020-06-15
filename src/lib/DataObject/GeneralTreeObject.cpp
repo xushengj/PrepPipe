@@ -1,5 +1,6 @@
 #include "GeneralTreeObject.h"
 #include "src/utils/XMLUtilities.h"
+#include "src/gui/GeneralTreeEditor.h"
 
 #include <QDebug>
 
@@ -18,6 +19,19 @@ GeneralTreeObject::GeneralTreeObject(const Tree &tree)
 GeneralTreeObject::~GeneralTreeObject()
 {
 
+}
+
+QWidget* GeneralTreeObject::getEditor()
+{
+    return getViewer();
+}
+
+QWidget* GeneralTreeObject::getViewer()
+{
+    GeneralTreeEditor* viewer = new GeneralTreeEditor;
+    viewer->setData(treeData);
+    viewer->setReadOnly(true);
+    return viewer;
 }
 
 //-----------------------------------------------------------------------------
