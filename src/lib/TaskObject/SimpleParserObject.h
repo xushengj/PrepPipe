@@ -4,6 +4,7 @@
 #include "src/lib/TaskObject.h"
 #include "src/lib/ExecuteObject.h"
 #include "src/lib/Tree/SimpleParser.h"
+#include "src/lib/Tree/EventLogging.h"
 
 #include <QObject>
 
@@ -19,9 +20,11 @@ public:
 protected:
     virtual int startImpl(ExitCause& cause) override;
 
-private:
+protected:
     SimpleParser parser;
     QString text;
+    Tree treeOut;
+    EventLogger* logger = nullptr;
 };
 
 class SimpleParserObject : public TaskObject

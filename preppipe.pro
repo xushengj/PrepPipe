@@ -62,12 +62,14 @@ SOURCES += \
     src/gui/SimpleParser/SPRulePatternQuickInputDialog.cpp \
     src/gui/SimpleParser/SPRulePatternQuickInputSpecialBlockModel.cpp \
     src/gui/SimpleParser/SimpleParserEditor.cpp \
+    src/gui/SimpleParser/SimpleParserGUIExecuteObject.cpp \
     src/gui/SimpleParser/SimpleParserGUIObject.cpp \
     src/gui/SimpleTextGenerator/STGAliasListWidget.cpp \
     src/gui/SimpleTextGenerator/STGEditor.cpp \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.cpp \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.cpp \
     src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.cpp \
+    src/gui/TransformPassView/TransformPassViewWidget.cpp \
     src/gui/TextEditor.cpp \
     src/gui/GeneralTreeEditor.cpp \
     src/gui/MIMEDataEditor.cpp \
@@ -88,6 +90,7 @@ SOURCES += \
     src/lib/TaskObject/SimpleWorkflowObject.cpp \
     src/lib/TaskObject/TestTaskObject.cpp \
     src/lib/Tree/Configuration.cpp \
+    src/lib/Tree/EventLogging.cpp \
     src/lib/Tree/SimpleParser.cpp \
     src/lib/Tree/SimpleTextGenerator.cpp \
     src/lib/Tree/SimpleTreeTransform.cpp \
@@ -126,12 +129,14 @@ HEADERS += \
     src/gui/SimpleParser/SPRulePatternQuickInputDialog.h \
     src/gui/SimpleParser/SPRulePatternQuickInputSpecialBlockModel.h \
     src/gui/SimpleParser/SimpleParserEditor.h \
+    src/gui/SimpleParser/SimpleParserGUIExecuteObject.h \
     src/gui/SimpleParser/SimpleParserGUIObject.h \
     src/gui/SimpleTextGenerator/STGAliasListWidget.h \
     src/gui/SimpleTextGenerator/STGEditor.h \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.h \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.h \
     src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h \
+    src/gui/TransformPassView/TransformPassViewWidget.h \
     src/gui/TextEditor.h \
     src/gui/GeneralTreeEditor.h \
     src/gui/MIMEDataEditor.h \
@@ -152,6 +157,7 @@ HEADERS += \
     src/lib/TaskObject/SimpleWorkflowObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \
+    src/lib/Tree/EventLogging.h \
     src/lib/Tree/SimpleParser.h \
     src/lib/Tree/SimpleTextGenerator.h \
     src/lib/Tree/SimpleTreeTransform.h \
@@ -179,7 +185,8 @@ FORMS += \
     src/gui/SimpleParser/SimpleParserEditor.ui \
     src/gui/SimpleTextGenerator/STGEditor.ui \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.ui \
-    src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui
+    src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui \
+    src/gui/TransformPassView/TransformPassViewWidget.ui
 
 TRANSLATIONS += \
     translations/tr_zh_CN.ts

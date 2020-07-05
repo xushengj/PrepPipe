@@ -40,6 +40,18 @@ QWidget* SimpleParserGUIObject::getEditor()
     return editor;
 }
 
+SimpleParserGUIExecuteObject* SimpleParserGUIObject::getExecuteObject(
+            const LaunchOptions& options,
+            const ConfigurationData& config,
+            std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
+            ) const
+{
+    Q_UNUSED(options)
+    Q_UNUSED(config)
+    Q_UNUSED(resolveReferenceCB)
+    return new class SimpleParserGUIExecuteObject(data, getName());
+}
+
 // ----------------------------------------------------------------------------
 
 class SimpleParserDecl : public IntrinsicObjectDecl

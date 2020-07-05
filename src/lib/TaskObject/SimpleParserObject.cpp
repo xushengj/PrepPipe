@@ -94,7 +94,7 @@ int SimpleParserExecuteObject::startImpl(ExitCause& cause)
         return -1;
     }
 
-    Tree treeOut;
+    treeOut = Tree();
     bool isGood = parser.performParsing(text, treeOut);
     if (Q_UNLIKELY(!isGood)) {
         return 1;

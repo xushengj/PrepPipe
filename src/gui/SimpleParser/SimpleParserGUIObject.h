@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include "src/lib/TaskObject/SimpleParserObject.h"
+#include "src/gui/SimpleParser/SimpleParserGUIExecuteObject.h"
 
 class SimpleParserGUIObject : public SimpleParserObject
 {
@@ -20,6 +21,12 @@ public:
     static SimpleParserGUIObject* loadFromXML(QXmlStreamReader& xml, StringCache &strCache);
 
     virtual QWidget* getEditor() override;
+
+    virtual SimpleParserGUIExecuteObject* getExecuteObject(
+            const LaunchOptions& options,
+            const ConfigurationData& config,
+            std::function<ObjectBase*(const ObjectBase::NamedReference&)> resolveReferenceCB
+            ) const override;
 
 protected:
     virtual void saveToXMLImpl(QXmlStreamWriter &xml) override;

@@ -415,7 +415,8 @@ QVariant GeneralTreeModel::data(const QModelIndex &index, int role) const
     switch (role) {
     default: return QVariant();
     case Qt::EditRole: return QVariant(node.typeName);
-    case Qt::DisplayRole: return QVariant(getNodeDisplayString(node));
+    case Qt::DisplayRole: return QVariant(getNodeDisplayString(node, true));
+    case Qt::ToolTipRole: return QVariant(getNodeDisplayString(node, false));
     }
 }
 
@@ -428,27 +429,55 @@ bool GeneralTreeModel::setData(const QModelIndex &index, const QVariant &value, 
     return false;
 }
 
-QString GeneralTreeModel::getNodeDisplayString(const TreeNodeRepresentation& node) const
+QString GeneralTreeModel::getNodeDisplayString(const TreeNodeRepresentation& node, bool isShortSingleLine) const
 {
     QString str = QString("[%1] %2").arg(QString::number(node.displayOrderIndex), node.typeName);
-    if (!node.valueList.isEmpty()) {
-        QString aux_str;
-        if (node.valueList.size() == 1) {
-            aux_str = node.valueList.front();
-        } else {
-            for (int i = 0, n = node.valueList.size(); i < n; ++i) {
-                if (i > 0) {
-                    aux_str.append(", ");
+    if (isShortSingleLine) {
+        // generate a summary style string
+        if (!node.valueList.isEmpty()) {
+            QString aux_str;
+            if (node.valueList.size() == 1) {
+                aux_str = node.valueList.front();
+            } else {
+                for (int i = 0, n = node.valueList.size(); i < n; ++i) {
+                    if (i > 0) {
+                        aux_str.append(", ");
+                    }
+                    aux_str.append(node.keyList.at(i));
+                    aux_str.append("=\"");
+                    aux_str.append(node.valueList.at(i));
+                    aux_str.append('"');
                 }
-                aux_str.append(node.keyList.at(i));
-                aux_str.append("=\"");
-                aux_str.append(node.valueList.at(i));
-                aux_str.append('"');
+            }
+            str.append(" (");
+            str.append(aux_str);
+            str.append(')');
+        }
+    } else {
+        // generate a multi-line detailed info
+        str.append('\n');
+        if (rootNodeIndex == node.selfID) {
+            str.append(tr("(Root node)"));
+        } else {
+            const auto& parent = nodes.at(node.parentID);
+            str.append(tr("Parent Node:"));
+            str.append("\n  ");
+            str.append(getNodeDisplayString(parent, true));
+        }
+        if (node.valueList.isEmpty()) {
+            str.append(tr("\n(No parameter)\n"));
+        } else {
+            str.append(tr("\nNumber of parameters: %1\n").arg(node.valueList.size()));
+            for (int i = 0, n = node.valueList.size(); i < n; ++i) {
+                const QString& key = node.keyList.at(i);
+                const QString& value = node.valueList.at(i);
+                str.append(QString("  \"%1\": \"%2\"\n").arg(key, value));
             }
         }
-        str.append(" (");
-        str.append(aux_str);
-        str.append(')');
+    }
+
+    while (str.endsWith('\n')) {
+        str.chop(1);
     }
     return str;
 }

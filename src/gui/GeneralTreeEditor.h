@@ -138,7 +138,7 @@ private:
     };
 
 private:
-    QString getNodeDisplayString(const TreeNodeRepresentation& node) const;
+    QString getNodeDisplayString(const TreeNodeRepresentation& node, bool isShortSingleLine) const;
 
     quint64 populateFromTree(const Tree& data, const QVector<int>& provenanceColorIndexVec, int curIndex, quint64 parentIndex);
     quint64 updateDisplayOrderIndex(quint64 curNode, quint64 curNodeDisplayOrder);
