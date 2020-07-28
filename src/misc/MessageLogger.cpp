@@ -17,7 +17,9 @@ MessageLogger::MessageLogger(QObject *parent) : QObject(parent)
 {
     timer.start();
     bootstrapLog.reserve(1024);
+#ifdef PP_GRACEFUL_FAILURE_HANDLING
     initFailureHandler();
+#endif
 }
 
 MessageLogger::~MessageLogger()
@@ -252,8 +254,10 @@ void MessageLogger::normalMessageHandler(QtMsgType type, const QMessageLogContex
 
     if (Q_UNLIKELY(type == QtFatalMsg)) {
         inst()->logFile.setAutoRemove(false);
+#ifdef PP_GRACEFUL_FAILURE_HANDLING
         tryDumpStackTrace(dest);
         crashReportWrapup();
+#endif
     }
 }
 

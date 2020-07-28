@@ -27,10 +27,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 # Enable threading unless in debug build
+# Enable graceful handling of crashes unless in debug build
 CONFIG(debug) {
 
 } else {
     DEFINES += PP_ENABLE_THREADS
+    DEFINES += PP_GRACEFUL_FAILURE_HANDLING
 }
 
 #if a build without GUI is needed, enable this define:
