@@ -139,18 +139,21 @@ SimpleParser::SimpleParser(const Data& d)
     Q_ASSERT(rootNodeRuleIndex != -1);
 }
 
-bool SimpleParser::performParsing(const QString& src, Tree& dest)
+bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *logger)
 {
-    // SimpleParser should be in clean state when entering
-    state.set(src);
+    state.clear();
+    builder.clear();
+
+    state.set(src, logger);
 
     struct RuleStackFrame {
         TreeBuilder::Node* ptr = nullptr;
         QVector<int> childMatchRules;
+        int event = -1;
 
         RuleStackFrame() = default;
-        RuleStackFrame(TreeBuilder::Node* node, const QVector<int>& child)
-            : ptr(node), childMatchRules(child)
+        RuleStackFrame(TreeBuilder::Node* node, const QVector<int>& child, int eventID)
+            : ptr(node), childMatchRules(child), event(eventID)
         {}
         RuleStackFrame(const RuleStackFrame&) = default;
         RuleStackFrame(RuleStackFrame&&) = default;
@@ -158,9 +161,13 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
     QVector<RuleStackFrame> ruleStack;
 
     int pos = 0;
+    int lastEventChangingPos = -1;
+    int lastEventChangingFrame = -1;
     int length = src.length();
+    QHash<int, std::tuple<int, int, int>> treeNodeSequenceNumberToEventMap; // [sequence number] -> <start pos, end pos, node add event id>
 
     auto skipEmptyLines = [&]() -> void {
+        int startPos = pos;
         QStringRef str = src.midRef(pos);
         auto match = emptyLineRegex.match(str, 0, QRegularExpression::NormalMatch, QRegularExpression::AnchoredMatchOption);
         if (match.hasMatch()) {
@@ -170,6 +177,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
             int dist = matchEnd;
             pos += dist;
             state.curPosition = pos;
+            lastEventChangingPos = SimpleParserEvent::Log(SimpleParserEvent::EmptyLineSkipped, logger, startPos, pos);
         }
     };
 
@@ -177,35 +185,67 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
     {
         const MatchRuleNode& rootRule = data.matchRuleNodes.at(rootNodeRuleIndex);
         TreeBuilder::Node* root = nullptr;
+        int rootRuleEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodeSpecification, logger, rootNodeRuleIndex, rootRule.name);
 
+        int rootNodeEventID = -1;
+        int startPos = pos;
         if (rootRule.patterns.isEmpty()) {
             // just create a node with root rule's name as type
             root = builder.addNode(nullptr);
             root->typeName = rootRule.name;
+            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodeDirectCreation, logger, rootRuleEventID);
         } else {
             // try all patterns
             if (data.flag_skipEmptyLineBeforeMatching) {
                 skipEmptyLines();
             }
+            startPos = pos;
+            QList<int> positiveMatchEvents;
+            QList<int> negativeMatchEvents;
             PatternMatchResult curBestResult;
             for (const auto& p : rootRule.patterns) {
-                PatternMatchResult curResult = tryPattern(p, pos);
+                PatternMatchResult curResult = tryPattern(p, pos, rootRuleEventID);
+                if (logger) {
+                    Q_ASSERT(curResult.nodeFinalEvent >= 0);
+                }
                 if (!curResult) {
+                    negativeMatchEvents.push_back(curResult.nodeFinalEvent);
                     continue;
                 }
-                if (!curBestResult || curResult.isBetterThan(curBestResult)) {
+                positiveMatchEvents.push_back(curResult.nodeFinalEvent);
+                if (!curBestResult) {
+                    // this is the first match
                     curBestResult = curResult;
+                } else {
+                    // this is not the first match
+                    if (curResult.isBetterThan(curBestResult)) {
+                        int e = SimpleParserEvent::Log(SimpleParserEvent::BetterPatternMatched, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
+                        positiveMatchEvents.push_back(e);
+                        curBestResult = curResult;
+                    } else {
+                        int e = SimpleParserEvent::Log(SimpleParserEvent::PatternMatchedNotBetter, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
+                        positiveMatchEvents.push_back(e);
+                    }
                 }
             }
             if (!curBestResult) {
+                SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchFailed, logger, pos, rootRuleEventID, positiveMatchEvents, negativeMatchEvents);
                 return false;
             }
             pos += curBestResult.totalConsumedLength;
             root = curBestResult.node;
+            builder.setRoot(root);
+            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchCreation, logger, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
+            lastEventChangingPos = rootNodeEventID;
         }
+        treeNodeSequenceNumberToEventMap.insert(root->getSequenceNumber(), std::make_tuple(startPos, pos, rootNodeEventID));
         const auto& rootChildRules = childNodeMatchRuleVec.at(rootNodeRuleIndex);
         if (!rootChildRules.isEmpty()) {
-            ruleStack.push_back(RuleStackFrame(root, rootChildRules));
+            int e = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, rootNodeEventID, rootChildRules);
+            ruleStack.push_back(RuleStackFrame(root, rootChildRules, e));
+            lastEventChangingFrame = e;
+        } else {
+            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::RootNodeNoFrame, logger, rootNodeEventID);
         }
     }
 
@@ -215,21 +255,39 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
         PatternMatchResult curBestResult;
         int childNodeRuleIndex = -1;
+        QList<int> positiveMatchEvents;
+        QList<int> negativeMatchEvents;
 
         if (data.flag_skipEmptyLineBeforeMatching) {
             skipEmptyLines();
         }
 
+        int startPos = pos;
         for (int childRuleIndex : frame.childMatchRules) {
             const MatchRuleNode& rule = data.matchRuleNodes.at(childRuleIndex);
             for (const auto& p : rule.patterns) {
-                PatternMatchResult curResult = tryPattern(p, pos);
+                PatternMatchResult curResult = tryPattern(p, pos, frame.event);
+                if (logger) {
+                    Q_ASSERT(curResult.nodeFinalEvent >= 0);
+                }
                 if (!curResult) {
+                    negativeMatchEvents.push_back(curResult.nodeFinalEvent);
                     continue;
                 }
-                if (!curBestResult || curResult.isBetterThan(curBestResult)) {
+                if (!curBestResult) {
+                    // first match
                     curBestResult = curResult;
                     childNodeRuleIndex = childRuleIndex;
+                } else {
+                    if (curResult.isBetterThan(curBestResult)) {
+                        int e = SimpleParserEvent::Log(SimpleParserEvent::BetterPatternMatched, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
+                        positiveMatchEvents.push_back(e);
+                        curBestResult = curResult;
+                        childNodeRuleIndex = childRuleIndex;
+                    } else {
+                        int e = SimpleParserEvent::Log(SimpleParserEvent::PatternMatchedNotBetter, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
+                        positiveMatchEvents.push_back(e);
+                    }
                 }
             }
         }
@@ -237,6 +295,8 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
         if (childNodeRuleIndex == -1) {
             // no matches in current node rule
             // go to parent
+            Q_ASSERT(positiveMatchEvents.isEmpty());
+            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::FramePoped, logger, frame.event, negativeMatchEvents);
             ruleStack.pop_back();
             continue;
         }
@@ -246,9 +306,11 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 
         pos += curBestResult.totalConsumedLength;
         state.curPosition = pos;
+        lastEventChangingPos = curBestResult.nodeFinalEvent;
 
         // if the best match is an early exit pattern, we also go to parent
         if (curBestResult.node->typeName.isEmpty()) {
+            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::FramePopedForEarlyExit, logger, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
             ruleStack.pop_back();
             continue;
         }
@@ -256,11 +318,31 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
         // we found the best match
         TreeBuilder::Node* parent = frame.ptr;
         node->setParent(parent);
+        int nodeAddEvent = SimpleParserEvent::Log(SimpleParserEvent::NodeAdded, logger, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
+        treeNodeSequenceNumberToEventMap.insert(node->getSequenceNumber(), std::make_tuple(startPos, pos, nodeAddEvent));
 
         const auto& childRules = childNodeMatchRuleVec.at(childNodeRuleIndex);
         if (!childRules.isEmpty()) {
-            ruleStack.push_back(RuleStackFrame(node, childRules));
+            int framePushEvent = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, nodeAddEvent, childRules);
+            ruleStack.push_back(RuleStackFrame(node, childRules, framePushEvent));
+            lastEventChangingFrame = framePushEvent;
         }
+    }
+
+    int finishEvent = SimpleParserEvent::Log(SimpleParserEvent::MatchFinished, logger, lastEventChangingFrame, pos);
+    QVector<int> sequenceNumberTable;
+    Tree tree(builder, sequenceNumberTable);
+    dest.swap(tree);
+
+    for (int i = 0, n = sequenceNumberTable.size(); i < n; ++i) {
+        int seqNum = sequenceNumberTable.at(i);
+        auto iter = treeNodeSequenceNumberToEventMap.find(seqNum);
+        Q_ASSERT(iter != treeNodeSequenceNumberToEventMap.end());
+        int startPos = 0;
+        int endPos = 0;
+        int nodeAddEvent = 0;
+        std::tie(startPos, endPos, nodeAddEvent) = iter.value();
+        SimpleParserEvent::Log(SimpleParserEvent::TextToNodePositionMapping, logger, startPos, endPos, i, nodeAddEvent);
     }
 
     // okay, done; no further match possible
@@ -283,12 +365,9 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
             continue;
 
         // we find strings that are not "whitespace"
-        // TODO generate a warning
+        SimpleParserEvent::Log(SimpleParserEvent::GarbageAtEnd, logger, str.position(), finishEvent);
         return false;
     }
-
-    Tree tree(builder);
-    dest.swap(tree);
 
     state.clear();
     builder.clear();
@@ -299,17 +378,21 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest)
 void SimpleParser::ParseState::clear()
 {
     stringLiteralPositionMap.clear();
-    regexMatchPositionMap.clear();
+    for (auto& regexPosMap : regexMatchPositionMap) {
+        regexPosMap.clear();
+    }
     str = nullptr;
+    logger = nullptr;
 
     // the following two is persistent across uses
     // regexPatternToIndexMap.clear();
     // regexList.clear();
 }
 
-void SimpleParser::ParseState::set(const QString& text)
+void SimpleParser::ParseState::set(const QString& text, EventLogger* loggerArg)
 {
     str = &text;
+    logger = loggerArg;
     strLength = text.length();
     curPosition = 0;
 }
@@ -328,7 +411,7 @@ int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
     return regexIndex;
 }
 
-SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern, int position)
+SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern, int position, int patternTestSourceEvent)
 {
     // helper function
     auto setDeclByPatternElement = [](BoundaryDeclaration& decl, const PatternElement& pe) -> void {
@@ -374,6 +457,8 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         const PatternElement& pe = pattern.pattern.at(elementIndex);
         BoundaryDeclaration decl;
         int nextElementIndex = elementIndex+1;
+        int curTestingElementIndex = elementIndex;
+        int curWSElementIndex = -1;
         int contentIndex = -1;
         QString contentExportName;
         QString boundaryExportName;
@@ -390,6 +475,8 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
                 Q_ASSERT(contentIndex != -1);
             }
             const PatternElement& nextPE = pattern.pattern.at(nextElementIndex);
+            curTestingElementIndex = nextElementIndex;
+            curWSElementIndex = nextElementIndex;
             nextElementIndex += 1;
             Q_ASSERT(nextPE.ty != PatternElement::ElementType::Content);
 
@@ -415,6 +502,7 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
                 if (!isFallback) {
                     // we can check the next pattern
                     isWSScenaro = true;
+                    curTestingElementIndex = nextElementIndex;
                     nextElementIndex += 1;
                     boundaryExportName = nextNextPE.elementName;
                     setDeclByPatternElement(decl, nextNextPE);
@@ -438,6 +526,11 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
         std::pair<int, int> pos = findBoundary(currentPosition, decl, contentIndex, chopWSAfterContent);
         if (pos.first < 0) {
             // no matches
+            result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternNotMatched, state.logger,
+                                                           position, currentPosition,
+                                                           patternTestSourceEvent,
+                                                           curTestingElementIndex, pattern.pattern.at(curTestingElementIndex),
+                                                           QList<int>()); // TODO add tracking of matching events
             return result;
         }
 
@@ -449,13 +542,20 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
             Q_ASSERT(pos.first == 0);
         } else {
             int contentStart = currentPosition;
-            int contentEnd = pos.first;
+            int contentEnd = pos.first; // this is a length instead of absolute pos
             int wsEnd = pos.first;
             if (chopWSAfterContent) {
                 int tailChopLen = getWhitespaceTailChopLength(currentPosition, pos.first);
                contentEnd -= tailChopLen;
+               boundaryConsumeCount += tailChopLen;
                if (tailChopLen == 0 && mandatoryWSAfterContent) {
                    // no matches
+                   result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternNotMatched, state.logger,
+                                                                  currentPosition, currentPosition + pos.first,
+                                                                  patternTestSourceEvent,
+                                                                  curWSElementIndex, pattern.pattern.at(curWSElementIndex),
+                                                                  QList<int>()); // TODO add tracking of matching events
+                   // curWSElementIndex
                    return result;
                }
             }
@@ -488,13 +588,15 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
     result.node = node;
     result.totalConsumedLength = totalConsumeCount;
     result.boundaryConsumedLength = boundaryConsumeCount;
+    // TODO currently we don't track element matching events yet
+    result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternMatched, state.logger, position, position + totalConsumeCount, patternTestSourceEvent, QList<int>());
     return result;
 }
 
-int SimpleParser::getWhitespaceTailChopLength(int startPos, int endPos)
+int SimpleParser::getWhitespaceTailChopLength(int startPos, int length)
 {
     int totalLength = 0;
-    QStringRef strRef = state.str->midRef(startPos, endPos - startPos);
+    QStringRef strRef = state.str->midRef(startPos, length);
     bool isChanged = true;
     while (isChanged) {
         isChanged = false;
