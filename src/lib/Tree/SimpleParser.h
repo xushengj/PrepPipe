@@ -246,6 +246,7 @@ private:
 
 class SimpleParserEvent : public EventInterpreter
 {
+    Q_GADGET
 public:
     enum class EventID: int {
         RootNodeSpecification,
@@ -266,10 +267,8 @@ public:
         PatternMatched,
         PatternNotMatched
     };
-    enum class EventLocationID: int {
-        START = static_cast<int>(EventLocationType::OTHER_START),
-        END
-    };
+    Q_ENUM(EventID)
+
     enum class EventReferenceID: int {
         RootNodeSpecification,
         RootNodeCreationEvent,
@@ -292,6 +291,18 @@ public:
         PatternNotMatched_SourceEvent,
         PatternNotMatched_ElementMatchEvent
     };
+    Q_ENUM(EventReferenceID)
+
+    enum class EventLocationID: int {
+        START = static_cast<int>(EventLocationType::OTHER_START),
+        END
+    };
+    Q_ENUM(EventLocationID)
+
+public:
+    static const DefaultEventInterpreter* getInterpreter();
+private:
+    static DefaultEventInterpreter interp;
 public:
     // transparently skip all logging if we don't have the logger
     template <typename F, typename... ArgTy>
@@ -330,7 +341,9 @@ public:
         EventReference::addReference(refs, EventReferenceID::PatternMatch_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
         QVector<EventLocationRemark> locations;
         EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, failedPos);
-        return logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchFailed, QVariantList(), EventColorOption::Referable, refs, locations);
+        int code = logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchFailed, QVariantList(), EventColorOption::Referable, refs, locations);
+        logger->passFailed(code);
+        return code;
     }
 
     static int EmptyLineSkipped(EventLogger* logger, int startPos, int endPos)
@@ -427,7 +440,9 @@ public:
         EventReference::addReference(refs, EventReferenceID::PostMatchingCheck_MatchFinishEvent, matchFinishEvent);
         QVector<EventLocationRemark> locations;
         EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, pos);
-        return logger->addEvent(SimpleParserEvent::EventID::GarbageAtEnd, QVariantList(), EventColorOption::Active, refs, locations);
+        int code = logger->addEvent(SimpleParserEvent::EventID::GarbageAtEnd, QVariantList(), EventColorOption::Active, refs, locations);
+        logger->passFailed(code);
+        return code;
     }
 
     static int PatternMatched(EventLogger* logger, int startPos, int endPos, int sourceEvent, const QList<int>& elementMatchEvents)
@@ -437,7 +452,7 @@ public:
         EventReference::addReference(refs, EventReferenceID::PatternMatched_SourceEvent, sourceEvent);
         QVector<EventLocationRemark> locations;
         EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, endPos);
+        EventLocationRemark::addRemark(locations, EventLocationType::InputDataEnd, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::PatternMatched, QVariantList(), EventColorOption::Referable, refs, locations);
     }
 

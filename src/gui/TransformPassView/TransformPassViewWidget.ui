@@ -28,6 +28,9 @@
    </property>
    <item row="0" column="0">
     <widget class="QStackedWidget" name="stackedWidget">
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
      <widget class="QWidget" name="placeholderPage">
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
@@ -68,21 +71,43 @@
           <property name="title">
            <string>Events</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
             <widget class="QSplitter" name="splitter_3">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
-             <widget class="QTreeWidget" name="eventTreeWidget">
-              <column>
-               <property name="text">
-                <string notr="true">1</string>
-               </property>
-              </column>
+             <widget class="QWidget" name="verticalLayoutWidget_2">
+              <layout class="QVBoxLayout" name="eventListingLayout">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <item>
+                  <widget class="QCheckBox" name="topEventFilterCheckBox">
+                   <property name="text">
+                    <string>Hide secondary events</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QCheckBox" name="customFilterCheckBox">
+                   <property name="text">
+                    <string>Apply filter</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QListView" name="eventListView">
+                 <property name="defaultDropAction">
+                  <enum>Qt::IgnoreAction</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </widget>
              <widget class="QWidget" name="verticalLayoutWidget">
-              <layout class="QVBoxLayout" name="verticalLayout_3">
+              <layout class="QVBoxLayout" name="eventDetailLayout">
                <item>
                 <widget class="QLabel" name="eventNameLabel">
                  <property name="sizePolicy">
@@ -98,6 +123,12 @@
                </item>
                <item>
                 <widget class="QLabel" name="eventDocumentLabel">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string notr="true">eventDocumentLabel</string>
                  </property>
@@ -106,11 +137,14 @@
                <item>
                 <widget class="QTreeWidget" name="eventClickableTreeWidget">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <attribute name="headerVisible">
+                  <bool>false</bool>
+                 </attribute>
                  <column>
                   <property name="text">
                    <string notr="true">1</string>

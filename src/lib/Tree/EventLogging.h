@@ -4,8 +4,25 @@
 #include <QList>
 #include <QStringList>
 #include <QVariantList>
+#include <QMetaEnum>
+#include <QDebug>
 
 #include <type_traits>
+
+/* Event logging
+ *
+ * In a pass-based, data-oriented pipeline, we want to capture events happened during a pass to facilitate post-mortem debugging
+ * instead of using traditional, single stepping based debugging. To some extent it is a more automated form of printf() debugging.
+ *
+ * We will want to capture following semantics into our log to ease debugging:
+ * 1. mapping between locations (mainly input to output)
+ *    this is crucial for identifying where goes wrong during the pass efficiently, both experts and new users.
+ * 2. (cause and effect) relationships between events
+ *    traditional "flat" logging discards this semantics, which makes new users confused on "what error is important" or even "what is the error".
+ *    (In my personal experience, I got many students asking why "make xxx" fails, without showing the log before the last error message...)
+ *
+ * The first is modeled in EventLocationRemark struct and the second is modeled in EventReference struct. The complete data for a event is in Event struct.
+ */
 
 struct EventReference {
     int referenceTypeIndex  = -1; //!< This should be a casted enum value
@@ -21,6 +38,31 @@ struct EventReference {
                                   //!< (e.g. when justifying why a pattern is selected, the event that another
                                   //!< pattern failed should be given negative sort order)
                                   //!< (We are bringing supportive / negative event distinction semantics to our general handling logic)
+
+    // used for sorting EventReference in containers
+    bool operator<(const EventReference& rhs) const {
+        // compare referenceTypeIndex first
+        if (referenceTypeIndex < rhs.referenceTypeIndex) return true;
+        if (referenceTypeIndex > rhs.referenceTypeIndex) return false;
+
+        // compare referenceSortOrder next
+        // non-negative ones is "smaller", then negative ones
+        // when both are non-negative or both are negative, then the absolute value decides the order; smaller absolute value is smaller
+        if (referenceSortOrder >= 0 && rhs.referenceSortOrder >= 0) {
+            if (referenceSortOrder < rhs.referenceSortOrder) return true;
+            if (referenceSortOrder > rhs.referenceSortOrder) return false;
+        } else if (referenceSortOrder < 0 && rhs.referenceSortOrder < 0) {
+            // inversed value from the case above
+            if (referenceSortOrder < rhs.referenceSortOrder) return false;
+            if (referenceSortOrder > rhs.referenceSortOrder) return true;
+        } else {
+            // if we reached here then the signs of two sort order are different
+            return (referenceSortOrder >= 0);
+        }
+
+        // finally, eventIndex
+        return eventIndex < rhs.eventIndex;
+    }
 
     static EventReference makeReference(int tyIndex, int eventIndex, int sortOrder = 0) {
         EventReference ref;
@@ -54,6 +96,13 @@ struct EventReference {
     }
 };
 
+inline QDebug operator<<(QDebug debug, const EventReference& e)
+{
+    QDebugStateSaver saver(debug);
+    debug.nospace() << '(' << e.referenceTypeIndex << ':' << e.eventIndex << '@' << e.referenceSortOrder << ')';
+    return debug;
+}
+
 enum class EventLocationType : int {
     // if an event location is in following types,
     // it will be used when searching for events from locations.
@@ -63,6 +112,11 @@ enum class EventLocationType : int {
     OutputDataStart,
     OutputDataEnd,
     // other locations that can be navigated to but is not used when searching for events
+    // to expose the "range" semantics to common code instead of the "point" semantics of each event location,
+    // Even (%2==0) enum values should be used for "start" position and odd (%2==1) ones should be used for "end" position
+    // if a location is point only, it should only use an even value, leaving the odd one reserved
+    // Note that the common code shall never request name/decription for odd value; all documentation should be on even ones.
+    // Note that whether the event location is for input or output is not specified here; TODO we will probably add a function in EventInterpreter to get this solved
     OTHER_START
 };
 
@@ -103,6 +157,13 @@ struct EventLocationRemark {
     }
 };
 
+inline QDebug operator<<(QDebug debug, const EventLocationRemark& l)
+{
+    QDebugStateSaver saver(debug);
+    debug.nospace() << '(' << l.locationTypeIndex << ':' << l.location << ')';
+    return debug;
+}
+
 struct Event {
     int eventTypeIndex      = -1; //!< This should be a casted enum value
     int selfIndex           = -1;
@@ -115,14 +176,12 @@ struct Event {
 
 // the derived class should be static global variables that get passed into EventLogger's constructor
 class EventInterpreter {
-protected:
-    EventInterpreter() = default;
-
 public:
+    EventInterpreter() = default;
     virtual ~EventInterpreter() = default;
 
     virtual QString getEventTypeTitle(int eventTypeIndex) const {
-        return QString::number(eventTypeIndex);
+        return QStringLiteral("<Unimplemented>") + QString::number(eventTypeIndex);
     }
 
     virtual QString getDetailString(const Event& e) const {
@@ -139,6 +198,43 @@ public:
     }
 };
 
+class DefaultEventInterpreter: public EventInterpreter
+{
+public:
+    DefaultEventInterpreter() = default;
+    virtual ~DefaultEventInterpreter() = default;
+
+    void initialize(QMetaEnum eventIDMetaArg, QMetaEnum eventReferenceIDMetaArg, QMetaEnum eventLocationIDMetaArg) {
+          eventIDMeta = eventIDMetaArg;
+          eventReferenceIDMeta = eventReferenceIDMetaArg;
+          eventLocationIDMeta = eventLocationIDMetaArg;
+    }
+
+    bool isValid() const {return eventIDMeta.isValid();}
+
+    virtual QString getEventTypeTitle(int eventTypeIndex) const override {
+        return QString(eventIDMeta.valueToKey(eventTypeIndex));
+    }
+    virtual QString getReferenceTypeTitle(int eventTypeIndex, int referenceTypeIndex) const override {
+        Q_UNUSED(eventTypeIndex)
+        return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
+    }
+    virtual QString getLocationTypeTitle(int eventTypeIndex, int locationTypeIndex) const override {
+        Q_UNUSED(eventTypeIndex)
+        switch (locationTypeIndex) {
+        case static_cast<int>(EventLocationType::InputDataStart):   return QStringLiteral("InputDataStart");
+        case static_cast<int>(EventLocationType::InputDataEnd):     return QStringLiteral("InputDataEnd");
+        case static_cast<int>(EventLocationType::OutputDataStart):  return QStringLiteral("OutputDataStart");
+        case static_cast<int>(EventLocationType::OutputDataEnd):    return QStringLiteral("OutputDataEnd");
+        default: return QString(eventLocationIDMeta.valueToKey(locationTypeIndex));
+        }
+    }
+private:
+    QMetaEnum eventIDMeta;
+    QMetaEnum eventReferenceIDMeta;
+    QMetaEnum eventLocationIDMeta;
+};
+
 class EventLogger {
 public:
     EventLogger() = default;
@@ -147,6 +243,13 @@ public:
 
     EventLogger* clone() const {
         return new EventLogger(*this);
+    }
+
+    void installInterpreter(const EventInterpreter* interpArg) {
+        interp = interpArg;
+    }
+    const EventInterpreter* getInterpreter() const {
+        return interp;
     }
 
     int addEvent(int typeIndex, const QVariantList& data,
@@ -168,9 +271,31 @@ public:
 
     const Event& getEvent(int index) const {return events.at(index);}
     int size() const {return events.size();}
+    int getNumActivelyColoredEvents() const {return numActivelyColoredEvents;}
+
+    void passFailed(int firstFatalEventIndex) {
+        Q_ASSERT(fatalEventIndex == -2);
+        Q_ASSERT(firstFatalEventIndex >= 0 && firstFatalEventIndex < events.size());
+        fatalEventIndex = firstFatalEventIndex;
+    }
+
+    void passSucceeded() {
+        Q_ASSERT(fatalEventIndex == -2);
+        fatalEventIndex = -1;
+    }
+
+    bool isPassFailed() const {return (fatalEventIndex >= 0);}
+    bool isPassSucceeded() const {return (fatalEventIndex == -1);}
+    int getFatalEventIndex() const {return fatalEventIndex;}
+
 private:
+    static EventInterpreter defaultInterp;
+
+private:
+    const EventInterpreter* interp = &defaultInterp; // not taking ownership
     QVector<Event> events;
     int numActivelyColoredEvents = 0;
+    int fatalEventIndex = -2; // -2: unknown whether failed or not; -1: success; >=0: first fatal event causing the failure
 };
 
 #endif // EVENTLOGGING_H

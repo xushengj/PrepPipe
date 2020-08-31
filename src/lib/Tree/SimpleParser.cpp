@@ -372,6 +372,9 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
     state.clear();
     builder.clear();
 
+    if (logger) {
+        logger->passSucceeded();
+    }
     return true;
 }
 
@@ -1332,4 +1335,20 @@ bool SimpleParser::BalancedParenthesis::loadFromXML(QXmlStreamReader& xml, Strin
     }
     xml.skipCurrentElement();
     return true;
+}
+
+// -----------------------------------------------------------------------------
+
+DefaultEventInterpreter SimpleParserEvent::interp;
+
+const DefaultEventInterpreter* SimpleParserEvent::getInterpreter()
+{
+    if (!interp.isValid()) {
+        interp.initialize(
+                    QMetaEnum::fromType<SimpleParserEvent::EventID>(),
+                    QMetaEnum::fromType<SimpleParserEvent::EventReferenceID>(),
+                    QMetaEnum::fromType<SimpleParserEvent::EventLocationID>()
+        );
+    }
+    return &interp;
 }

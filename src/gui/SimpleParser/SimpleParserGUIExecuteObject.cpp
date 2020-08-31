@@ -37,6 +37,7 @@ int SimpleParserGUIExecuteObject::startImpl(ExitCause& cause)
         delete logger;
 
     logger = new EventLogger;
+    logger->installInterpreter(SimpleParserEvent::getInterpreter());
     int retVal = SimpleParserExecuteObject::startImpl(cause);
     // note that we emit the signal no matter what's the cause of termination of execution
     emit guiDataReady(logger);
