@@ -175,27 +175,30 @@ struct Event {
 };
 
 // the derived class should be static global variables that get passed into EventLogger's constructor
+class EventLogger;
 class EventInterpreter {
 public:
+    enum class EventImportance {
+        AlwaysPrimary,   // the event is always a primary event that should not be hidden by "hide secondary events"
+        Auto,            // the event is considered a primary event if no other events reference it
+        AlwaysSecondary, // the event is always a secondary event, even if no other events reference it
+    };
+
     EventInterpreter() = default;
     virtual ~EventInterpreter() = default;
 
-    virtual QString getEventTypeTitle(int eventTypeIndex) const {
-        return QStringLiteral("<Unimplemented>") + QString::number(eventTypeIndex);
+    virtual EventImportance getEventImportance (int eventTypeIndex) const {
+        Q_UNUSED(eventTypeIndex);
+        return EventImportance::Auto;
     }
 
-    virtual QString getDetailString(const Event& e) const {
-        return getEventTypeTitle(e.eventTypeIndex);
-    }
-
-    virtual QString getReferenceTypeTitle(int eventTypeIndex, int referenceTypeIndex) const {
-        Q_UNUSED(eventTypeIndex)
-        return QString::number(referenceTypeIndex);
-    }
-    virtual QString getLocationTypeTitle(int eventTypeIndex, int locationTypeIndex) const {
-        Q_UNUSED(eventTypeIndex)
-        return QString::number(locationTypeIndex);
-    }
+    // functions to get a text describing each entity
+    // all the information needed for a descriptive text should be completely contained in statically known data and the event logger
+    // if any information in input/output data is needed, they should be included inside the event's data
+    virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const;
+    virtual QString getDetailString         (const EventLogger* logger, int eventIndex) const;
+    virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const;
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const;
 };
 
 class DefaultEventInterpreter: public EventInterpreter
@@ -212,23 +215,10 @@ public:
 
     bool isValid() const {return eventIDMeta.isValid();}
 
-    virtual QString getEventTypeTitle(int eventTypeIndex) const override {
-        return QString(eventIDMeta.valueToKey(eventTypeIndex));
-    }
-    virtual QString getReferenceTypeTitle(int eventTypeIndex, int referenceTypeIndex) const override {
-        Q_UNUSED(eventTypeIndex)
-        return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
-    }
-    virtual QString getLocationTypeTitle(int eventTypeIndex, int locationTypeIndex) const override {
-        Q_UNUSED(eventTypeIndex)
-        switch (locationTypeIndex) {
-        case static_cast<int>(EventLocationType::InputDataStart):   return QStringLiteral("InputDataStart");
-        case static_cast<int>(EventLocationType::InputDataEnd):     return QStringLiteral("InputDataEnd");
-        case static_cast<int>(EventLocationType::OutputDataStart):  return QStringLiteral("OutputDataStart");
-        case static_cast<int>(EventLocationType::OutputDataEnd):    return QStringLiteral("OutputDataEnd");
-        default: return QString(eventLocationIDMeta.valueToKey(locationTypeIndex));
-        }
-    }
+    virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
+    virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const override;
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const override;
+
 private:
     QMetaEnum eventIDMeta;
     QMetaEnum eventReferenceIDMeta;
@@ -257,6 +247,24 @@ public:
                  const QVector<EventReference>& references,
                  const QVector<EventLocationRemark>& locationRemarks
     );
+    // functions to append additional information after the event is registered
+    // event references cannot be appended because it may be sorted upon registration, and this also prevents circles in event reference
+    void appendEventData(int eventIndex, const QVariantList& data) {
+        Q_ASSERT(eventIndex >= 0 && eventIndex < events.size());
+        events[eventIndex].data.append(data);
+    }
+    void appendEventData(int eventIndex, const QVariant& data) {
+        Q_ASSERT(eventIndex >= 0 && eventIndex < events.size());
+        events[eventIndex].data.append(data);
+    }
+    void appendEventLocationRemarks(int eventIndex, const QVector<EventLocationRemark>& locationRemarks) {
+        Q_ASSERT(eventIndex >= 0 && eventIndex < events.size());
+        events[eventIndex].locationRemarks.append(locationRemarks);
+    }
+    void appendEventLocationRemarks(int eventIndex, const EventLocationRemark& locationRemark) {
+        Q_ASSERT(eventIndex >= 0 && eventIndex < events.size());
+        events[eventIndex].locationRemarks.append(locationRemark);
+    }
 
     // the variant that does the cast
     template<typename IndexTy>

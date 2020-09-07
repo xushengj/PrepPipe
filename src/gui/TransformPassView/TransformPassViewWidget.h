@@ -151,7 +151,7 @@ public:
     int getEventIndexFromListIndex(int listIndex) const;
     int getNumEventInList() const;
 
-    static QString getEventNameLabel(int eventIndex, const EventInterpreter* interp, const Event& e);
+    static QString getEventNameLabel(const EventLogger *logger, const EventInterpreter* interp, int eventIndex);
 
 public:
     // data output

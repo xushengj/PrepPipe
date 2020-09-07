@@ -209,9 +209,9 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
         Q_ASSERT(eventIndex < events->size());
         const Event& e = events->getEvent(eventIndex);
         const auto* interp = events->getInterpreter();
-        QString nameLabel = TransformEventListModel::getEventNameLabel(eventIndex, interp, e);
+        QString nameLabel = TransformEventListModel::getEventNameLabel(events.get(), interp, eventIndex);
         ui->eventNameLabel->setText(nameLabel);
-        ui->eventDocumentLabel->setText(interp->getDetailString(e));
+        ui->eventDocumentLabel->setText(interp->getDetailString(events.get(), eventIndex));
         // TODO: add support of event
         /*
         QHash<int, std::pair<QVariant, QVariant>> locations;
@@ -237,14 +237,13 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
             int eventGroupStart = 0;
             auto commitGroup = [&](int eventGroupEndIndex) -> void {
                 const auto& refHead = e.references.at(eventGroupStart);
-                QString referenceTypeName = interp->getReferenceTypeTitle(e.eventTypeIndex, refHead.referenceTypeIndex);
+                QString referenceTypeName = interp->getReferenceTypeTitle(events.get(), eventIndex, e.eventTypeIndex, refHead.referenceTypeIndex);
                 if (eventGroupStart == eventGroupEndIndex) {
                     // we only have one reference in this group
                     QTreeWidgetItem* refItem = new QTreeWidgetItem;
                     QString labelString = referenceTypeName;
-                    labelString.append(" (");
-                    labelString.append(TransformEventListModel::getEventNameLabel(refHead.eventIndex, interp, events->getEvent(refHead.eventIndex)));
-                    labelString.append(")");
+                    labelString.append(": ");
+                    labelString.append(TransformEventListModel::getEventNameLabel(events.get(), interp, refHead.eventIndex));
                     refItem->setText(0, labelString);
                     currentEventCrossReferences.insert(refItem, refHead.eventIndex);
                     outgoingRefHead->addChild(refItem);
@@ -257,7 +256,7 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
                     for (int i = eventGroupStart; i <= eventGroupEndIndex; ++i) {
                         const auto& ref = e.references.at(i);
                         QTreeWidgetItem* refItem = new QTreeWidgetItem;
-                        refItem->setText(0, TransformEventListModel::getEventNameLabel(ref.eventIndex, interp, events->getEvent(ref.eventIndex)));
+                        refItem->setText(0, TransformEventListModel::getEventNameLabel(events.get(), interp, ref.eventIndex));
                         currentEventCrossReferences.insert(refItem, ref.eventIndex);
                         refGroup->addChild(refItem);
                     }
@@ -284,9 +283,9 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
                 int referenceTypeIndex = ref.second;
                 const Event& srcEvent = events->getEvent(eventIndex);
                 QTreeWidgetItem* refItem = new QTreeWidgetItem;
-                QString labelName = TransformEventListModel::getEventNameLabel(eventIndex, interp, srcEvent);
+                QString labelName = TransformEventListModel::getEventNameLabel(events.get(), interp, eventIndex);
                 labelName.append(" (");
-                labelName.append(interp->getReferenceTypeTitle(srcEvent.eventTypeIndex, referenceTypeIndex));
+                labelName.append(interp->getReferenceTypeTitle(events.get(), eventIndex, srcEvent.eventTypeIndex, referenceTypeIndex));
                 labelName.append(")");
                 refItem->setText(0, labelName);
                 currentEventCrossReferences.insert(refItem, eventIndex);
@@ -443,6 +442,15 @@ QModelIndex TransformEventListModel::getModelIndexFromEventIndex(int eventIndex)
         // all events are in the list, and the row is just the event index
         return createIndex(eventIndex, 0);
     }
+
+    // if this is the case then the event must be in filteredEventVec
+    auto iter = std::lower_bound(filteredEventVec.begin(), filteredEventVec.end(), eventIndex);
+    if (iter == filteredEventVec.end() || (*iter != eventIndex)) {
+        return QModelIndex();
+    }
+
+    int index = std::distance(filteredEventVec.begin(), iter);
+    return createIndex(index, 0);
 }
 
 void TransformEventListModel::recomputeFilteredEvents(std::function<bool(EventLogger*,int)> filterCB)
@@ -483,6 +491,15 @@ void TransformEventListModel::recomputeFilteredEvents(std::function<bool(EventLo
         }
     };
 
+    const EventInterpreter* interp = logger->getInterpreter();
+    auto isPrimaryEvent = [&](int eventIndex) -> bool {
+        const auto& e = logger->getEvent(eventIndex);
+        switch (interp->getEventImportance(e.eventTypeIndex)) {
+        case EventInterpreter::EventImportance::AlwaysPrimary:   return true;
+        case EventInterpreter::EventImportance::AlwaysSecondary: return false;
+        case EventInterpreter::EventImportance::Auto: return !scetchpad.at(eventIndex);
+        }
+    };
     if (filteredEventVec.isEmpty()) {
         for (int i = num-1; i >= 0; --i) {
             if (!scetchpad.at(i)) {
@@ -491,7 +508,7 @@ void TransformEventListModel::recomputeFilteredEvents(std::function<bool(EventLo
         }
 
         for (int i = 0; i < num; ++i) {
-            if (!scetchpad.at(i)) {
+            if (isPrimaryEvent(i)) {
                 topLevelFinalEventVec.push_back(i);
             }
         }
@@ -504,7 +521,7 @@ void TransformEventListModel::recomputeFilteredEvents(std::function<bool(EventLo
         }
         for (int i = filteredEventVec.size()-1; i >= 0; --i) {
             int eventIndex = filteredEventVec.at(i);
-            if (!scetchpad.at(eventIndex)) {
+            if (isPrimaryEvent(eventIndex)) {
                 topLevelFinalEventVec.push_back(eventIndex);
             }
         }
@@ -559,11 +576,10 @@ QVariant TransformEventListModel::data(const QModelIndex &index, int role) const
     default: return QVariant();
     case 0: {
         int eventIndex = getEventIndexFromListIndex(index.row());
-        const Event& event = logger->getEvent(eventIndex);
         const auto* interp = logger->getInterpreter();
         switch (role) {
-        case Qt::DisplayRole: return getEventNameLabel(eventIndex, interp, event);
-        case Qt::ToolTipRole: return interp->getDetailString(event);
+        case Qt::DisplayRole: return getEventNameLabel(logger, interp, eventIndex);
+        case Qt::ToolTipRole: return interp->getDetailString(logger, eventIndex);
         }
     }break;
     }
@@ -571,13 +587,12 @@ QVariant TransformEventListModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-QString TransformEventListModel::getEventNameLabel(int eventIndex, const EventInterpreter* interp, const Event& e)
+QString TransformEventListModel::getEventNameLabel(const EventLogger* logger, const EventInterpreter* interp, int eventIndex)
 {
     QString label;
-    label.append('[');
+    label.append('#');
     label.append(QString::number(eventIndex));
-    label.append(']');
     label.append(' ');
-    label.append(interp->getEventTypeTitle(e.eventTypeIndex));
+    label.append(interp->getEventTitle(logger, eventIndex, logger->getEvent(eventIndex).eventTypeIndex));
     return label;
 }

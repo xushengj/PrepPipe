@@ -102,6 +102,7 @@ SOURCES += \
     src/misc/MessageLogger.cpp \
     src/misc/Settings.cpp \
     src/utils/NameSorting.cpp \
+    src/utils/TextPositionInfo.cpp \
     src/utils/XMLUtilities.cpp
 
 HEADERS += \
@@ -167,6 +168,7 @@ HEADERS += \
     src/misc/MessageLogger.h \
     src/misc/Settings.h \
     src/utils/NameSorting.h \
+    src/utils/TextPositionInfo.h \
     src/utils/XMLUtilities.h
 
 FORMS += \

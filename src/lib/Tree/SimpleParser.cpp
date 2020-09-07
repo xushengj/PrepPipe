@@ -164,7 +164,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
     int lastEventChangingPos = -1;
     int lastEventChangingFrame = -1;
     int length = src.length();
-    QHash<int, std::tuple<int, int, int>> treeNodeSequenceNumberToEventMap; // [sequence number] -> <start pos, end pos, node add event id>
+    QHash<int, int> treeNodeSequenceNumberToEventMap; // [sequence number] -> <node add event id>
 
     auto skipEmptyLines = [&]() -> void {
         int startPos = pos;
@@ -177,7 +177,9 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
             int dist = matchEnd;
             pos += dist;
             state.curPosition = pos;
-            lastEventChangingPos = SimpleParserEvent::Log(SimpleParserEvent::EmptyLineSkipped, logger, startPos, pos);
+            auto startPosPair = state.posInfo.getLineAndColumnNumber(startPos);
+            auto endPosPair = state.posInfo.getLineAndColumnNumber(pos-1);
+            lastEventChangingPos = SimpleParserEvent::Log(SimpleParserEvent::EmptyLineSkipped, logger, startPos, pos, startPosPair.first, endPosPair.first);
         }
     };
 
@@ -219,12 +221,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
                 } else {
                     // this is not the first match
                     if (curResult.isBetterThan(curBestResult)) {
-                        int e = SimpleParserEvent::Log(SimpleParserEvent::BetterPatternMatched, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
-                        positiveMatchEvents.push_back(e);
                         curBestResult = curResult;
-                    } else {
-                        int e = SimpleParserEvent::Log(SimpleParserEvent::PatternMatchedNotBetter, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
-                        positiveMatchEvents.push_back(e);
                     }
                 }
             }
@@ -235,13 +232,13 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
             pos += curBestResult.totalConsumedLength;
             root = curBestResult.node;
             builder.setRoot(root);
-            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchCreation, logger, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
+            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchCreation, logger, root->typeName, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents, startPos, pos);
             lastEventChangingPos = rootNodeEventID;
         }
-        treeNodeSequenceNumberToEventMap.insert(root->getSequenceNumber(), std::make_tuple(startPos, pos, rootNodeEventID));
+        treeNodeSequenceNumberToEventMap.insert(root->getSequenceNumber(), rootNodeEventID);
         const auto& rootChildRules = childNodeMatchRuleVec.at(rootNodeRuleIndex);
         if (!rootChildRules.isEmpty()) {
-            int e = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, rootNodeEventID, rootChildRules);
+            int e = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, rootNodeEventID, rootNodeRuleIndex, rootChildRules, data);
             ruleStack.push_back(RuleStackFrame(root, rootChildRules, e));
             lastEventChangingFrame = e;
         } else {
@@ -262,6 +259,10 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
             skipEmptyLines();
         }
 
+        if (pos >= length) {
+            break;
+        }
+
         int startPos = pos;
         for (int childRuleIndex : frame.childMatchRules) {
             const MatchRuleNode& rule = data.matchRuleNodes.at(childRuleIndex);
@@ -274,19 +275,15 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
                     negativeMatchEvents.push_back(curResult.nodeFinalEvent);
                     continue;
                 }
+                positiveMatchEvents.push_back(curResult.nodeFinalEvent);
                 if (!curBestResult) {
                     // first match
                     curBestResult = curResult;
                     childNodeRuleIndex = childRuleIndex;
                 } else {
                     if (curResult.isBetterThan(curBestResult)) {
-                        int e = SimpleParserEvent::Log(SimpleParserEvent::BetterPatternMatched, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
-                        positiveMatchEvents.push_back(e);
                         curBestResult = curResult;
                         childNodeRuleIndex = childRuleIndex;
-                    } else {
-                        int e = SimpleParserEvent::Log(SimpleParserEvent::PatternMatchedNotBetter, logger, curResult.nodeFinalEvent, curBestResult.nodeFinalEvent);
-                        positiveMatchEvents.push_back(e);
                     }
                 }
             }
@@ -318,12 +315,12 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
         // we found the best match
         TreeBuilder::Node* parent = frame.ptr;
         node->setParent(parent);
-        int nodeAddEvent = SimpleParserEvent::Log(SimpleParserEvent::NodeAdded, logger, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
-        treeNodeSequenceNumberToEventMap.insert(node->getSequenceNumber(), std::make_tuple(startPos, pos, nodeAddEvent));
+        int nodeAddEvent = SimpleParserEvent::Log(SimpleParserEvent::NodeAdded, logger, node->typeName, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents, startPos, pos);
+        treeNodeSequenceNumberToEventMap.insert(node->getSequenceNumber(), nodeAddEvent);
 
         const auto& childRules = childNodeMatchRuleVec.at(childNodeRuleIndex);
         if (!childRules.isEmpty()) {
-            int framePushEvent = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, nodeAddEvent, childRules);
+            int framePushEvent = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, nodeAddEvent, childNodeRuleIndex, childRules, data);
             ruleStack.push_back(RuleStackFrame(node, childRules, framePushEvent));
             lastEventChangingFrame = framePushEvent;
         }
@@ -338,11 +335,7 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
         int seqNum = sequenceNumberTable.at(i);
         auto iter = treeNodeSequenceNumberToEventMap.find(seqNum);
         Q_ASSERT(iter != treeNodeSequenceNumberToEventMap.end());
-        int startPos = 0;
-        int endPos = 0;
-        int nodeAddEvent = 0;
-        std::tie(startPos, endPos, nodeAddEvent) = iter.value();
-        SimpleParserEvent::Log(SimpleParserEvent::TextToNodePositionMapping, logger, startPos, endPos, i, nodeAddEvent);
+        SimpleParserEvent::Log(SimpleParserEvent::TextToNodePositionMapping, logger, i, iter.value());
     }
 
     // okay, done; no further match possible
@@ -386,6 +379,7 @@ void SimpleParser::ParseState::clear()
     }
     str = nullptr;
     logger = nullptr;
+    posInfo = TextPositionInfo();
 
     // the following two is persistent across uses
     // regexPatternToIndexMap.clear();
@@ -398,6 +392,7 @@ void SimpleParser::ParseState::set(const QString& text, EventLogger* loggerArg)
     logger = loggerArg;
     strLength = text.length();
     curPosition = 0;
+    posInfo = TextPositionInfo(text);
 }
 
 int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
@@ -1339,16 +1334,242 @@ bool SimpleParser::BalancedParenthesis::loadFromXML(QXmlStreamReader& xml, Strin
 
 // -----------------------------------------------------------------------------
 
-DefaultEventInterpreter SimpleParserEvent::interp;
+const SimpleParserEvent SimpleParserEvent::interp;
 
-const DefaultEventInterpreter* SimpleParserEvent::getInterpreter()
+const EventInterpreter* SimpleParserEvent::getInterpreter()
 {
-    if (!interp.isValid()) {
-        interp.initialize(
-                    QMetaEnum::fromType<SimpleParserEvent::EventID>(),
-                    QMetaEnum::fromType<SimpleParserEvent::EventReferenceID>(),
-                    QMetaEnum::fromType<SimpleParserEvent::EventLocationID>()
-        );
-    }
     return &interp;
+}
+
+QString SimpleParserEvent::getString(const EventLogger* logger, const Event& e, InterpretedStringType ty)
+{
+    // the events must have been populated by SimpleParserEvent::* with * having the same name as enum value below
+    // Note that if parsing is successful, node creation events will also contain mapping from source text to dest tree node
+    int eventTypeIndex = e.eventTypeIndex;
+    switch (eventTypeIndex) {
+    default: {
+        QMetaEnum eventIDEnum = QMetaEnum::fromType<EventID>();
+        return QString(eventIDEnum.valueToKey(eventTypeIndex));
+    }break;
+    case static_cast<int>(EventID::RootNodeSpecification): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Root Node Setting (%1)").arg(e.data.at(1).toString());
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("The parsing starts with root rule \"%1\" according to the parser's option.\n"
+                      "If this is unexpected, please change the corresponding option in the parser's editor.")
+                    .arg(e.data.at(1).toString());
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::RootNodeDirectCreation): {
+        int rootSpec = e.references.front().eventIndex;
+        const Event& ref = logger->getEvent(rootSpec);
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Root Node Direct Creation (%1)").arg(ref.data.at(1).toString());
+        }break;
+        case InterpretedStringType::Detail: {
+            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
+            return tr("Root rule \"%1\" do not contain any pattern, therefore the output root node is directly created.")
+                    .arg(ref.data.at(1).toString());
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::RootNodePatternMatchCreation): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Root Node Match Creation (%1)").arg(e.data.front().toString());
+        }break;
+        case InterpretedStringType::Detail: {
+            int rootSpec = e.references.front().eventIndex;
+            const Event& ref = logger->getEvent(rootSpec);
+
+            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
+            return tr("A pattern for \"%1\" is the best match in the root rule and is used to generate output root node.\n"
+                      "A pattern is considered a match if a non-zero length of text starting at a given position can be described by the pattern's elements.\n"
+                      "A pattern covering a longer text at starting position is better, and in case of a tie, a pattern with marker elements convering more text is better.")
+                    .arg(ref.data.front().toString());
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::RootNodePatternMatchFailed): {
+        int rootSpec = e.references.front().eventIndex;
+        const Event& ref = logger->getEvent(rootSpec);
+        Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Root Node Match Failed (%1)").arg(ref.data.at(1).toString());
+        }break;
+        case InterpretedStringType::Detail: {
+            int rootSpec = e.references.front().eventIndex;
+            const Event& ref = logger->getEvent(rootSpec);
+
+            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
+            return tr("None of the pattern in root rule \"%1\" matches the beginning of the text. Please check the referenced supporting events to identify the cause of unexpected matching failures.")
+                    .arg(ref.data.at(1).toString());
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::EmptyLineSkipped): {
+        int startLineNum = e.data.at(0).toInt();
+        int endLineNum = e.data.at(1).toInt();
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            if (startLineNum == endLineNum) {
+                return tr("Empty line skipped (line %1)").arg(startLineNum);
+            } else {
+                return tr("Empty line skipped (line %1~%2)").arg(QString::number(startLineNum), QString::number(endLineNum));
+            }
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("The parser will skip empty lines after a pattern is matched. If your use case require matching with these empty lines, please integrate the empty line into the previous pattern getting matched.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::FramePushed): {
+        QString parentRuleName = e.data.front().toString();
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Frame Pushed (%1)").arg(parentRuleName);
+        }break;
+        case InterpretedStringType::Detail: {
+            QString baseTest = tr("A pattern under the rule \"%1\" (current rule) is matched and created a node (current node). "
+                                  "Because the current rule has child rule(s), the parser created a \"frame\" for this node, which:\n"
+                                  " 1. enable all the patterns from all the child rule(s) for subsequent matching\n"
+                                  " 2. new nodes created from matching the enabled patterns will be placed under the current node in the output tree\n"
+                                  "If a rule is not listed as expected, please add the source rule to the parent list of the missing rule.").arg(parentRuleName);
+            QString childRuleString = tr("%1 rule nodes are enabled").arg(e.data.size()-1);
+            if (e.data.size() < 4) {
+                childRuleString.append(" (");
+                for (int i = 1; i < e.data.size(); ++i) {
+                    QString ruleName = e.data.at(i).toString();
+                    childRuleString.append(ruleName);
+                    if (i + 1 < e.data.size()) {
+                        childRuleString.append(", ");
+                    }
+                }
+                childRuleString.append(")");
+            };
+            return baseTest + "\n" + childRuleString;
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::FramePoped): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Frame Poped");
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("None of the patterns enabled in the frame was matched. Therefore the frame was removed and patterns enabled in the previous frame would be attempted.\n"
+                      "If the expected pattern was not attempted, please check whether the containing rule has added the frame's current rule as parent.\n"
+                      "If a pattern was attempted but failed to match, please check the details on the corresponding matching failure event.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::FramePopedForEarlyExit): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Frame Poped (Explicit)");
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("When a pattern from the frame's rule with empty output node type name is matched, the frame will be popped immediately.\n"
+                      "If the frame popping action is unexpected, please correct the output node type name for the matching pattern.\n"
+                      "If the pattern matching is unexpected, please check the referenced matching events to identify the cause of unexpected match.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::RootNodeNoFrame): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Root Node Has No Frame");
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("The root rule does not have any child rule. Therefore no frame is created for the root node.\n"
+                      "This is only correct if the parser is intended to only create a single node.\n"
+                      "If this is unexpected, please check if all intended child rules have added the root rule to the parent list.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::NodeAdded): {
+        QString nodeTitle = e.data.front().toString();
+        if (e.locationRemarks.size() == 3) {
+            // the node position is successfully registered
+            const auto& outputStart = e.locationRemarks.at(2);
+            Q_ASSERT(outputStart.locationTypeIndex == static_cast<int>(EventLocationType::OutputDataStart));
+            nodeTitle.prepend(QString("[%1] ").arg(outputStart.location.toInt()));
+        }
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Node Added: ") + nodeTitle;
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("The node is created from a pattern matching. If this is unexpected, please check the referenced events.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::MatchFinished): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Pattern Match Finished");
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("All the pattern matching is finished because either all the input text has been processed or the last frame is popped.");
+        }break;
+        }
+    }break;
+    case static_cast<int>(EventID::GarbageAtEnd): {
+        switch (ty) {
+        case InterpretedStringType::EventTitle: {
+            return tr("Unprocessed Text Left");
+        }break;
+        case InterpretedStringType::Detail: {
+            return tr("Non-whitespace text is found after the pattern matching.\n"
+                      "If the text is expected to be pattern-matched, "
+                        "please check the related frame push and pop events to find whether the pattern is attempted, "
+                        "and then either look for the cause of missed attempt or the cause of failed pattern match");
+        }break;
+        }
+    }break;
+    }
+    return QStringLiteral("<Unimplemented>");
+}
+
+QString SimpleParserEvent::getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const
+{
+
+    const Event& e = logger->getEvent(eventIndex);
+    Q_ASSERT(e.eventTypeIndex == eventTypeIndex);
+    return getString(logger, e, InterpretedStringType::EventTitle);
+}
+
+QString SimpleParserEvent::getDetailString         (const EventLogger* logger, int eventIndex) const
+{
+    const Event& e = logger->getEvent(eventIndex);
+    return getString(logger, e, InterpretedStringType::Detail);
+}
+
+QString SimpleParserEvent::getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const
+{
+    Q_UNUSED(logger)
+    Q_UNUSED(eventIndex)
+    Q_UNUSED(eventTypeIndex)
+    QMetaEnum eventReferenceIDMeta = QMetaEnum::fromType<EventReferenceID>();
+    return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
+}
+
+QString SimpleParserEvent::getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const
+{
+    Q_UNUSED(logger)
+    Q_UNUSED(eventIndex)
+    Q_UNUSED(eventTypeIndex)
+    QMetaEnum eventLocationIDMeta = QMetaEnum::fromType<EventLocationID>();
+    switch (locationTypeIndex) {
+    case static_cast<int>(EventLocationType::InputDataStart):   return QStringLiteral("InputDataStart");
+    case static_cast<int>(EventLocationType::InputDataEnd):     return QStringLiteral("InputDataEnd");
+    case static_cast<int>(EventLocationType::OutputDataStart):  return QStringLiteral("OutputDataStart");
+    case static_cast<int>(EventLocationType::OutputDataEnd):    return QStringLiteral("OutputDataEnd");
+    default: return QString(eventLocationIDMeta.valueToKey(locationTypeIndex));
+    }
 }
