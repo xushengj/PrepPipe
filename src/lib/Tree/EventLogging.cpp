@@ -66,11 +66,11 @@ QString EventInterpreter::getReferenceTypeTitle(const EventLogger* logger, int e
     return QString::number(referenceTypeIndex);
 }
 
-QString EventInterpreter::getLocationTypeTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const {
+QString EventInterpreter::getLocationTypeTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex) const {
     Q_UNUSED(logger)
     Q_UNUSED(eventIndex)
     Q_UNUSED(eventTypeIndex)
-    return QString::number(locationTypeIndex);
+    return QStringLiteral("<Unimplemented>");
 }
 
 QString DefaultEventInterpreter::getEventTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex) const {
@@ -84,17 +84,4 @@ QString DefaultEventInterpreter::getReferenceTypeTitle(const EventLogger* logger
     Q_UNUSED(eventIndex)
     Q_UNUSED(eventTypeIndex)
     return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
-}
-
-QString DefaultEventInterpreter::getLocationTypeTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const {
-    Q_UNUSED(logger)
-    Q_UNUSED(eventIndex)
-    Q_UNUSED(eventTypeIndex)
-    switch (locationTypeIndex) {
-    case static_cast<int>(EventLocationType::InputDataStart):   return QStringLiteral("InputDataStart");
-    case static_cast<int>(EventLocationType::InputDataEnd):     return QStringLiteral("InputDataEnd");
-    case static_cast<int>(EventLocationType::OutputDataStart):  return QStringLiteral("OutputDataStart");
-    case static_cast<int>(EventLocationType::OutputDataEnd):    return QStringLiteral("OutputDataEnd");
-    default: return QString(eventLocationIDMeta.valueToKey(locationTypeIndex));
-    }
 }

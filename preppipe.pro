@@ -71,6 +71,7 @@ SOURCES += \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.cpp \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.cpp \
     src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.cpp \
+    src/gui/StackedWidgetWithComboBox.cpp \
     src/gui/TransformPassView/TransformPassViewWidget.cpp \
     src/gui/TextEditor.cpp \
     src/gui/GeneralTreeEditor.cpp \
@@ -106,6 +107,7 @@ SOURCES += \
     src/utils/XMLUtilities.cpp
 
 HEADERS += \
+    src/GlobalInclude.h \
     src/gui/AnonymousElementListController.h \
     src/gui/BreadcrumbWidget.h \
     src/gui/ComboBoxDelegate.h \
@@ -139,6 +141,7 @@ HEADERS += \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.h \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.h \
     src/gui/SimpleTextGenerator/SimpleTextGeneratorGUIObject.h \
+    src/gui/StackedWidgetWithComboBox.h \
     src/gui/TransformPassView/TransformPassViewWidget.h \
     src/gui/TextEditor.h \
     src/gui/GeneralTreeEditor.h \
@@ -160,6 +163,7 @@ HEADERS += \
     src/lib/TaskObject/SimpleWorkflowObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \
+    src/lib/Tree/EventLocationForBuiltinTypes.h \
     src/lib/Tree/EventLogging.h \
     src/lib/Tree/SimpleParser.h \
     src/lib/Tree/SimpleTextGenerator.h \
@@ -190,6 +194,7 @@ FORMS += \
     src/gui/SimpleTextGenerator/STGEditor.ui \
     src/gui/SimpleTextGenerator/STGFragmentInputWidget.ui \
     src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.ui \
+    src/gui/StackedWidgetWithComboBox.ui \
     src/gui/TransformPassView/TransformPassViewWidget.ui
 
 TRANSLATIONS += \

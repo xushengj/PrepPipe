@@ -1,8 +1,10 @@
 #ifndef SIMPLEPARSER_H
 #define SIMPLEPARSER_H
 
+#include "src/GlobalInclude.h"
 #include "src/lib/Tree/Tree.h"
 #include "src/lib/Tree/EventLogging.h"
+#include "src/lib/Tree/EventLocationForBuiltinTypes.h"
 #include "src/utils/XMLUtilities.h"
 #include "src/utils/TextPositionInfo.h"
 
@@ -294,11 +296,12 @@ public:
     };
     Q_ENUM(EventReferenceID)
 
-    enum class EventLocationID: int {
-        START = static_cast<int>(EventLocationType::OTHER_START),
-        END
+    enum class EventLocationContext: int {
+        InputData = 0,
+        OutputData = 1
     };
-    Q_ENUM(EventLocationID)
+    Q_ENUM(EventLocationContext)
+
 
 public:
     static const EventInterpreter* getInterpreter();
@@ -306,7 +309,7 @@ public:
     virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
     virtual QString getDetailString         (const EventLogger* logger, int eventIndex) const override;
     virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const override;
-    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const override;
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
 
     virtual EventImportance getEventImportance (int eventTypeIndex) const override {
         switch (eventTypeIndex) {
@@ -325,6 +328,29 @@ private:
         Detail
     };
     static QString getString(const EventLogger *logger, const Event& e, InterpretedStringType ty);
+
+    static EventLocationRemark getInputLoc(int startPos, int endPos) {
+        PlainTextLocation locData;
+        locData.startPos = startPos;
+        locData.endPos = endPos;
+        EventLocationRemark loc;
+        loc.location.setValue(locData);
+        loc.locationContextIndex = static_cast<int>(EventLocationContext::InputData);
+        return loc;
+    }
+    static QVector<EventLocationRemark> getSingleInputLoc(int startPos, int endPos) {
+        QVector<EventLocationRemark> result;
+        result.push_back(getInputLoc(startPos, endPos));
+        return result;
+    }
+    static EventLocationRemark getOutputLoc(int nodeIndex) {
+        Tree::LocationType locData;
+        locData.nodeIndex = nodeIndex;
+        EventLocationRemark loc;
+        loc.location.setValue(locData);
+        loc.locationContextIndex = static_cast<int>(EventLocationContext::OutputData);
+        return loc;
+    }
 
 private:
     static const SimpleParserEvent interp;
@@ -358,9 +384,7 @@ public:
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::PatternMatch_MatchFinalEvent, rootNodePatternEvent);
         EventReference::addReference(refs, EventReferenceID::PatternMatch_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataEnd, endPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchCreation, QVariantList() << rootNodeTypeName, EventColorOption::Referable, refs, locations);
     }
 
@@ -369,8 +393,7 @@ public:
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::RootNodeSpecification, rootNodeSpecificationEvent);
         EventReference::addReference(refs, EventReferenceID::PatternMatch_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, failedPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(failedPos, failedPos);
         int code = logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchFailed, QVariantList(), EventColorOption::Referable, refs, locations);
         logger->passFailed(code);
         return code;
@@ -379,9 +402,7 @@ public:
     static int EmptyLineSkipped(EventLogger* logger, int startPos, int endPos, int startLineNum, int endLineNum)
     {
         Q_ASSERT(endLineNum >= startLineNum);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataEnd, endPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::EmptyLineSkipped,
                                 QVariantList() << startLineNum << endLineNum, EventColorOption::Passive, QVector<EventReference>(), locations);
     }
@@ -430,9 +451,7 @@ public:
         EventReference::addReference(refs, EventReferenceID::NodeCreation_FrameEvent, frameEvent);
         EventReference::addReference(refs, EventReferenceID::NodeCreation_MatchEvent, patternEvent);
         EventReference::addReference(refs, EventReferenceID::NodeCreation_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataEnd, endPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::NodeAdded, QVariantList() << nodeTypeName, EventColorOption::Referable, refs, locations);
     }
 
@@ -440,16 +459,13 @@ public:
     {
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::MatchFinished_FrameEvent, lastFrameEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, pos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(pos, pos);
         return logger->addEvent(SimpleParserEvent::EventID::MatchFinished, QVariantList(), EventColorOption::Referable, refs, locations);
     }
 
     static int TextToNodePositionMapping(EventLogger* logger, int nodeIndex, int nodeAddEvent)
     {
-        EventLocationRemark remark;
-        remark.locationTypeIndex = static_cast<int>(EventLocationType::OutputDataStart);
-        remark.location = nodeIndex;
+        EventLocationRemark remark = getOutputLoc(nodeIndex);
         logger->appendEventLocationRemarks(nodeAddEvent, remark);
         return -1;
     }
@@ -458,8 +474,7 @@ public:
     {
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::PostMatchingCheck_MatchFinishEvent, matchFinishEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, pos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(pos, pos);
         int code = logger->addEvent(SimpleParserEvent::EventID::GarbageAtEnd, QVariantList(), EventColorOption::Active, refs, locations);
         logger->passFailed(code);
         return code;
@@ -470,9 +485,7 @@ public:
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::PatternMatched_ElementMatchEvent, elementMatchEvents, QList<int>());
         EventReference::addReference(refs, EventReferenceID::PatternMatched_SourceEvent, sourceEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataEnd, endPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::PatternMatched, QVariantList(), EventColorOption::Referable, refs, locations);
     }
 
@@ -486,9 +499,7 @@ public:
         QVector<EventReference> refs;
         EventReference::addReference(refs, EventReferenceID::PatternMatched_ElementMatchEvent, elementMatchEvents, QList<int>());
         EventReference::addReference(refs, EventReferenceID::PatternMatched_SourceEvent, sourceEvent);
-        QVector<EventLocationRemark> locations;
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, startPos);
-        EventLocationRemark::addRemark(locations, EventLocationType::InputDataStart, endPos);
+        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::PatternNotMatched, data, EventColorOption::Referable, refs, locations);
     }
 };

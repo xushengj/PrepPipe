@@ -7,15 +7,13 @@
 #include <iterator>
 #include <algorithm>
 
+#include "src/lib/TaskObject.h"
+
 TransformPassViewWidget::TransformPassViewWidget(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::TransformPassViewWidget),
-    inputDataGroupBoxLayout(new QVBoxLayout),
-    outputDataGroupBoxLayout(new QVBoxLayout)
+    ui(new Ui::TransformPassViewWidget)
 {
     ui->setupUi(this);
-    ui->inputDataGroupBox->setLayout(inputDataGroupBoxLayout);
-    ui->outputDataGroupBox->setLayout(outputDataGroupBoxLayout);
 
     ui->stackedWidget->setCurrentWidget(ui->placeholderPage);
 
@@ -51,13 +49,17 @@ void TransformPassViewWidget::dataReady(EventLogger* e)
     events.reset(e->clone());
 
     delegateObject->updateDataWidgetForNewData();
-    inputDataWidget = delegateObject->getInputDataWidget(this);
-    outputDataWidget = delegateObject->getOutputDataWidget(this);
-    Q_ASSERT(inputDataWidget);
-    Q_ASSERT(outputDataWidget);
-
-    inputDataGroupBoxLayout->insertWidget(0, inputDataWidget);
-    outputDataGroupBoxLayout->insertWidget(0, outputDataWidget);
+    int numObjs = delegateObject->getNumDataObjects();
+    for (int i = 0; i < numObjs; ++i) {
+        const auto& info = delegateObject->getDataInfo(i);
+        QWidget* w = delegateObject->getDataWidget(this, i);
+        Q_ASSERT(w != nullptr);
+        if (info.isOutputInsteadOfInput) {
+            ui->outputDataWidgets->addWidget(TaskObject::getOutputDisplayName(info.name), w);
+        } else {
+            ui->inputDataWidgets->addWidget(TaskObject::getInputDisplayName(info.name), w);
+        }
+    }
     eventListModel->setLogger(events.get());
     ui->stackedWidget->setCurrentWidget(ui->resultPage);
 
@@ -85,6 +87,7 @@ void TransformPassViewWidget::dataReady(EventLogger* e)
 TransformPassViewWidget::EventLocationExpansionData TransformPassViewWidget::extractLocationsFromEvent(const Event& e)
 {
     TransformPassViewWidget::EventLocationExpansionData result;
+    /*
     for (const auto& remark : e.locationRemarks) {
         switch (remark.locationTypeIndex) {
         default: break;
@@ -106,11 +109,13 @@ TransformPassViewWidget::EventLocationExpansionData TransformPassViewWidget::ext
         }break;
         }
     }
+    */
     return result;
 }
 
 void TransformPassViewWidget::buildEventLocationMap()
 {
+    /*
     inputDataStartPosMap.reset(new EventLocationMapType(delegateObject->getInputDataPositionComparator()));
     outputDataStartPosMap.reset(new EventLocationMapType(delegateObject->getOutputDataPositionComparator()));
     for (int i = 0, n = events->size(); i < n; ++i) {
@@ -127,6 +132,7 @@ void TransformPassViewWidget::buildEventLocationMap()
             outputDataStartPosMap->insert(std::make_pair(expansion.outputDataStart, std::make_pair(expansion.outputDataEnd, i)));
         }
     }
+    */
 }
 
 void TransformPassViewWidget::setFocusToEvent(int eventIndex)
@@ -173,8 +179,7 @@ void TransformPassViewWidget::refreshHighlighting()
     //    if we are searching for events near a location, the event list should be the search results
     // 3. move the view if needed
     //    if we are highlighting an event, make sure it is visible in input/output viewer
-    delegateObject->resetInputDataWidgetEventColoring();
-    delegateObject->resetOutputDataWidgetEventColoring();
+    delegateObject->resetDataWidgetEventColoring(-1);
     switch (eventFocusTy) {
     case EventFocusType::NoFocus: {
         // TODO

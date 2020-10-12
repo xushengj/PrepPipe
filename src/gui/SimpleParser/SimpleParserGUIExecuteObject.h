@@ -36,8 +36,7 @@ public:
     virtual ~SimpleParserViewDelegateObject() = default;
 
 public:
-    virtual QWidget* getInputDataWidget(TransformPassViewWidget* w) override;
-    virtual QWidget* getOutputDataWidget(TransformPassViewWidget* w) override;
+    virtual QWidget* getDataWidget(TransformPassViewWidget* w, int objectID) override;
 
     virtual void updateDataWidgetForNewData() override;
 

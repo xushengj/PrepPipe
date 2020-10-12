@@ -18,25 +18,42 @@ class TransformPassViewWidget;
 
 class TransformPassViewWidget;
 class TransformEventListModel;
+
+
 class TransformPassViewDelegateObject
 {
 public:
+    struct DataObjectInfo {
+        QString name; //!< name to be used for widget title; empty for main input or main output
+        bool isOutputInsteadOfInput; //!< true for output, false for input
+    };
+
+public:
     virtual ~TransformPassViewDelegateObject() = default;
 
-    // they should take care of signal-slot connections
-    virtual QWidget* getInputDataWidget(TransformPassViewWidget* w) = 0;
-    virtual QWidget* getOutputDataWidget(TransformPassViewWidget* w) = 0;
+    // default to 1 input (#0) and 1 output(#1)
+    virtual int getNumDataObjects() const {return 2;}
+
+    virtual DataObjectInfo getDataInfo(int objectID) const {
+        DataObjectInfo info;
+        info.isOutputInsteadOfInput = false;
+        switch (objectID) {
+        default: Q_UNREACHABLE();
+        case 0: break;
+        case 1:
+            info.isOutputInsteadOfInput = true;
+        }
+        return info;
+    }
+
+    // it should take care of signal-slot connections
+    virtual QWidget* getDataWidget(TransformPassViewWidget* w, int objectID) = 0;
 
     // called when dataReady() slot is invoked
     virtual void updateDataWidgetForNewData() {}
 
-    virtual std::function<bool(const QVariant&, const QVariant&)> getInputDataPositionComparator() const {
-        return [](const QVariant& lhs, const QVariant& rhs) -> bool {
-            return lhs.toInt() < rhs.toInt();
-        };
-    }
-
-    virtual std::function<bool(const QVariant&, const QVariant&)> getOutputDataPositionComparator() const {
+    virtual std::function<bool(const QVariant&, const QVariant&)> getDataLocationComparator(int objectID) const {
+        Q_UNUSED(objectID);
         return [](const QVariant& lhs, const QVariant& rhs) -> bool {
             return lhs.toInt() < rhs.toInt();
         };
@@ -44,8 +61,7 @@ public:
 
     // note that currently we always show event coloring as background color
     // reset coloring (restore original background color) for input widget
-    virtual void resetInputDataWidgetEventColoring() {}
-    virtual void resetOutputDataWidgetEventColoring() {}
+    virtual void resetDataWidgetEventColoring(int objectID) {}
 };
 
 class TransformPassViewWidget : public QWidget
@@ -113,12 +129,7 @@ private:
     Ui::TransformPassViewWidget *ui;
     std::unique_ptr<TransformPassViewDelegateObject> delegateObject;
     std::unique_ptr<EventLogger> events;
-    QWidget* inputDataWidget = nullptr;
-    QWidget* outputDataWidget = nullptr;
-    QVBoxLayout* inputDataGroupBoxLayout = nullptr;
-    QVBoxLayout* outputDataGroupBoxLayout = nullptr;
-    std::unique_ptr<EventLocationMapType> inputDataStartPosMap;
-    std::unique_ptr<EventLocationMapType> outputDataStartPosMap;
+    QHash<int, EventLocationMapType> dataStartPosMap;
     QVector<QColor> activelyColoredEventColors;
     EventFocusType eventFocusTy = EventFocusType::NoFocus;
     QVariant eventFocusLocation; // where is the focus of event

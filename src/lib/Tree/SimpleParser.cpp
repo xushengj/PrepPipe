@@ -1494,11 +1494,13 @@ QString SimpleParserEvent::getString(const EventLogger* logger, const Event& e, 
     }break;
     case static_cast<int>(EventID::NodeAdded): {
         QString nodeTitle = e.data.front().toString();
-        if (e.locationRemarks.size() == 3) {
+        Q_ASSERT(e.locationRemarks.size() <= 2);
+        if (e.locationRemarks.size() == 2) {
             // the node position is successfully registered
-            const auto& outputStart = e.locationRemarks.at(2);
-            Q_ASSERT(outputStart.locationTypeIndex == static_cast<int>(EventLocationType::OutputDataStart));
-            nodeTitle.prepend(QString("[%1] ").arg(outputStart.location.toInt()));
+            const auto& outputStart = e.locationRemarks.at(1);
+            Q_ASSERT(outputStart.locationContextIndex == static_cast<int>(EventLocationContext::OutputData));
+            int nodeIndex = outputStart.location.value<Tree::LocationType>().nodeIndex;
+            nodeTitle.prepend(QString("[%1] ").arg(nodeIndex));
         }
         switch (ty) {
         case InterpretedStringType::EventTitle: {
@@ -1559,17 +1561,12 @@ QString SimpleParserEvent::getReferenceTypeTitle   (const EventLogger* logger, i
     return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
 }
 
-QString SimpleParserEvent::getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const
+QString SimpleParserEvent::getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const
 {
     Q_UNUSED(logger)
     Q_UNUSED(eventIndex)
     Q_UNUSED(eventTypeIndex)
-    QMetaEnum eventLocationIDMeta = QMetaEnum::fromType<EventLocationID>();
-    switch (locationTypeIndex) {
-    case static_cast<int>(EventLocationType::InputDataStart):   return QStringLiteral("InputDataStart");
-    case static_cast<int>(EventLocationType::InputDataEnd):     return QStringLiteral("InputDataEnd");
-    case static_cast<int>(EventLocationType::OutputDataStart):  return QStringLiteral("OutputDataStart");
-    case static_cast<int>(EventLocationType::OutputDataEnd):    return QStringLiteral("OutputDataEnd");
-    default: return QString(eventLocationIDMeta.valueToKey(locationTypeIndex));
-    }
+    // const Event& e = logger->getEvent(eventIndex);
+    // TODO
+    return QStringLiteral("<Unimplemented>");
 }

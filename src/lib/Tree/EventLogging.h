@@ -103,23 +103,6 @@ inline QDebug operator<<(QDebug debug, const EventReference& e)
     return debug;
 }
 
-enum class EventLocationType : int {
-    // if an event location is in following types,
-    // it will be used when searching for events from locations.
-    // if an event happens at a point instead of a range, then the "end" location is not necessary / should be avoided.
-    InputDataStart = 0,
-    InputDataEnd,
-    OutputDataStart,
-    OutputDataEnd,
-    // other locations that can be navigated to but is not used when searching for events
-    // to expose the "range" semantics to common code instead of the "point" semantics of each event location,
-    // Even (%2==0) enum values should be used for "start" position and odd (%2==1) ones should be used for "end" position
-    // if a location is point only, it should only use an even value, leaving the odd one reserved
-    // Note that the common code shall never request name/decription for odd value; all documentation should be on even ones.
-    // Note that whether the event location is for input or output is not specified here; TODO we will probably add a function in EventInterpreter to get this solved
-    OTHER_START
-};
-
 /// This option determines how the coloring (our way of showing event location to user) of the event is done
 /// an option of higher number imply coloring condition in lower number (i.e. if an event is Actively colored, it is also colored when user highlight a referencing event)
 /// Note that if the event do not have any location remarks, then it is never colored
@@ -131,36 +114,14 @@ enum class EventColorOption : int {
 };
 
 struct EventLocationRemark {
-    int locationTypeIndex = -1; //!< This should be a casted enum value from EventReference, or the ones starting from OTHER_START.
     QVariant location;
-
-    static EventLocationRemark makeRemark(int tyIndex, const QVariant& loc)
-    {
-        EventLocationRemark remark;
-        remark.locationTypeIndex = tyIndex;
-        remark.location = loc;
-        return remark;
-    }
-
-    template<typename EnumTy>
-    static EventLocationRemark makeRemark(EnumTy tyIndex, const QVariant& loc)
-    {
-        static_assert (std::is_enum<EnumTy>::value, "EnumTy should be enum");
-        return makeRemark(static_cast<int>(tyIndex), loc);
-    }
-
-    template<typename ContainerTy, typename EnumTy>
-    static void addRemark(ContainerTy& container, EnumTy tyIndex, const QVariant& loc)
-    {
-        static_assert (std::is_enum<EnumTy>::value, "EnumTy should be enum");
-        container.push_back(makeRemark(static_cast<int>(tyIndex), loc));
-    }
+    int locationContextIndex = 0; //!< This indicates which context is the location for, for example whether this is a location in an input object or an output object
 };
 
 inline QDebug operator<<(QDebug debug, const EventLocationRemark& l)
 {
     QDebugStateSaver saver(debug);
-    debug.nospace() << '(' << l.locationTypeIndex << ':' << l.location << ')';
+    debug.nospace() << '(' << l.locationContextIndex << ':' << l.location << ')';
     return debug;
 }
 
@@ -198,7 +159,7 @@ public:
     virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const;
     virtual QString getDetailString         (const EventLogger* logger, int eventIndex) const;
     virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const;
-    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const;
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const;
 };
 
 class DefaultEventInterpreter: public EventInterpreter
@@ -217,7 +178,6 @@ public:
 
     virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
     virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const override;
-    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationTypeIndex) const override;
 
 private:
     QMetaEnum eventIDMeta;

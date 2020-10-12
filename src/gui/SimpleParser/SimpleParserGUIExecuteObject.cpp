@@ -9,14 +9,17 @@ SimpleParserViewDelegateObject::SimpleParserViewDelegateObject(SimpleParserGUIEx
     outputViewer->setReadOnly(true);
 }
 
-QWidget* SimpleParserViewDelegateObject::getInputDataWidget(TransformPassViewWidget* w)
+QWidget* SimpleParserViewDelegateObject::getDataWidget(TransformPassViewWidget* w, int objectID)
 {
-    return inputViewer;
-}
-
-QWidget* SimpleParserViewDelegateObject::getOutputDataWidget(TransformPassViewWidget* w)
-{
-    return outputViewer;
+    switch(objectID) {
+    default: qFatal("Unexpected objectID"); return nullptr;
+    case static_cast<int>(SimpleParserEvent::EventLocationContext::InputData): {
+        return inputViewer;
+    }break;
+    case static_cast<int>(SimpleParserEvent::EventLocationContext::OutputData): {
+        return outputViewer;
+    }break;
+    }
 }
 
 void SimpleParserViewDelegateObject::updateDataWidgetForNewData()

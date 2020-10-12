@@ -11,6 +11,7 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
+#include "src/GlobalInclude.h"
 #include "src/utils/XMLUtilities.h"
 
 class TreeBuilder;
@@ -22,10 +23,14 @@ public:
         QStringList keyList;
         QStringList valueList;
 
-        int offsetFromParent = 0; // non-negative; root has offset of zero
-        QVector<int> offsetToChildren; // always positive
+        indextype offsetFromParent = 0; // non-negative; root has offset of zero
+        QVector<indextype> offsetToChildren; // always positive
     };
 
+protected:
+    QVector<Node> nodes;
+
+public:
     struct LocalValueExpression {
         enum ValueType {
             Literal,
@@ -179,9 +184,25 @@ public:
     int getNumNodes() const {return nodes.size();}
     bool isEmpty() const {return nodes.isEmpty();}
 
-protected:
-    QVector<Node> nodes;
+public:
+    //!< identify a location in the data structure
+    //!< this will be the minimal unit of location remark in processing
+    struct LocationType {
+        indextype nodeIndex = -1;
+        // for now do not implement more finer grained highlighting
+
+        // operators for range search support
+        bool operator<(const LocationType& rhs) const {
+            return nodeIndex < rhs.nodeIndex;
+        }
+        bool operator==(const LocationType& rhs) const {
+            return nodeIndex == rhs.nodeIndex;
+        }
+    };
 };
+
+// make it work in QVariant
+Q_DECLARE_METATYPE(Tree::LocationType)
 
 class TreeBuilder
 {
