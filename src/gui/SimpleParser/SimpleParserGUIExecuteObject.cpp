@@ -24,8 +24,26 @@ QWidget* SimpleParserViewDelegateObject::getDataWidget(TransformPassViewWidget* 
 
 void SimpleParserViewDelegateObject::updateDataWidgetForNewData()
 {
-    inputViewer->setPlainText(parent->getInputText());
-    outputViewer->setData(parent->getOutputTree());
+    inputData = parent->getInputText();
+    outputData = parent->getOutputTree();
+    inputTextPositionInfo = TextUtil::TextPositionInfo(inputData);
+    inputViewer->setPlainText(inputData);
+    outputViewer->setData(outputData);
+}
+
+QString SimpleParserViewDelegateObject::getLocationDescriptionString(int objectID, const QVariant& locData) const
+{
+    switch(objectID) {
+    default: qFatal("Unexpected objectID"); return QString();
+    case static_cast<int>(SimpleParserEvent::EventLocationContext::InputData): {
+        auto loc = locData.value<TextUtil::PlainTextLocation>();
+        return inputTextPositionInfo.getLocationString(inputData, loc.startPos, loc.endPos);
+    }break;
+    case static_cast<int>(SimpleParserEvent::EventLocationContext::OutputData): {
+        Tree::LocationType loc = locData.value<Tree::LocationType>();
+        return loc.getLocationString(outputData);
+    }break;
+    }
 }
 
 SimpleParserGUIExecuteObject::SimpleParserGUIExecuteObject(const SimpleParser::Data& dataArg, QString name)

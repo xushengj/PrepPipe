@@ -66,11 +66,12 @@ QString EventInterpreter::getReferenceTypeTitle(const EventLogger* logger, int e
     return QString::number(referenceTypeIndex);
 }
 
-QString EventInterpreter::getLocationTypeTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex) const {
+QString EventInterpreter::getLocationTypeTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationIndex) const {
     Q_UNUSED(logger)
     Q_UNUSED(eventIndex)
     Q_UNUSED(eventTypeIndex)
-    return QStringLiteral("<Unimplemented>");
+    Q_UNUSED(locationIndex)
+    return QString();
 }
 
 QString DefaultEventInterpreter::getEventTitle(const EventLogger* logger, int eventIndex, int eventTypeIndex) const {

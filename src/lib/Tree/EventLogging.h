@@ -159,7 +159,9 @@ public:
     virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const;
     virtual QString getDetailString         (const EventLogger* logger, int eventIndex) const;
     virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const;
-    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const;
+
+    // return empty string if there is no need for a location type string (e.g., when the event only have 1 location)
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationIndex) const;
 };
 
 class DefaultEventInterpreter: public EventInterpreter

@@ -4,9 +4,8 @@
 #include "src/GlobalInclude.h"
 #include "src/lib/Tree/Tree.h"
 #include "src/lib/Tree/EventLogging.h"
-#include "src/lib/Tree/EventLocationForBuiltinTypes.h"
 #include "src/utils/XMLUtilities.h"
-#include "src/utils/TextPositionInfo.h"
+#include "src/utils/TextUtilities.h"
 
 #include <QString>
 #include <QStringList>
@@ -153,7 +152,7 @@ public:
         QHash<QString, int> regexPatternToIndexMap;
         QList<QRegularExpression> regexList;
         QList<QMap<int, std::pair<int, RegexMatchData>>> regexMatchPositionMap;
-        TextPositionInfo posInfo;
+        TextUtil::TextPositionInfo posInfo;
         int strLength = 0;
         int curPosition = 0;
 
@@ -309,7 +308,7 @@ public:
     virtual QString getEventTitle           (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
     virtual QString getDetailString         (const EventLogger* logger, int eventIndex) const override;
     virtual QString getReferenceTypeTitle   (const EventLogger* logger, int eventIndex, int eventTypeIndex, int referenceTypeIndex) const override;
-    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const override;
+    virtual QString getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationIndex) const override;
 
     virtual EventImportance getEventImportance (int eventTypeIndex) const override {
         switch (eventTypeIndex) {
@@ -330,7 +329,7 @@ private:
     static QString getString(const EventLogger *logger, const Event& e, InterpretedStringType ty);
 
     static EventLocationRemark getInputLoc(int startPos, int endPos) {
-        PlainTextLocation locData;
+        TextUtil::PlainTextLocation locData;
         locData.startPos = startPos;
         locData.endPos = endPos;
         EventLocationRemark loc;

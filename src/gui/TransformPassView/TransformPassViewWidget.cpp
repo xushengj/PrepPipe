@@ -204,8 +204,7 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
 
     lastDetailedEventIndex = eventIndex;
     ui->eventClickableTreeWidget->clear();
-    currentEventInputPositions.clear();
-    currentEventOutputPositions.clear();
+    currentEventLocations.clear();
     currentEventCrossReferences.clear();
     if (eventIndex < 0) {
         ui->eventNameLabel->setText(tr("(No event selection)"));
@@ -217,6 +216,31 @@ void TransformPassViewWidget::updateEventDetails(int eventIndex)
         QString nameLabel = TransformEventListModel::getEventNameLabel(events.get(), interp, eventIndex);
         ui->eventNameLabel->setText(nameLabel);
         ui->eventDocumentLabel->setText(interp->getDetailString(events.get(), eventIndex));
+
+        if (!e.locationRemarks.isEmpty()) {
+            QTreeWidgetItem* locationHead = new QTreeWidgetItem;
+            locationHead->setText(0, tr("Locations"));
+            ui->eventClickableTreeWidget->addTopLevelItem(locationHead);
+            locationHead->setExpanded(true);
+            for (indextype i = 0, n = e.locationRemarks.size(); i < n; ++i) {
+                const auto& loc = e.locationRemarks.at(i);
+                QString locType = interp->getLocationTypeTitle(events.get(), eventIndex, e.eventTypeIndex, i);
+                int objectID = loc.locationContextIndex;
+                QString locStr = delegateObject->getLocationDescriptionString(objectID, loc.location);
+                QString locationStr;
+                if (locType.isEmpty()) {
+                    locationStr = locStr;
+                } else {
+                    locationStr = locType;
+                    locationStr.append(QStringLiteral(": "));
+                    locationStr.append(locStr);
+                }
+                QTreeWidgetItem* locItem = new QTreeWidgetItem;
+                locItem->setText(0, locationStr);
+                currentEventLocations.insert(locItem, std::make_pair(objectID, loc.location));
+                locationHead->addChild(locItem);
+            }
+        }
         // TODO: add support of event
         /*
         QHash<int, std::pair<QVariant, QVariant>> locations;
@@ -503,6 +527,7 @@ void TransformEventListModel::recomputeFilteredEvents(std::function<bool(EventLo
         case EventInterpreter::EventImportance::AlwaysPrimary:   return true;
         case EventInterpreter::EventImportance::AlwaysSecondary: return false;
         case EventInterpreter::EventImportance::Auto: return !scetchpad.at(eventIndex);
+        default: qFatal("Unhandled event importance"); return false;
         }
     };
     if (filteredEventVec.isEmpty()) {

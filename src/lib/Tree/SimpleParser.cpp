@@ -379,7 +379,7 @@ void SimpleParser::ParseState::clear()
     }
     str = nullptr;
     logger = nullptr;
-    posInfo = TextPositionInfo();
+    posInfo = TextUtil::TextPositionInfo();
 
     // the following two is persistent across uses
     // regexPatternToIndexMap.clear();
@@ -392,7 +392,7 @@ void SimpleParser::ParseState::set(const QString& text, EventLogger* loggerArg)
     logger = loggerArg;
     strLength = text.length();
     curPosition = 0;
-    posInfo = TextPositionInfo(text);
+    posInfo = TextUtil::TextPositionInfo(text);
 }
 
 int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
@@ -1561,12 +1561,25 @@ QString SimpleParserEvent::getReferenceTypeTitle   (const EventLogger* logger, i
     return QString(eventReferenceIDMeta.valueToKey(referenceTypeIndex));
 }
 
-QString SimpleParserEvent::getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex) const
+QString SimpleParserEvent::getLocationTypeTitle    (const EventLogger* logger, int eventIndex, int eventTypeIndex, int locationIndex) const
 {
     Q_UNUSED(logger)
     Q_UNUSED(eventIndex)
-    Q_UNUSED(eventTypeIndex)
-    // const Event& e = logger->getEvent(eventIndex);
-    // TODO
-    return QStringLiteral("<Unimplemented>");
+    switch (eventTypeIndex) {
+    case static_cast<int>(EventID::NodeAdded): {
+        switch (locationIndex) {
+        default: qFatal("Unexpected location index for NodeAdded event"); return QString();
+        case 0: {
+            return tr("Source Text");
+        }break;
+        case 1: {
+            return tr("Result Node");
+        }break;
+        }
+    }break;
+    default: {
+        Q_ASSERT(locationIndex == 0);
+        return QString();
+    }
+    }
 }

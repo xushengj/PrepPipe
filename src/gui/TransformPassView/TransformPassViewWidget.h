@@ -59,9 +59,15 @@ public:
         };
     }
 
+    virtual QString getLocationDescriptionString(int objectID, const QVariant& locData) const {
+        Q_UNUSED(objectID)
+        Q_UNUSED(locData)
+        return QStringLiteral("<Unimplemented>");
+    }
+
     // note that currently we always show event coloring as background color
     // reset coloring (restore original background color) for input widget
-    virtual void resetDataWidgetEventColoring(int objectID) {}
+    virtual void resetDataWidgetEventColoring(int objectID) {Q_UNUSED(objectID)}
 };
 
 class TransformPassViewWidget : public QWidget
@@ -134,8 +140,7 @@ private:
     EventFocusType eventFocusTy = EventFocusType::NoFocus;
     QVariant eventFocusLocation; // where is the focus of event
     int lastDetailedEventIndex = -2; // what's the current event's index, whose details are listed at bottom-right panel
-    QHash<QTreeWidgetItem*, QVariant> currentEventInputPositions;
-    QHash<QTreeWidgetItem*, QVariant> currentEventOutputPositions;
+    QHash<QTreeWidgetItem*, std::pair<int, QVariant>> currentEventLocations; // locations for all objects recorded in current events
     QHash<QTreeWidgetItem*, int> currentEventCrossReferences; // both events referencing current event and the events being referenced by current event
 
     // [eventIndex] -> vec of <eventIndex, referenceTy>

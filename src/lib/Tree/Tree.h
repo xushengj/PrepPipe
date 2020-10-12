@@ -10,6 +10,7 @@
 #include <QMap>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
+#include <QCoreApplication>
 
 #include "src/GlobalInclude.h"
 #include "src/utils/XMLUtilities.h"
@@ -17,6 +18,7 @@
 class TreeBuilder;
 class Tree
 {
+    Q_DECLARE_TR_FUNCTIONS(Tree)
 public:
     struct Node {
         QString typeName;
@@ -197,6 +199,13 @@ public:
         }
         bool operator==(const LocationType& rhs) const {
             return nodeIndex == rhs.nodeIndex;
+        }
+
+        QString getLocationString(const Tree& tree) const {
+            if (nodeIndex < 0 || nodeIndex >= tree.getNumNodes()) {
+                return tr("<Invalid node: %1>").arg(nodeIndex);
+            }
+            return QString("[%1] %2").arg(QString::number(nodeIndex), tree.getNode(nodeIndex).typeName);
         }
     };
 };

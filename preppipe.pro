@@ -103,7 +103,7 @@ SOURCES += \
     src/misc/MessageLogger.cpp \
     src/misc/Settings.cpp \
     src/utils/NameSorting.cpp \
-    src/utils/TextPositionInfo.cpp \
+    src/utils/TextUtilities.cpp \
     src/utils/XMLUtilities.cpp
 
 HEADERS += \
@@ -163,7 +163,6 @@ HEADERS += \
     src/lib/TaskObject/SimpleWorkflowObject.h \
     src/lib/TaskObject/TestTaskObject.h \
     src/lib/Tree/Configuration.h \
-    src/lib/Tree/EventLocationForBuiltinTypes.h \
     src/lib/Tree/EventLogging.h \
     src/lib/Tree/SimpleParser.h \
     src/lib/Tree/SimpleTextGenerator.h \
@@ -172,7 +171,7 @@ HEADERS += \
     src/misc/MessageLogger.h \
     src/misc/Settings.h \
     src/utils/NameSorting.h \
-    src/utils/TextPositionInfo.h \
+    src/utils/TextUtilities.h \
     src/utils/XMLUtilities.h
 
 FORMS += \

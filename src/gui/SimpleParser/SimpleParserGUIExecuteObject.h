@@ -8,6 +8,7 @@
 #include "src/gui/TransformPassView/TransformPassViewWidget.h"
 #include "src/gui/GeneralTreeEditor.h"
 #include "src/gui/TextEditor.h"
+#include "src/utils/TextUtilities.h"
 
 class SimpleParserGUIExecuteObject : public SimpleParserExecuteObject
 {
@@ -39,11 +40,15 @@ public:
     virtual QWidget* getDataWidget(TransformPassViewWidget* w, int objectID) override;
 
     virtual void updateDataWidgetForNewData() override;
+    virtual QString getLocationDescriptionString(int objectID, const QVariant& locData) const override;
 
 private:
     SimpleParserGUIExecuteObject* parent;
     TextEditor* inputViewer;
     GeneralTreeEditor* outputViewer;
+    QString inputData;
+    TextUtil::TextPositionInfo inputTextPositionInfo;
+    Tree outputData;
 };
 
 #endif // SIMPLEPARSERGUIEXECUTEOBJECT_H
