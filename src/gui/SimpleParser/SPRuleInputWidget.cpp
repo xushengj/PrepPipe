@@ -1,5 +1,6 @@
 #include "SPRuleInputWidget.h"
 #include "ui_SPRuleInputWidget.h"
+#include "src/utils/EventLoopHelper.h"
 
 #include <QMessageBox>
 
@@ -125,7 +126,7 @@ void SPRuleInputWidget::addPatternRequested()
 {
     Q_ASSERT(helperPtr);
     SPRulePatternQuickInputDialog* dialog = new SPRulePatternQuickInputDialog(*helperPtr, defaultNodeTypeName, this);
-    if (dialog->exec() == QDialog::Accepted) {
+    if (EventLoopHelper::execDialog(dialog) == QDialog::Accepted) {
         SimpleParser::Pattern data;
         dialog->getData(data);
         if (!data.pattern.isEmpty()) {

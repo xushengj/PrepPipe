@@ -33,6 +33,9 @@ void populateSpecialBlockTypeInfo()
     populateSpecialBlockTypeInfo_addSeparator();
     populateSpecialBlockTypeInfo_addRow(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_StringLiteral);
     populateSpecialBlockTypeInfo_addRow(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex);
+    populateSpecialBlockTypeInfo_addSeparator();
+    populateSpecialBlockTypeInfo_addRow(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Integer);
+    populateSpecialBlockTypeInfo_addRow(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Number);
 }
 }
 
@@ -230,6 +233,7 @@ void SPRulePatternQuickInputDialog::regeneratePattern()
         SimpleParser::PatternElement& element = elementData.data;
         element.elementName = curBlock.info.exportName;
         switch (curBlock.info.ty) {
+        default: qFatal("Unexpected special block type!"); break;
         case decltype(curBlock.info.ty)::AnonymousBoundary_StringLiteral: {
             element.ty = decltype (element.ty)::AnonymousBoundary_StringLiteral;
             element.str = curBlock.identifier.first;
@@ -237,6 +241,14 @@ void SPRulePatternQuickInputDialog::regeneratePattern()
         case decltype(curBlock.info.ty)::AnonymousBoundary_Regex: {
             element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
             element.str = curBlock.info.str;
+        }break;
+        case decltype(curBlock.info.ty)::AnonymousBoundary_Regex_Integer: {
+            element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
+            element.str = "[-+]?\\d+";
+        }break;
+        case decltype(curBlock.info.ty)::AnonymousBoundary_Regex_Number: {
+            element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
+            element.str = "[-+]?\\d*\\.?\\d*";
         }break;
         case decltype(curBlock.info.ty)::NamedBoundary: {
             element.ty = decltype (element.ty)::NamedBoundary;

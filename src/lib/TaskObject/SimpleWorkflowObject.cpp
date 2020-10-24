@@ -1,6 +1,7 @@
 #include "SimpleWorkflowObject.h"
 
-#include <QEventLoop>
+#include <QApplication>
+#include "src/utils/EventLoopHelper.h"
 
 SimpleWorkflowObject::SimpleWorkflowObject()
     : TaskObject(ObjectType::Task_SimpleWorkflow)
@@ -369,7 +370,7 @@ int SimpleWorkflowExecuteObject::startImpl(ExitCause& cause)
         ExecuteObject* exec = childExecuteObjects.at(jobIndex);
         // void statusUpdate(const QString& description, int start, int end, int value);
         emit statusUpdate(QString(), 0, n * 100, jobIndex * 100);
-        QEventLoop loop;
+        EventLoopHelper::EventLoop loop;
         int childStatus = 0;
         ExitCause childExitCause = ExitCause::Completed;
         connect(exec, &ExecuteObject::statusUpdate, this, [=](const QString& description, int start, int end, int value) -> void {
@@ -401,13 +402,13 @@ int SimpleWorkflowExecuteObject::startImpl(ExitCause& cause)
             }
         }, Qt::QueuedConnection);
         connect(exec, &ExecuteObject::finished, this, [&](int status, int cause) -> void {
-            int exitCode = 0;
+            int code = 0;
             if (status != 0 || static_cast<ExitCause>(cause) != ExitCause::Completed) {
-                exitCode = 1;
+                code = 1;
                 childStatus = status;
                 childExitCause = static_cast<ExitCause>(cause);
             }
-            loop.exit(exitCode);
+            loop.exit(code);
         }, Qt::QueuedConnection);
         QMetaObject::invokeMethod(exec, &ExecuteObject::start, Qt::QueuedConnection);
         int code = loop.exec();

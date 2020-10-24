@@ -81,6 +81,8 @@ QVariant SPRulePatternQuickInputSpecialBlockModel::data(const QModelIndex &index
         case Qt::DisplayRole: {
             switch (rowData.info.ty) {
             default: break;
+            case SpecialBlockType::AnonymousBoundary_Regex_Integer:
+            case SpecialBlockType::AnonymousBoundary_Regex_Number:
             case SpecialBlockType::AnonymousBoundary_StringLiteral: {
                 return QVariant(tr("(No Data)"));
             }break;
@@ -153,10 +155,13 @@ Qt::ItemFlags SPRulePatternQuickInputSpecialBlockModel::flags(const QModelIndex&
     case COL_String: {
         int row = index.row();
         const auto& rowData = table.at(row);
-        if (rowData.info.ty == decltype (rowData.info.ty)::AnonymousBoundary_StringLiteral) {
+        switch (rowData.info.ty) {
+        default: return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+        case decltype (rowData.info.ty)::AnonymousBoundary_StringLiteral:
+        case decltype (rowData.info.ty)::AnonymousBoundary_Regex_Integer:
+        case decltype (rowData.info.ty)::AnonymousBoundary_Regex_Number:
             return Qt::ItemIsEnabled | Qt::ItemIsSelectable; // not editable if it is a literal
         }
-        return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
     }break;
     }
 
@@ -205,6 +210,8 @@ QString SPRulePatternQuickInputSpecialBlockModel::getDisplayText(SpecialBlockTyp
     switch (ty) {
     case SpecialBlockType::AnonymousBoundary_StringLiteral: return tr("String");
     case SpecialBlockType::AnonymousBoundary_Regex: return tr("Regular Expression");
+    case SpecialBlockType::AnonymousBoundary_Regex_Integer: return tr("Integer");
+    case SpecialBlockType::AnonymousBoundary_Regex_Number: return tr("Number");
     case SpecialBlockType::ContentType: return tr("Content");
     case SpecialBlockType::NamedBoundary: return tr("Named Mark");
     }

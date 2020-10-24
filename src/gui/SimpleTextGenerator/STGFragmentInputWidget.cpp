@@ -1,6 +1,7 @@
 #include "STGFragmentInputWidget.h"
 #include "ui_STGFragmentInputWidget.h"
 #include "src/gui/SimpleTextGenerator/STGFragmentParameterReplacementEditDialog.h"
+#include "src/utils/EventLoopHelper.h"
 
 #include <QMenu>
 
@@ -332,7 +333,7 @@ bool STGFragmentInputWidget::execParamEditDialog(EditorData::Mapping& data)
         }
     }
     STGFragmentParameterReplacementEditDialog* dialog = new STGFragmentParameterReplacementEditDialog(data.exampleText, data.replacingParam, doc, occupiedList, this);
-    int code = dialog->exec();
+    int code = EventLoopHelper::execDialog(dialog);
     dialog->deleteLater();
     if (code == QDialog::Accepted) {
         data.exampleText = dialog->getResultExample();

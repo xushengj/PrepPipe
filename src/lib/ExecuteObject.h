@@ -43,10 +43,13 @@ public slots:
 
 protected:
     bool isTerminationRequested(ExitCause& cause) {
+        Q_UNUSED(cause)
+#ifdef PP_ENABLE_THREADS
         if (Q_UNLIKELY(QThread::currentThread()->isInterruptionRequested())) {
             cause = ExitCause::Terminated;
             return true;
         }
+#endif
         return false;
     }
 };

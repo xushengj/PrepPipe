@@ -35,6 +35,12 @@ CONFIG(debug) {
     DEFINES += PP_GRACEFUL_FAILURE_HANDLING
 }
 
+# WebAssembly target do not support nested event loops, and local file access is restricted
+emscripten {
+
+} else {
+    DEFINES += PP_ENABLE_EVENTLOOP
+}
 #if a build without GUI is needed, enable this define:
 # DEFINES += PP_DISABLE_GUI
 
@@ -102,6 +108,7 @@ SOURCES += \
     src/gui/EditorWindow.cpp \
     src/misc/MessageLogger.cpp \
     src/misc/Settings.cpp \
+    src/utils/EventLoopHelper.cpp \
     src/utils/NameSorting.cpp \
     src/utils/TextUtilities.cpp \
     src/utils/XMLUtilities.cpp
@@ -170,6 +177,7 @@ HEADERS += \
     src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h \
+    src/utils/EventLoopHelper.h \
     src/utils/NameSorting.h \
     src/utils/TextUtilities.h \
     src/utils/XMLUtilities.h
@@ -203,6 +211,8 @@ TRANSLATIONS += \
 win32 {
     SOURCES += src/misc/MessageLogger_Windows.cpp
     LIBS += -lDbgHelp
+} else: emscripten {
+    SOURCES += src/misc/MessageLogger_WebAssembly.cpp
 } else: unix {
     SOURCES += src/misc/MessageLogger_POSIX.cpp
     QMAKE_LFLAGS += -rdynamic

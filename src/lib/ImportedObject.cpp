@@ -1,5 +1,6 @@
 #include "ImportedObject.h"
 #include "src/gui/ImportFileDialog.h"
+#include "src/utils/EventLoopHelper.h"
 #include <functional>
 #include <QSaveFile>
 
@@ -25,7 +26,7 @@ ImportedObject* ImportedObject::open(const QByteArray &src, QWidget* window)
 {
     ImportFileDialog* dialog = new ImportFileDialog(window);
     dialog->setSrc(src);
-    if (dialog->exec() == QDialog::Accepted) {
+    if (EventLoopHelper::execDialog(dialog) == QDialog::Accepted) {
         return dialog->getResult();
     }
     return nullptr;

@@ -19,6 +19,8 @@ public:
     enum class SpecialBlockType : int {
         AnonymousBoundary_StringLiteral,
         AnonymousBoundary_Regex,
+        AnonymousBoundary_Regex_Integer,
+        AnonymousBoundary_Regex_Number,
         ContentType,
         NamedBoundary
     };

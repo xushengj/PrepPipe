@@ -5,6 +5,7 @@
 #include "src/gui/ExecuteOptionDialog.h"
 #include "src/gui/ObjectTreeWidget.h"
 #include "src/misc/MessageLogger.h"
+#include "src/utils/EventLoopHelper.h"
 
 #include <QDebug>
 #include <QCommonStyle>
@@ -267,13 +268,7 @@ ExecuteWindow* ExecuteWindow::tryExecuteTask(const ObjectBase::NamedReference &t
                 QHash<QString, QVector<OutputAction>>(),
                 editor);
 
-    // wait until the dialog is done
-    QEventLoop localLoop;
-    QObject::connect(dialog, &QDialog::finished, &localLoop, &QEventLoop::quit);
-    dialog->show();
-    localLoop.exec();
-
-    if (dialog->result() == QDialog::Rejected)
+    if (EventLoopHelper::execDialog(dialog) == QDialog::Rejected)
         return nullptr;
 
     // okay, all good
