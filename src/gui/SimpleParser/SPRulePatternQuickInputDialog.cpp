@@ -79,9 +79,89 @@ void SPRulePatternQuickInputDialog::textEditContextMenuEventHandler(const QPoint
     QTextCursor cursor = ui->textEdit->textCursor();
     if (cursor.hasSelection()) {
         // TODO add "clear marking" if there is any marked text block in the selection
-        QAction* markAction = new QAction("Mark");
+        QAction* markAction = new QAction(tr("Mark"));
         connect(markAction, &QAction::triggered, this, &SPRulePatternQuickInputDialog::text_markSelection);
         menu.addAction(markAction);
+    }
+    // menu of marking all occurrence of something
+    {
+        QMenu* markAllMenu = new QMenu(tr("Mark all ..."));
+        bool isEmpty = true;
+
+        QString fullText = ui->textEdit->document()->toPlainText();
+        if (hasInSelectionUnmarkedOccurrenceOfSpecialRegex(fullText, SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Integer)) {
+            QAction* markAllInteger = new QAction(tr("Integer"));
+            connect(markAllInteger, &QAction::triggered, this, [&](){
+                text_markInSelectionAllOccurrenceOfSpecialRegex(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Integer);
+            });
+            markAllMenu->addAction(markAllInteger);
+            isEmpty = false;
+        }
+        if (hasInSelectionUnmarkedOccurrenceOfSpecialRegex(fullText, SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Number)) {
+            QAction* markAllNumber = new QAction(tr("Number"));
+            connect(markAllNumber, &QAction::triggered, this, [&](){
+                text_markInSelectionAllOccurrenceOfSpecialRegex(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_Regex_Number);
+            });
+            markAllMenu->addAction(markAllNumber);
+            isEmpty = false;
+        }
+
+        // for each string where all occurrence is consistent and the block type is not regex or all regex based special types,
+        // and there is at least one occurrence of them not being marked,
+        // we add one option to find remaining instance
+        QHash<QString, indextype> existingStringMap;
+
+        const auto& table = specialBlockModel->getData();
+        for (indextype i = 0; i < table.size(); ++i) {
+            bool isApplicable = true;
+            const auto& record = table.at(i);
+            switch (record.info.ty) {
+            default: break;
+            case decltype(record.info.ty)::AnonymousBoundary_Regex_Integer:
+            case decltype(record.info.ty)::AnonymousBoundary_Regex_Number:
+            case decltype(record.info.ty)::AnonymousBoundary_Regex:
+                isApplicable = false;
+            }
+            auto iter = existingStringMap.find(record.identifier.first);
+            if (iter != existingStringMap.end()) {
+                if (iter.value() == -1) {
+                    isApplicable = false;
+                } else {
+                    // check if the condition is identical
+                    const auto& head = table.at(iter.value());
+                    if (record.info.ty != head.info.ty || record.info.str != head.info.str) {
+                        isApplicable = false;
+                    }
+                }
+            }
+            existingStringMap[record.identifier.first] = (isApplicable? i : -1);
+        }
+        bool isFirstStringOption = true;
+        for (indextype i = 0; i < table.size(); ++i) {
+            const auto& record = table.at(i);
+            if (existingStringMap.value(record.identifier.first) == i
+               && hasInSelectionUnmarkedOccurrenceOf(fullText, record.identifier.first)) {
+                if (isFirstStringOption && !isEmpty) {
+                    markAllMenu->addSeparator();
+                }
+                isFirstStringOption = false;
+
+                QString str = record.identifier.first;
+                auto info = record.info;
+                QAction* markAct = new QAction(str);
+                connect(markAct, &QAction::triggered, this, [=](){
+                    text_markInSelectionAllOccurrenceOf(str, info);
+                });
+                markAllMenu->addAction(markAct);
+                isEmpty = false;
+            }
+        }
+
+        if (!isEmpty) {
+            menu.addMenu(markAllMenu);
+        } else {
+            delete markAllMenu;
+        }
     }
 
     if (!menu.isEmpty()) {
@@ -108,20 +188,12 @@ void SPRulePatternQuickInputDialog::textEditContextMenuEventHandler(const QPoint
     menu.exec(ui->textEdit->mapToGlobal(p));
 }
 
-void SPRulePatternQuickInputDialog::text_markSelection()
+int SPRulePatternQuickInputDialog::findOccurrenceIndex(const QString& str, int textStart, int textEnd)
 {
-    QTextCursor cursor = ui->textEdit->textCursor();
-    if (!cursor.hasSelection()) {
-        return;
-    }
-
-    int textStart = cursor.selectionStart();
-    int textEnd = cursor.selectionEnd();
-    QString str = cursor.selectedText();
     int occurrenceIndex = 0;
     int lastPos = 0;
     while (true) {
-        QTextCursor searchResult = cursor.document()->find(str, lastPos);
+        QTextCursor searchResult = ui->textEdit->document()->find(str, lastPos);
 
         // if we cannot find the text then our algorithm is broken...
         Q_ASSERT(!searchResult.isNull());
@@ -136,15 +208,140 @@ void SPRulePatternQuickInputDialog::text_markSelection()
         occurrenceIndex += 1;
         lastPos = searchResult.selectionStart() + 1;
     }
+    return occurrenceIndex;
+}
+
+void SPRulePatternQuickInputDialog::text_markSelection()
+{
+    QTextCursor cursor = ui->textEdit->textCursor();
+    if (!(cursor.hasSelection())) {
+        return;
+    }
+    int textStart = cursor.selectionStart();
+    int textEnd = cursor.selectionEnd();
+    QString str = cursor.selectedText();
 
     SPRulePatternQuickInputSpecialBlockModel::SpecialBlockRecord record;
     record.identifier.first = str;
-    record.identifier.second = occurrenceIndex;
+    record.identifier.second = findOccurrenceIndex(str, textStart, textEnd);
     record.textHighlightRange.first = textStart;
     record.textHighlightRange.second = textEnd;
     record.info.ty = SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType::AnonymousBoundary_StringLiteral;
     record.info.str = str;
+    specialBlockModel->adjustBestGuessOfBlockInfo(record);
     specialBlockModel->addBlockRequested(record);
+}
+
+void SPRulePatternQuickInputDialog::text_markInSelectionAllOccurrenceOfSpecialRegex(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType ty)
+{
+    QString fullText = ui->textEdit->document()->toPlainText();
+    int rangeStart = 0;
+    int rangeEnd = fullText.length();
+    QTextCursor cursor = ui->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        rangeStart = cursor.selectionStart();
+        rangeEnd = cursor.selectionEnd();
+    }
+    const QRegularExpression& regex = specialBlockModel->getRegexInstanceForSpecialTypes(ty);
+    auto matchResult = regex.globalMatch(fullText.midRef(rangeStart, rangeEnd - rangeStart));
+    while (matchResult.hasNext()) {
+        auto match = matchResult.next();
+        int textStart = match.capturedStart() + rangeStart;
+        int textEnd = match.capturedEnd() + rangeStart;
+
+        // skip empty matches
+        if (textEnd == textStart)
+            continue;
+
+        QString str = match.captured();
+        if (specialBlockModel->isSafeToAddMark(textStart, textEnd)) {
+            SPRulePatternQuickInputSpecialBlockModel::SpecialBlockRecord record;
+            record.identifier.first = str;
+            record.identifier.second = findOccurrenceIndex(str, textStart, textEnd);
+            record.textHighlightRange.first = textStart;
+            record.textHighlightRange.second = textEnd;
+            record.info.ty = ty;
+            record.info.str = str;
+            specialBlockModel->addBlockRequested(record);
+        }
+    }
+}
+
+bool SPRulePatternQuickInputDialog::hasInSelectionUnmarkedOccurrenceOfSpecialRegex(const QString& fullText, SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType ty)
+{
+    int rangeStart = 0;
+    int rangeEnd = fullText.length();
+    QTextCursor cursor = ui->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        rangeStart = cursor.selectionStart();
+        rangeEnd = cursor.selectionEnd();
+    }
+    const QRegularExpression& regex = specialBlockModel->getRegexInstanceForSpecialTypes(ty);
+    auto matchResult = regex.globalMatch(fullText.midRef(rangeStart, rangeEnd - rangeStart));
+    while (matchResult.hasNext()) {
+        auto match = matchResult.next();
+        int textStart = match.capturedStart() + rangeStart;
+        int textEnd = match.capturedEnd() + rangeStart;
+
+        // skip empty matches
+        if (textEnd == textStart)
+            continue;
+
+        QString str = match.captured();
+        if (specialBlockModel->isSafeToAddMark(textStart, textEnd)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool SPRulePatternQuickInputDialog::hasInSelectionUnmarkedOccurrenceOf(const QString& fullText, const QString& existingMarkedText)
+{
+    int rangeStart = 0;
+    int rangeEnd = fullText.length();
+    QTextCursor cursor = ui->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        rangeStart = cursor.selectionStart();
+        rangeEnd = cursor.selectionEnd();
+    }
+    int nextOccurrence = fullText.indexOf(existingMarkedText, rangeStart);
+    while (nextOccurrence >= 0 && nextOccurrence <= (rangeEnd - existingMarkedText.length())) {
+        int textStart = nextOccurrence;
+        int textEnd = nextOccurrence + existingMarkedText.length();
+        if (specialBlockModel->isSafeToAddMark(textStart, textEnd)) {
+            return true;
+        }
+        nextOccurrence = fullText.indexOf(existingMarkedText, nextOccurrence + existingMarkedText.length());
+    }
+    return false;
+}
+
+void SPRulePatternQuickInputDialog::text_markInSelectionAllOccurrenceOf(const QString& existingMarkedText, const SPRulePatternQuickInputSpecialBlockModel::SpecialBlockInfo& info)
+{
+    Q_ASSERT(existingMarkedText.length() > 0);
+    QString fullText = ui->textEdit->document()->toPlainText();
+    int rangeStart = 0;
+    int rangeEnd = fullText.length();
+    QTextCursor cursor = ui->textEdit->textCursor();
+    if (cursor.hasSelection()) {
+        rangeStart = cursor.selectionStart();
+        rangeEnd = cursor.selectionEnd();
+    }
+    int nextOccurrence = fullText.indexOf(existingMarkedText, rangeStart);
+    while (nextOccurrence >= 0 && nextOccurrence <= (rangeEnd - existingMarkedText.length())) {
+        int textStart = nextOccurrence;
+        int textEnd = nextOccurrence + existingMarkedText.length();
+        if (specialBlockModel->isSafeToAddMark(textStart, textEnd)) {
+            SPRulePatternQuickInputSpecialBlockModel::SpecialBlockRecord record;
+            record.identifier.first = existingMarkedText;
+            record.identifier.second = findOccurrenceIndex(existingMarkedText, textStart, textEnd);
+            record.textHighlightRange.first = textStart;
+            record.textHighlightRange.second = textEnd;
+            record.info = info;
+            specialBlockModel->addBlockRequested(record);
+        }
+        nextOccurrence = fullText.indexOf(existingMarkedText, nextOccurrence + existingMarkedText.length());
+    }
 }
 
 void SPRulePatternQuickInputDialog::text_contentUpdated()
@@ -242,14 +439,13 @@ void SPRulePatternQuickInputDialog::regeneratePattern()
             element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
             element.str = curBlock.info.str;
         }break;
-        case decltype(curBlock.info.ty)::AnonymousBoundary_Regex_Integer: {
-            element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
-            element.str = "[-+]?\\d+";
-        }break;
+
+        case decltype(curBlock.info.ty)::AnonymousBoundary_Regex_Integer:
         case decltype(curBlock.info.ty)::AnonymousBoundary_Regex_Number: {
             element.ty = decltype (element.ty)::AnonymousBoundary_Regex;
-            element.str = "[-+]?\\d*\\.?\\d*";
+            element.str = SPRulePatternQuickInputSpecialBlockModel::getRegexForSpecialTypes(curBlock.info.ty);
         }break;
+
         case decltype(curBlock.info.ty)::NamedBoundary: {
             element.ty = decltype (element.ty)::NamedBoundary;
             element.str = curBlock.info.str;

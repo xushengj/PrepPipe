@@ -29,10 +29,16 @@ public:
 private slots:
     void textEditContextMenuEventHandler(const QPoint& p);
     void text_markSelection();
+    bool hasInSelectionUnmarkedOccurrenceOfSpecialRegex(const QString& fullText, SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType ty);
+    bool hasInSelectionUnmarkedOccurrenceOf(const QString& fullText, const QString& existingMarkedText);
+    void text_markInSelectionAllOccurrenceOfSpecialRegex(SPRulePatternQuickInputSpecialBlockModel::SpecialBlockType ty);
+    void text_markInSelectionAllOccurrenceOf(const QString& existingMarkedText, const SPRulePatternQuickInputSpecialBlockModel::SpecialBlockInfo& info);
     void text_contentUpdated();
     void scheduleRegeneratePattern();
     void regeneratePattern();
 
+private:
+    int findOccurrenceIndex(const QString& str, int textStart, int textEnd);
 private:
     Ui::SPRulePatternQuickInputDialog *ui;
     HelperData& helper;

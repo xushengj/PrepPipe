@@ -6,8 +6,12 @@
 #include <vector>
 #include <algorithm>
 
+#include "src/GlobalInclude.h"
+
 SPRulePatternQuickInputSpecialBlockModel::SPRulePatternQuickInputSpecialBlockModel(SpecialBlockHelperData &helperRef, QTableView *parent)
-    : QAbstractTableModel(parent), helper(helperRef), parent(parent), errorIcon(":/icon/execute/failed.png")
+    : QAbstractTableModel(parent), helper(helperRef), parent(parent), errorIcon(":/icon/execute/failed.png"),
+      regex_integer(SPRulePatternQuickInputSpecialBlockModel::getRegexForSpecialTypes(SpecialBlockType::AnonymousBoundary_Regex_Integer)),
+      regex_number(SPRulePatternQuickInputSpecialBlockModel::getRegexForSpecialTypes(SpecialBlockType::AnonymousBoundary_Regex_Number))
 {
     Q_ASSERT(parent);
 }
@@ -219,7 +223,7 @@ QString SPRulePatternQuickInputSpecialBlockModel::getDisplayText(SpecialBlockTyp
     return QString();
 }
 
-void SPRulePatternQuickInputSpecialBlockModel::addBlockRequested(const SpecialBlockRecord& record)
+int SPRulePatternQuickInputSpecialBlockModel::addBlockRequested(const SpecialBlockRecord& record)
 {
     // step 1: find where to insert this record
     int textStart = record.textHighlightRange.first;
@@ -244,6 +248,80 @@ void SPRulePatternQuickInputSpecialBlockModel::addBlockRequested(const SpecialBl
 
     // step 3: try refresh if adding this record invalidates others
     refreshTableForInvalidationCheck();
+
+    lastAddedBlockIdentifier = record.identifier;
+    return index;
+}
+
+QString SPRulePatternQuickInputSpecialBlockModel::getRegexForSpecialTypes(SpecialBlockType ty)
+{
+    switch (ty) {
+    default: qFatal("Unexpected special types"); return QString();
+    case SpecialBlockType::AnonymousBoundary_Regex_Integer:
+        return QStringLiteral("[-+]?\\d+");
+    case SpecialBlockType::AnonymousBoundary_Regex_Number:
+        return QStringLiteral("[-+]?(\\d+(\\.\\d+)?|(\\.\\d+))");
+    }
+}
+
+const QRegularExpression& SPRulePatternQuickInputSpecialBlockModel::getRegexInstanceForSpecialTypes(SpecialBlockType ty) const
+{
+    switch (ty) {
+    default: qFatal("Unexpected special types");
+    case SpecialBlockType::AnonymousBoundary_Regex_Integer:
+        return regex_integer;
+    case SpecialBlockType::AnonymousBoundary_Regex_Number:
+        return regex_number;
+    }
+}
+
+void SPRulePatternQuickInputSpecialBlockModel::adjustBestGuessOfBlockInfo(SpecialBlockRecord& record)
+{
+    // try to populate the block type and string using the last added result
+    int curBestMatch = -1;
+    int curBestMatchOccurrenceIndex = 0;
+    for (indextype i = 0; i < table.size(); ++i) {
+        const auto& curRecord = table.at(i);
+        if (curRecord.identifier.first == record.identifier.first && curRecord.identifier.second <= record.identifier.second) {
+            if (curBestMatch == -1 || (record.identifier.second - curRecord.identifier.second) < (record.identifier.second - curBestMatchOccurrenceIndex)) {
+                curBestMatch = i;
+                curBestMatchOccurrenceIndex = curRecord.identifier.second;
+            }
+        }
+    }
+    if (curBestMatch != -1) {
+        const auto& curRecord = table.at(curBestMatch);
+        record.info.ty = curRecord.info.ty;
+        if (record.info.ty != decltype (record.info.ty)::AnonymousBoundary_StringLiteral) {
+            record.info.str = curRecord.info.str;
+        }
+        return;
+    }
+
+    // try to populate them by testing whether the string is known to be something
+    auto checkIfFullyMatch = [](const QString& str, QRegularExpression& regex) -> bool {
+        auto matchResult = regex.match(str);
+        return (matchResult.isValid() && matchResult.hasMatch() && matchResult.capturedLength() == str.length());
+    };
+    if (checkIfFullyMatch(record.identifier.first, regex_integer)) {
+        record.info.ty = SpecialBlockType::AnonymousBoundary_Regex_Integer;
+        return;
+    }
+
+    if (checkIfFullyMatch(record.identifier.first, regex_number)) {
+        record.info.ty = SpecialBlockType::AnonymousBoundary_Regex_Number;
+        return;
+    }
+}
+
+bool SPRulePatternQuickInputSpecialBlockModel::isSafeToAddMark(int start, int end)
+{
+    for (const auto& curRecord : table) {
+        if (curRecord.textHighlightRange.second <= start || curRecord.textHighlightRange.first >= end)
+            continue;
+        return false;
+    }
+    return true;
 }
 
 std::pair<int, int> SPRulePatternQuickInputSpecialBlockModel::findStringFromText(const QString& text, const QString& str, int occurrenceIndex)

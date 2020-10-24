@@ -5,6 +5,7 @@
 #include <QAbstractTableModel>
 #include <QTableView>
 #include <QIcon>
+#include <QRegularExpression>
 
 inline uint qHash(const std::pair<QString, int>& key, uint seed)
 {
@@ -19,8 +20,8 @@ public:
     enum class SpecialBlockType : int {
         AnonymousBoundary_StringLiteral,
         AnonymousBoundary_Regex,
-        AnonymousBoundary_Regex_Integer,
-        AnonymousBoundary_Regex_Number,
+        AnonymousBoundary_Regex_Integer, // any integer
+        AnonymousBoundary_Regex_Number,  // any integer or floating point numbers
         ContentType,
         NamedBoundary
     };
@@ -52,10 +53,12 @@ public:
 public:
     SPRulePatternQuickInputSpecialBlockModel(SpecialBlockHelperData& helperRef, QTableView* parent);
     const QList<SpecialBlockRecord>& getData() const {return table;}
+    void adjustBestGuessOfBlockInfo(SpecialBlockRecord& record);
+    bool isSafeToAddMark(int start, int end);
 
 public slots:
     void contextMenuHandler(const QPoint& pos);
-    void addBlockRequested(const SpecialBlockRecord& record);
+    int addBlockRequested(const SpecialBlockRecord& record);
     void exampleTextUpdated(const QString& text);
 
 signals:
@@ -63,6 +66,10 @@ signals:
 
 public:
     static std::pair<int, int> findStringFromText(const QString& text, const QString& str, int occurrenceIndex);
+    static QString getRegexForSpecialTypes(SpecialBlockType ty);
+
+public:
+    const QRegularExpression& getRegexInstanceForSpecialTypes(SpecialBlockType ty) const;
 
 private:
     void refreshTableForInvalidationCheck();
@@ -76,6 +83,10 @@ private:
 
     QIcon errorIcon;
     QString exampleText;
+
+    std::pair<QString, int> lastAddedBlockIdentifier;
+    QRegularExpression regex_integer;
+    QRegularExpression regex_number;
 
 public:
     virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override;
