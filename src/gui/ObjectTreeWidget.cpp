@@ -1,4 +1,5 @@
 #include "src/gui/ObjectTreeWidget.h"
+#include "src/gui/PPMIMETypes.h"
 
 #include <QMimeData>
 #include <QJsonArray>
@@ -9,7 +10,6 @@
 #include <QDebug>
 
 namespace {
-const QString MIME_TYPE = QStringLiteral("application/pp-object-ref");
 const QString REF_CTX_ID = QStringLiteral("ContextID");
 const QString REF_REF_ID = QStringLiteral("ReferenceID");
 }
@@ -32,7 +32,7 @@ QMimeData* ObjectTreeWidget::mimeData(const QList<QTreeWidgetItem *> items) cons
     QByteArray ba = doc.toJson(QJsonDocument::Compact);
 
     QMimeData* data = new QMimeData;
-    data->setData(MIME_TYPE, ba);
+    data->setData(PP_MIMETYPE::ObjectContext_ObjectReference, ba);
     return data;
 }
 
@@ -73,7 +73,7 @@ QList<ObjectBase*> ObjectTreeWidget::solveReference(const QList<ObjectContext::A
 QList<ObjectContext::AnonymousObjectReference> ObjectTreeWidget::recoverReference(const QMimeData* data)
 {
     QList<ObjectContext::AnonymousObjectReference> result;
-    QByteArray ba = data->data(MIME_TYPE);
+    QByteArray ba = data->data(PP_MIMETYPE::ObjectContext_ObjectReference);
     QJsonDocument doc = QJsonDocument::fromJson(ba);
     QJsonArray itemArray = doc.array();
     for (auto item : itemArray) {

@@ -55,12 +55,14 @@ SOURCES += \
     src/gui/ElementTableView.cpp \
     src/gui/ExecuteOptionDialog.cpp \
     src/gui/ExecuteWindow.cpp \
+    src/gui/HierarchicalElementTreeController.cpp \
     src/gui/ImportFileDialog.cpp \
     src/gui/IntrinsicObjectCreationDialog.cpp \
     src/gui/NameListWidget.cpp \
     src/gui/NamedElementListController.cpp \
     src/gui/ObjectInputEdit.cpp \
     src/gui/ObjectTreeWidget.cpp \
+    src/gui/PPMIMETypes.cpp \
     src/gui/PlainTextObjectEditor.cpp \
     src/gui/SimpleParser/BoundaryDeclarationEditWidget.cpp \
     src/gui/SimpleParser/SPContentInputWidget.cpp \
@@ -126,12 +128,14 @@ HEADERS += \
     src/gui/ElementTableView.h \
     src/gui/ExecuteOptionDialog.h \
     src/gui/ExecuteWindow.h \
+    src/gui/HierarchicalElementTreeController.h \
     src/gui/ImportFileDialog.h \
     src/gui/IntrinsicObjectCreationDialog.h \
     src/gui/NameListWidget.h \
     src/gui/NamedElementListController.h \
     src/gui/ObjectInputEdit.h \
     src/gui/ObjectTreeWidget.h \
+    src/gui/PPMIMETypes.h \
     src/gui/PlainTextObjectEditor.h \
     src/gui/SimpleParser/BoundaryDeclarationEditWidget.h \
     src/gui/SimpleParser/SPContentInputWidget.h \
@@ -177,6 +181,8 @@ HEADERS += \
     src/lib/Tree/Tree.h \
     src/misc/MessageLogger.h \
     src/misc/Settings.h \
+    src/utils/BidirStringList.h \
+    src/utils/ContiguousIndexVector.h \
     src/utils/EventLoopHelper.h \
     src/utils/NameSorting.h \
     src/utils/TextUtilities.h \

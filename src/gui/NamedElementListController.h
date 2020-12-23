@@ -16,7 +16,7 @@
 
 #include <type_traits>
 
-#include "src/utils/NameSorting.h"
+#include "src/utils/BidirStringList.h"
 
 /**
  * @brief The NamedElementListControllerObject class wraps all signal/slot connection
@@ -124,7 +124,7 @@ public:
         return nameListModel;
     }
     bool isElementExist(const QString& name) {
-        return (nameSearchMap.find(name) != nameSearchMap.end());
+        return nameList.contains(name);
     }
 
     // for all setData() and getData(), the return type is void; the enable_if are for conditionally enable the function with given signature
@@ -149,10 +149,8 @@ public:
 private:
     // private functions that show how ElementWidget would be used
     void addElementDuringSetData(const QString& name, ElementWidget* widget) {
-        int index = nameList.size();
         nameList.push_back(name);
         widgetList.push_back(widget);
-        nameSearchMap.insert(name, index);
         QObject::connect(widget, &ElementWidget::dirty, &obj, &NamedElementListControllerObject::dirty);
         listWidget->addItem(name);
         stackedWidget->addWidget(widget);
@@ -232,8 +230,7 @@ private:
     QWidget* placeHolderPage = nullptr;
     QStringListModel* nameListModel = nullptr;
 
-    QHash<QString, int> nameSearchMap; // Name -> index in nameList
-    QStringList nameList;
+    BidirStringList nameList;
     QList<ElementWidget*> widgetList;
 };
 
@@ -273,14 +270,13 @@ void NamedElementListController<ElementWidget, isSortElementByName>::clearData()
 
     nameList.clear();
     widgetList.clear();
-    nameSearchMap.clear();
-    nameListModel->setStringList(nameList);
+    nameListModel->setStringList(nameList.getList());
 }
 
 template <typename ElementWidget, bool isSortElementByName>
 void NamedElementListController<ElementWidget, isSortElementByName>::finalizeSetData()
 {
-    nameListModel->setStringList(nameList);
+    nameListModel->setStringList(nameList.getList());
     if (!widgetList.isEmpty()) {
         listWidget->setCurrentRow(0);
     }
@@ -289,24 +285,16 @@ void NamedElementListController<ElementWidget, isSortElementByName>::finalizeSet
 template <typename ElementWidget, bool isSortElementByName>
 void NamedElementListController<ElementWidget, isSortElementByName>::tryGoToElement(const QString& element)
 {
-    int index = nameSearchMap.value(element, -1);
-
     // this would also emit signal that cause stackedWidget to be updated
-    listWidget->setCurrentRow(index);
+    listWidget->setCurrentRow(nameList.indexOf(element));
 }
 
 template <typename ElementWidget, bool isSortElementByName>
 void NamedElementListController<ElementWidget, isSortElementByName>::nameListUpdated()
 {
     listWidget->clear();
-    listWidget->addItems(nameList);
-
-    nameSearchMap.clear();
-    for (int i = 0, n = nameList.size(); i < n; ++i) {
-        nameSearchMap.insert(nameList.at(i), i);
-    }
-
-    obj.emitListUpdated(nameList);
+    listWidget->addItems(nameList.getList());
+    obj.emitListUpdated(nameList.getList());
 }
 
 template <typename ElementWidget, bool isSortElementByName> template <typename Helper>
@@ -520,7 +508,8 @@ template <typename ElementWidget, bool isSortElementByName>
 void NamedElementListController<ElementWidget, isSortElementByName>::handleRename(int index, const QString& newName)
 {
     Q_ASSERT(index >= 0 && index < nameList.size());
-    nameList[index] = newName;
+    QStringList curList = nameList.getList();
+    curList[index] = newName;
     // we keep a pointer here and push the notification after all the invariants are recovered
     ElementWidget* w = widgetList.at(index);
     int numElements = nameList.size();
@@ -529,13 +518,14 @@ void NamedElementListController<ElementWidget, isSortElementByName>::handleRenam
     int curIndex = -1;
     for (int i = 0; i < numElements; ++i) {
         auto& p = combinedPair.at(i);
-        nameList[i] = p.first;
+        curList[i] = p.first;
         widgetList[i] = p.second;
         if (p.second == w) {
             curIndex = i;
         }
     }
     notifyNameChange(newName, w);
+    nameList = curList;
     nameListUpdated();
     Q_ASSERT(curIndex >= 0);
     listWidget->setCurrentRow(curIndex);

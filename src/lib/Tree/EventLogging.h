@@ -230,7 +230,7 @@ public:
 
     // the variant that does the cast
     template<typename IndexTy>
-    int addEvent(IndexTy typeIndex, const QVariantList& data,
+    int addEvent(IndexTy typeIndex, const QVariantList& data = QVariantList(),
                  EventColorOption colorOption = EventColorOption::Referable,
                  const QVector<EventReference>& references = QVector<EventReference>(),
                  const QVector<EventLocationRemark>& locationRemarks = QVector<EventLocationRemark>()

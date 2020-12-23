@@ -107,6 +107,7 @@ public:
     struct Pattern {
         QString typeName;   // type name of generated tree node; empty for exit pattern
         QVector<PatternElement> pattern;    // the pattern for matching
+        int patternPass = 0;
 
         void saveToXML(QXmlStreamWriter& xml) const;
         bool loadFromXML(QXmlStreamReader& xml, StringCache& strCache);
@@ -114,7 +115,7 @@ public:
 
     struct MatchRuleNode {
         QString name;
-        QStringList parentNodeNameList;
+        QStringList childNodeNameList;
         QVector<Pattern> patterns;
 
         void saveToXML(QXmlStreamWriter& xml) const;
@@ -127,7 +128,7 @@ public:
         QVector<ContentType> contentTypes; // the first item will be used for anonymous ones
         QVector<BalancedParenthesis> parenthesis;
         QStringList whitespaceList; // even we mean for list of single characters, QChar only has 16 bits and we need a QString to represent arbitrary (say UTF-32) characters
-        QString rootRuleNodeName;
+        QStringList topNodeList; // child node names for the pseudo root node
         bool flag_skipEmptyLineBeforeMatching = true;
 
         void saveToXML(QXmlStreamWriter& xml) const;
@@ -232,8 +233,16 @@ private:
     QHash<QString, int> boundaryNameToIndexMap;
     QHash<QString, int> contentTypeNameToIndexMap;
     QHash<int, QVector<int>> classBasedBoundaryChildList;
-    QVector<QVector<int>> childNodeMatchRuleVec; // NodeMatchRuleIndex -> vec of child node match rule index
-    int rootNodeRuleIndex = -1;
+
+    // for match rule nodes, there will be a pseudo root node created
+    // the pseudo root (match rule) node will have index of d.matchRuleNodes.size()
+    struct MatchPassData {
+        QHash<int, QVector<int>> patterns; // ruleNodeIndex -> patternIndices
+        int pass = 0;
+    };
+    using ContextMatchRuleData = QVector<MatchPassData>;
+    QVector<ContextMatchRuleData> childNodeMatchRules;
+    const int rootNodeRuleIndex = 0;
     // for now, white space related special character search is done by regular expressions
     int regexIndex_SpecialCharacter_OptionalWhiteSpace = -1;
     int regexIndex_SpecialCharacter_WhiteSpaces = -1;
@@ -254,16 +263,13 @@ class SimpleParserEvent : public EventInterpreter
     Q_DECLARE_TR_FUNCTIONS(MyClass)
 public:
     enum class EventID: int {
-        RootNodeSpecification,
-        RootNodeDirectCreation,
-        RootNodePatternMatchCreation,
-        RootNodePatternMatchFailed,
+        RootNodeCreation,
         EmptyLineSkipped,
-        FramePushed,
-        FramePoped,
         FramePopedForEarlyExit,
         RootNodeNoFrame,
         NodeAdded,
+        MatchPassNoMatching,
+        MatchFailed,
         MatchFinished,
         GarbageAtEnd,
         PatternMatched,
@@ -272,19 +278,20 @@ public:
     Q_ENUM(EventID)
 
     enum class EventReferenceID: int {
-        RootNodeSpecification,
-        RootNodeCreationEvent,
         PatternMatch_MatchFinalEvent,
         PatternMatch_SupportiveEvent, // both positive and negative
         PatternBestCandidateComparison_PreviousEvent,
         PatternBestCandidateComparison_NewEvent,
-        FramePush_ParentNodeCreationEvent,
         FramePop_PushEvent,
         FramePop_ExitPatternEvent,
         FramePop_MatchEvent,
         NodeCreation_FrameEvent,
         NodeCreation_MatchEvent,
         NodeCreation_SupportiveEvent,
+        MatchPassFail_FrameEvent,
+        MatchPassFail_MatchEvent,
+        MatchFailed_FrameEvent,
+        MatchFailed_PassFailEvent,
         MatchFinished_FrameEvent,
         PositionMapping_NodeEvent,
         PostMatchingCheck_MatchFinishEvent,
@@ -313,8 +320,6 @@ public:
     virtual EventImportance getEventImportance (int eventTypeIndex) const override {
         switch (eventTypeIndex) {
         default: break;
-        case static_cast<int>(EventID::RootNodeDirectCreation):
-        case static_cast<int>(EventID::RootNodePatternMatchCreation):
         case static_cast<int>(EventID::NodeAdded):
             return EventImportance::AlwaysPrimary;
         }
@@ -364,38 +369,9 @@ public:
     }
 
     // functions to actually log events
-    static int RootNodeSpecification(EventLogger* logger, int rootNodeIndex, const QString& rootNodeName)
+    static int RootNodeCreation(EventLogger* logger)
     {
-        return logger->addEvent(SimpleParserEvent::EventID::RootNodeSpecification,
-                                QVariantList() << rootNodeIndex << rootNodeName);
-    }
-
-    static int RootNodeDirectCreation(EventLogger* logger, int rootNodeSpecificationEvent)
-    {
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::RootNodeSpecification, rootNodeSpecificationEvent);
-        return logger->addEvent(SimpleParserEvent::EventID::RootNodeDirectCreation,
-                                QVariantList(), EventColorOption::Referable, refs, QVector<EventLocationRemark>());
-    }
-
-    static int RootNodePatternMatchCreation(EventLogger* logger, QString rootNodeTypeName, int rootNodePatternEvent, const QList<int>& positiveMatchEvent, const QList<int>& negativeMatchEvent, int startPos, int endPos)
-    {
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::PatternMatch_MatchFinalEvent, rootNodePatternEvent);
-        EventReference::addReference(refs, EventReferenceID::PatternMatch_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
-        QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
-        return logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchCreation, QVariantList() << rootNodeTypeName, EventColorOption::Referable, refs, locations);
-    }
-
-    static int RootNodePatternMatchFailed(EventLogger* logger, int failedPos, int rootNodeSpecificationEvent, const QList<int>& positiveMatchEvent, const QList<int>& negativeMatchEvent)
-    {
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::RootNodeSpecification, rootNodeSpecificationEvent);
-        EventReference::addReference(refs, EventReferenceID::PatternMatch_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
-        QVector<EventLocationRemark> locations = getSingleInputLoc(failedPos, failedPos);
-        int code = logger->addEvent(SimpleParserEvent::EventID::RootNodePatternMatchFailed, QVariantList(), EventColorOption::Referable, refs, locations);
-        logger->passFailed(code);
-        return code;
+        return logger->addEvent(SimpleParserEvent::EventID::RootNodeCreation);
     }
 
     static int EmptyLineSkipped(EventLogger* logger, int startPos, int endPos, int startLineNum, int endLineNum)
@@ -404,28 +380,6 @@ public:
         QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::EmptyLineSkipped,
                                 QVariantList() << startLineNum << endLineNum, EventColorOption::Passive, QVector<EventReference>(), locations);
-    }
-
-    static int FramePushed(EventLogger* logger, int parentNodeAddEvent, int parentRuleNodeIndex, const QVector<int>& childRuleNodeIndices, const SimpleParser::Data& parserData)
-    {
-        QVariantList data;
-        // the first string is the name of "parent" rule node
-        // all subsequent string are the name of child rule nodes
-        data.push_back(parserData.matchRuleNodes.at(parentRuleNodeIndex).name);
-        for (int idx : childRuleNodeIndices) {
-            data.push_back(parserData.matchRuleNodes.at(idx).name);
-        }
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::FramePush_ParentNodeCreationEvent, parentNodeAddEvent);
-        return logger->addEvent(SimpleParserEvent::EventID::FramePushed, data, EventColorOption::Referable, refs, QVector<EventLocationRemark>());
-    }
-
-    static int FramePoped(EventLogger* logger, int frameEvent, const QList<int>& matchFailEvents)
-    {
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::FramePop_PushEvent, frameEvent);
-        EventReference::addReference(refs, EventReferenceID::FramePop_MatchEvent, QList<int>(), matchFailEvents);
-        return logger->addEvent(SimpleParserEvent::EventID::FramePoped, QVariantList(), EventColorOption::Referable, refs, QVector<EventLocationRemark>());
     }
 
     static int FramePopedForEarlyExit(EventLogger* logger, int frameEvent, int patternEvent, const QList<int>& positiveMatchEvent, const QList<int>& negativeMatchEvent)
@@ -437,13 +391,6 @@ public:
         return logger->addEvent(SimpleParserEvent::EventID::FramePopedForEarlyExit, QVariantList(), EventColorOption::Referable, refs, QVector<EventLocationRemark>());
     }
 
-    static int RootNodeNoFrame(EventLogger* logger, int parentNodeEvent)
-    {
-        QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::RootNodeCreationEvent, parentNodeEvent);
-        return logger->addEvent(SimpleParserEvent::EventID::RootNodeNoFrame, QVariantList(), EventColorOption::Referable, refs, QVector<EventLocationRemark>());
-    }
-
     static int NodeAdded(EventLogger* logger, QString nodeTypeName, int frameEvent, int patternEvent, const QList<int>& positiveMatchEvent, const QList<int>& negativeMatchEvent, int startPos, int endPos)
     {
         QVector<EventReference> refs;
@@ -452,6 +399,22 @@ public:
         EventReference::addReference(refs, EventReferenceID::NodeCreation_SupportiveEvent, positiveMatchEvent, negativeMatchEvent);
         QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
         return logger->addEvent(SimpleParserEvent::EventID::NodeAdded, QVariantList() << nodeTypeName, EventColorOption::Referable, refs, locations);
+    }
+
+    static int MatchPassNoMatching(EventLogger* logger, int frameEvent, int passIndex, int frameIndex, const QList<int>& matchFailEvents)
+    {
+        QVector<EventReference> refs;
+        EventReference::addReference(refs, EventReferenceID::MatchPassFail_FrameEvent, frameEvent);
+        EventReference::addReference(refs, EventReferenceID::MatchPassFail_MatchEvent, matchFailEvents, QList<int>());
+        return logger->addEvent(SimpleParserEvent::EventID::MatchPassNoMatching, QVariantList() << passIndex << frameIndex, EventColorOption::Referable, refs, QVector<EventLocationRemark>());
+    }
+
+    static int MatchFailed(EventLogger* logger, int frameEvent, const QList<int>& passFailEvents)
+    {
+        QVector<EventReference> refs;
+        EventReference::addReference(refs, EventReferenceID::MatchFailed_FrameEvent, frameEvent);
+        EventReference::addReference(refs, EventReferenceID::MatchFailed_PassFailEvent, passFailEvents, QList<int>());
+        return logger->addEvent(SimpleParserEvent::EventID::MatchFailed, QVariantList(), EventColorOption::Referable, refs, QVector<EventLocationRemark>());
     }
 
     static int MatchFinished(EventLogger* logger, int lastFrameEvent, int pos)

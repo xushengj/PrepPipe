@@ -10,7 +10,7 @@ SPRuleInputWidget::SPRuleInputWidget(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->parentListWidget->setAcceptGotoRequest(true);
-    connect(ui->parentListWidget, &NameListWidget::gotoRequested, this, &SPRuleInputWidget::gotoRuleNodeRequested);
+    //connect(ui->parentListWidget, &NameListWidget::gotoRequested, this, &SPRuleInputWidget::gotoRuleNodeRequested);
     connect(ui->patternComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SPRuleInputWidget::currentPatternChanged);
     connect(ui->addPatternPushButton, &QPushButton::clicked, this, &SPRuleInputWidget::addPatternRequested);
     connect(ui->deletePatternPushButton, &QPushButton::clicked, this, &SPRuleInputWidget::deleteCurrentPatternRequested);
@@ -41,7 +41,6 @@ void SPRuleInputWidget::otherDataUpdated()
 void SPRuleInputWidget::setData(const SimpleParser::MatchRuleNode& dataArg)
 {
     defaultNodeTypeName = dataArg.name;
-    ui->parentListWidget->setData(dataArg.parentNodeNameList);
     for (auto& data : patterns) {
         ui->patternStackedWidget->removeWidget(data.widget);
         delete data.widget;
@@ -80,10 +79,10 @@ void SPRuleInputWidget::updateButtonState()
     ui->deletePatternPushButton->setEnabled(!patterns.isEmpty());
 }
 
-void SPRuleInputWidget::getData(const QString &name, SimpleParser::MatchRuleNode& dataArg)
+void SPRuleInputWidget::getData(const QString &name, const HierarchicalElementTreeControllerObject::GraphData *graph, SimpleParser::MatchRuleNode& dataArg)
 {
     dataArg.name = name;
-    dataArg.parentNodeNameList = ui->parentListWidget->getData();
+    dataArg.childNodeNameList = graph->getChildElementList(name);
     dataArg.patterns.clear();
     int numPatterns = patterns.size();
     dataArg.patterns.resize(numPatterns);

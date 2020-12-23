@@ -44,7 +44,7 @@
          <property name="childrenCollapsible">
           <bool>false</bool>
          </property>
-         <widget class="QListWidget" name="ruleNameListWidget">
+         <widget class="QTreeView" name="ruleNameTreeView">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
             <horstretch>0</horstretch>

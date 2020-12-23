@@ -5,6 +5,7 @@
 #include "src/lib/Tree/SimpleParser.h"
 #include "src/gui/SimpleParser/SPRulePatternInputWidget.h"
 #include "src/gui/SimpleParser/SPRulePatternQuickInputDialog.h"
+#include "src/gui/HierarchicalElementTreeController.h"
 
 namespace Ui {
 class SPRuleInputWidget;
@@ -27,14 +28,15 @@ public:
     ~SPRuleInputWidget();
 
     void setData(const SimpleParser::MatchRuleNode& dataArg);
-    void setData(const QString& name, const SimpleParser::MatchRuleNode& dataArg) {
+    void setData(const QString& name, const HierarchicalElementTreeControllerObject::GraphData* graph, const SimpleParser::MatchRuleNode& dataArg) {
         Q_UNUSED(name)
+        Q_UNUSED(graph)
         setData(dataArg);
     }
     void bindCommonHelper(CommonHelperData& helper) {
         helperPtr = &helper;
     }
-    void getData(const QString& name, SimpleParser::MatchRuleNode& dataArg);
+    void getData(const QString& name, const HierarchicalElementTreeControllerObject::GraphData* graph, SimpleParser::MatchRuleNode& dataArg);
 
     // Note: all the callback should be set before setting data
 

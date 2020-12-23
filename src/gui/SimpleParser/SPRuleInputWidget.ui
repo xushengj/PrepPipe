@@ -28,6 +28,9 @@
    </property>
    <item>
     <widget class="QGroupBox" name="parentGroupBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>Parents</string>
      </property>

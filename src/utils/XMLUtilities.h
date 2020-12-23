@@ -103,6 +103,23 @@ bool readAttribute(QXmlStreamReader& xml, const char* const currentElement,
                    std::initializer_list<QString> possibleValues,
                    const char * const reason);
 
+// WARNING: remember to set initial values of the attribute before calling the read function
+bool readOptionalAttribute(QXmlStreamReader& xml, const char* const currentElement,
+                           const QString& attributedElement,
+                           const QString& attributeName,
+                           std::function<bool(QStringRef)> attributeReadCB,
+                           std::initializer_list<QString> possibleValues,
+                           const char * const reason);
+
+inline bool readOptionalIntAttribute(QXmlStreamReader& xml, const char* const currentElement, const QString& attributedElement, const QString& attributeName, int& intVal){
+    return readOptionalAttribute(xml, currentElement, attributedElement, attributeName,
+        [&](QStringRef str)->bool{
+            bool isGood = false;
+            intVal = str.toInt(&isGood);
+            return isGood;
+        }, {}, "the value is not an integer");
+}
+
 bool readStringAttribute(QXmlStreamReader& xml, const char* const currentElement,
                          const QString& attributedElement,
                          const QString& attributeName,

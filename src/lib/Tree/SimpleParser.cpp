@@ -121,22 +121,65 @@ SimpleParser::SimpleParser(const Data& d)
     }
 
     // build the match rule node name map
+    // pseudo root node is the last node
     QHash<QString, int> matchRuleNodeNameToIndexMap;
     for (int i = 0, n = d.matchRuleNodes.size(); i < n; ++i) {
         const auto& rule = d.matchRuleNodes.at(i);
         matchRuleNodeNameToIndexMap.insert(rule.name, i);
     }
-    childNodeMatchRuleVec.resize(d.matchRuleNodes.size());
+    childNodeMatchRules.resize(d.matchRuleNodes.size()+1);
+    auto populateChildNodeMatchRules = [&](int matchRuleNodeIndex, const QVector<int>& childNodes) -> void {
+        // the pattern matching when a set of nodes are activated is done as follows:
+        // all patterns have a "pass" value, and all patterns from all nodes with the same "pass" is considered together
+        // the matching start from pass 0, then 1, 2, ..., and then -inf, .., -2, -1
+        QMap<int, QHash<int, QVector<int>>> positivePasses;
+        QMap<int, QHash<int, QVector<int>>> negativePasses;
+        for (int nodeIndex : childNodes) {
+            const auto& nodeData = d.matchRuleNodes.at(nodeIndex);
+            for (int patternIndex = 0; patternIndex < nodeData.patterns.size(); ++patternIndex) {
+                const auto& pattern = nodeData.patterns.at(patternIndex);
+                int passIndex = pattern.patternPass;
+                if (passIndex >= 0) {
+                    positivePasses[passIndex][nodeIndex].push_back(patternIndex);
+                } else {
+                    negativePasses[passIndex][nodeIndex].push_back(patternIndex);
+                }
+            }
+        }
+        auto& rulesData = childNodeMatchRules[matchRuleNodeIndex];
+        for (auto iter = positivePasses.begin(), iterEnd = positivePasses.end(); iter != iterEnd; ++iter) {
+            rulesData.push_back(SimpleParser::MatchPassData());
+            auto& passData = rulesData.back();
+            passData.pass = iter.key();
+            passData.patterns = iter.value();
+        }
+        for (auto iter = negativePasses.begin(), iterEnd = negativePasses.end(); iter != iterEnd; ++iter) {
+            rulesData.push_back(SimpleParser::MatchPassData());
+            auto& passData = rulesData.back();
+            passData.pass = iter.key();
+            passData.patterns = iter.value();
+        }
+    };
+
     for (int i = 0, n = d.matchRuleNodes.size(); i < n; ++i) {
         const auto& rule = d.matchRuleNodes.at(i);
-        for (const auto& parent : rule.parentNodeNameList) {
-            int parentIndex = matchRuleNodeNameToIndexMap.value(parent, -1);
-            Q_ASSERT(parentIndex != -1);
-            childNodeMatchRuleVec[parentIndex].push_back(i);
+        QVector<int> childNodesVec;
+        for (const auto& child : rule.childNodeNameList) {
+            int childIndex = matchRuleNodeNameToIndexMap.value(child, -1);
+            Q_ASSERT(childIndex != -1);
+            childNodesVec.push_back(childIndex);
         }
+        populateChildNodeMatchRules(i, childNodesVec);
     }
-    rootNodeRuleIndex = matchRuleNodeNameToIndexMap.value(d.rootRuleNodeName, -1);
-    Q_ASSERT(rootNodeRuleIndex != -1);
+    {
+        QVector<int> topNodes;
+        for (const QString& topNode : d.topNodeList) {
+            int topNodeIndex = matchRuleNodeNameToIndexMap.value(topNode, -1);
+            Q_ASSERT(topNodeIndex != -1);
+            topNodes.push_back(topNodeIndex);
+        }
+        populateChildNodeMatchRules(d.matchRuleNodes.size(), topNodes);
+    }
 }
 
 bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *logger)
@@ -148,11 +191,12 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
 
     struct RuleStackFrame {
         TreeBuilder::Node* ptr = nullptr;
-        QVector<int> childMatchRules;
+        SimpleParser::ContextMatchRuleData childMatchRules;
         int event = -1;
+        QVector<std::pair<int,int>> passData; // pass -> [<frame, matchPassIndex>]
 
         RuleStackFrame() = default;
-        RuleStackFrame(TreeBuilder::Node* node, const QVector<int>& child, int eventID)
+        RuleStackFrame(TreeBuilder::Node* node, const SimpleParser::ContextMatchRuleData& child, int eventID)
             : ptr(node), childMatchRules(child), event(eventID)
         {}
         RuleStackFrame(const RuleStackFrame&) = default;
@@ -183,78 +227,72 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
         }
     };
 
+    auto pushFrame = [&](TreeBuilder::Node* node, const SimpleParser::ContextMatchRuleData& child, int eventID) -> void {
+        // step 1: push the frame
+        ruleStack.push_back(RuleStackFrame(node, child, eventID));
+
+        // step 2: figure out ordering of passes across all frames on the stack
+        struct TmpPassRecord {
+            int passVal;
+            int frame;
+            int framePassIndex;
+        };
+        int numPassData = 0;
+        for (int frameIndex = 0, numFrame = ruleStack.size(); frameIndex < numFrame; ++frameIndex) {
+            const auto& frame = ruleStack.at(frameIndex);
+            numPassData += frame.childMatchRules.size();
+        }
+        std::vector<std::pair<int, std::pair<int, int>>> passRecords; // <passVal, <frame, framePassIndex>>
+        passRecords.reserve(numPassData);
+
+        for (int frameIndex = 0, numFrame = ruleStack.size(); frameIndex < numFrame; ++frameIndex) {
+            const auto& frame = ruleStack.at(frameIndex);
+            for (int passDataIndex = 0, numPass = frame.childMatchRules.size(); passDataIndex < numPass; ++passDataIndex) {
+                const auto& passData = frame.childMatchRules.at(passDataIndex);
+                int passVal = passData.pass;
+                passRecords.push_back(std::make_pair(passVal, std::make_pair(frameIndex, passDataIndex)));
+            }
+        }
+
+        std::sort(passRecords.begin(), passRecords.end(),
+        [](
+                  const std::pair<int, std::pair<int, int>>& lhs,
+                  const std::pair<int, std::pair<int, int>>& rhs) -> bool {
+            if (lhs.first != rhs.first) {
+                // pass is different
+               if (lhs.first >= 0 && rhs.first < 0) {
+                    return true;
+                } else if (lhs.first < 0 && rhs.first >= 0) {
+                    return false;
+                } else {
+                    // same interval
+                    return lhs.first < rhs.first;
+                }
+            } else {
+                // same pass
+                return lhs.second.first < rhs.second.first;
+            }
+        });
+
+        auto& passData = ruleStack.back().passData;
+        passData.reserve(passRecords.size());
+        for (const auto& record : passRecords) {
+            passData.push_back(record.second);
+        }
+    };
+
     // bootstrap the first node
     {
-        const MatchRuleNode& rootRule = data.matchRuleNodes.at(rootNodeRuleIndex);
-        TreeBuilder::Node* root = nullptr;
-        int rootRuleEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodeSpecification, logger, rootNodeRuleIndex, rootRule.name);
-
-        int rootNodeEventID = -1;
-        int startPos = pos;
-        if (rootRule.patterns.isEmpty()) {
-            // just create a node with root rule's name as type
-            root = builder.addNode(nullptr);
-            root->typeName = rootRule.name;
-            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodeDirectCreation, logger, rootRuleEventID);
-        } else {
-            // try all patterns
-            if (data.flag_skipEmptyLineBeforeMatching) {
-                skipEmptyLines();
-            }
-            startPos = pos;
-            QList<int> positiveMatchEvents;
-            QList<int> negativeMatchEvents;
-            PatternMatchResult curBestResult;
-            for (const auto& p : rootRule.patterns) {
-                PatternMatchResult curResult = tryPattern(p, pos, rootRuleEventID);
-                if (logger) {
-                    Q_ASSERT(curResult.nodeFinalEvent >= 0);
-                }
-                if (!curResult) {
-                    negativeMatchEvents.push_back(curResult.nodeFinalEvent);
-                    continue;
-                }
-                positiveMatchEvents.push_back(curResult.nodeFinalEvent);
-                if (!curBestResult) {
-                    // this is the first match
-                    curBestResult = curResult;
-                } else {
-                    // this is not the first match
-                    if (curResult.isBetterThan(curBestResult)) {
-                        curBestResult = curResult;
-                    }
-                }
-            }
-            if (!curBestResult) {
-                SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchFailed, logger, pos, rootRuleEventID, positiveMatchEvents, negativeMatchEvents);
-                return false;
-            }
-            pos += curBestResult.totalConsumedLength;
-            root = curBestResult.node;
-            builder.setRoot(root);
-            rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodePatternMatchCreation, logger, root->typeName, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents, startPos, pos);
-            lastEventChangingPos = rootNodeEventID;
-        }
-        treeNodeSequenceNumberToEventMap.insert(root->getSequenceNumber(), rootNodeEventID);
-        const auto& rootChildRules = childNodeMatchRuleVec.at(rootNodeRuleIndex);
-        if (!rootChildRules.isEmpty()) {
-            int e = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, rootNodeEventID, rootNodeRuleIndex, rootChildRules, data);
-            ruleStack.push_back(RuleStackFrame(root, rootChildRules, e));
-            lastEventChangingFrame = e;
-        } else {
-            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::RootNodeNoFrame, logger, rootNodeEventID);
-        }
+        int rootNodeEventID = SimpleParserEvent::Log(SimpleParserEvent::RootNodeCreation, logger);
+        auto* rootPtr = builder.addNode(nullptr);
+        pushFrame(rootPtr, childNodeMatchRules.back(), rootNodeEventID);
+        lastEventChangingFrame = rootNodeEventID;
+        treeNodeSequenceNumberToEventMap.insert(rootPtr->getSequenceNumber(), rootNodeEventID);
     }
 
     // main loop
+    bool isMatchFailed = false;
     while (!ruleStack.isEmpty() && (pos < length)) {
-        const auto& frame = ruleStack.back();
-
-        PatternMatchResult curBestResult;
-        int childNodeRuleIndex = -1;
-        QList<int> positiveMatchEvents;
-        QList<int> negativeMatchEvents;
-
         if (data.flag_skipEmptyLineBeforeMatching) {
             skipEmptyLines();
         }
@@ -263,66 +301,103 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
             break;
         }
 
+        const auto& frame = ruleStack.back();
+        const auto passData = frame.passData; // implicit sharing; create another reference so that no bad access is made when frame is poped inside the body
+        QList<int> passMatchFailEvents;
         int startPos = pos;
-        for (int childRuleIndex : frame.childMatchRules) {
-            const MatchRuleNode& rule = data.matchRuleNodes.at(childRuleIndex);
-            for (const auto& p : rule.patterns) {
-                PatternMatchResult curResult = tryPattern(p, pos, frame.event);
-                if (logger) {
-                    Q_ASSERT(curResult.nodeFinalEvent >= 0);
-                }
-                if (!curResult) {
-                    negativeMatchEvents.push_back(curResult.nodeFinalEvent);
-                    continue;
-                }
-                positiveMatchEvents.push_back(curResult.nodeFinalEvent);
-                if (!curBestResult) {
-                    // first match
-                    curBestResult = curResult;
-                    childNodeRuleIndex = childRuleIndex;
-                } else {
-                    if (curResult.isBetterThan(curBestResult)) {
+        bool isMatchFound = false;
+        for (const auto& pass : passData) {
+            int frameIndex = pass.first;
+            int passIndex = pass.second;
+            const auto& curPassData = ruleStack.at(frameIndex).childMatchRules.at(passIndex);
+            int passNum = curPassData.pass;
+
+            QList<int> positiveMatchEvents;
+            QList<int> negativeMatchEvents;
+            PatternMatchResult curBestResult;
+            int bestResultRuleNodeIndex = -1;
+            int bestResultPatternIndex = -1;
+
+            for(auto iter = curPassData.patterns.begin(), iterEnd = curPassData.patterns.end(); iter != iterEnd; ++iter) {
+                int matchRuleNodeIndex = iter.key();
+                const auto& patterns = data.matchRuleNodes.at(matchRuleNodeIndex).patterns;
+                for (int patternIndex : iter.value()) {
+                    const auto& curPattern = patterns.at(patternIndex);
+                    PatternMatchResult curResult = tryPattern(curPattern, pos, frame.event);
+                    if (logger) {
+                        Q_ASSERT(curResult.nodeFinalEvent >= 0);
+                    }
+                    if (!curResult) {
+                        negativeMatchEvents.push_back(curResult.nodeFinalEvent);
+                        continue;
+                    }
+                    positiveMatchEvents.push_back(curResult.nodeFinalEvent);
+                    if (!curBestResult || curResult.isBetterThan(curBestResult)) {
+                        // first match
                         curBestResult = curResult;
-                        childNodeRuleIndex = childRuleIndex;
+                        bestResultRuleNodeIndex = matchRuleNodeIndex;
+                        bestResultPatternIndex = patternIndex;
                     }
                 }
             }
+
+            if (!curBestResult) {
+                int matchFailEvent = SimpleParserEvent::Log(SimpleParserEvent::MatchPassNoMatching, logger, frame.event, passNum, frameIndex, negativeMatchEvents);
+                if (matchFailEvent >= 0) {
+                    passMatchFailEvents.push_back(matchFailEvent);
+                }
+                continue;
+            } else {
+                // we get a match
+                isMatchFound = true;
+
+                TreeBuilder::Node* node = curBestResult.node;
+                Q_ASSERT(node);
+
+                pos += curBestResult.totalConsumedLength;
+                state.curPosition = pos;
+                lastEventChangingPos = curBestResult.nodeFinalEvent;
+
+                // merge the pass fail events into negative match events
+                negativeMatchEvents.append(passMatchFailEvents);
+
+                // if the best match is an early exit pattern, we also go to its parent
+                auto& bestMatchFrame = ruleStack[frameIndex];
+                if (curBestResult.node->typeName.isEmpty()) {
+                    lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::FramePopedForEarlyExit, logger, bestMatchFrame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
+                    assert(frameIndex > 0);
+                    ruleStack.resize(frameIndex);
+                    break; // stop trying other passes
+                }
+
+                TreeBuilder::Node* parent = bestMatchFrame.ptr;
+                node->setParent(parent);
+
+                int nodeAddEvent = SimpleParserEvent::Log(SimpleParserEvent::NodeAdded, logger, node->typeName, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents, startPos, pos);
+                treeNodeSequenceNumberToEventMap.insert(node->getSequenceNumber(), nodeAddEvent);
+
+                if (frameIndex != ruleStack.size() - 1) {
+                    // we are not matching at the top most frame
+                    // just drop all frames above the best matching frame
+                    ruleStack.resize(frameIndex + 1);
+                    lastEventChangingFrame = nodeAddEvent;
+                }
+
+
+                const auto& childRules = childNodeMatchRules.at(bestResultRuleNodeIndex);
+                if (!childRules.isEmpty()) {
+                    pushFrame(node, childRules, nodeAddEvent);
+                    lastEventChangingFrame = nodeAddEvent;
+                }
+
+                break; // stop trying other passes
+            }
         }
-
-        if (childNodeRuleIndex == -1) {
-            // no matches in current node rule
-            // go to parent
-            Q_ASSERT(positiveMatchEvents.isEmpty());
-            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::FramePoped, logger, frame.event, negativeMatchEvents);
-            ruleStack.pop_back();
-            continue;
-        }
-
-        TreeBuilder::Node* node = curBestResult.node;
-        Q_ASSERT(node);
-
-        pos += curBestResult.totalConsumedLength;
-        state.curPosition = pos;
-        lastEventChangingPos = curBestResult.nodeFinalEvent;
-
-        // if the best match is an early exit pattern, we also go to parent
-        if (curBestResult.node->typeName.isEmpty()) {
-            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::FramePopedForEarlyExit, logger, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents);
-            ruleStack.pop_back();
-            continue;
-        }
-
-        // we found the best match
-        TreeBuilder::Node* parent = frame.ptr;
-        node->setParent(parent);
-        int nodeAddEvent = SimpleParserEvent::Log(SimpleParserEvent::NodeAdded, logger, node->typeName, frame.event, curBestResult.nodeFinalEvent, positiveMatchEvents, negativeMatchEvents, startPos, pos);
-        treeNodeSequenceNumberToEventMap.insert(node->getSequenceNumber(), nodeAddEvent);
-
-        const auto& childRules = childNodeMatchRuleVec.at(childNodeRuleIndex);
-        if (!childRules.isEmpty()) {
-            int framePushEvent = SimpleParserEvent::Log(SimpleParserEvent::FramePushed, logger, nodeAddEvent, childNodeRuleIndex, childRules, data);
-            ruleStack.push_back(RuleStackFrame(node, childRules, framePushEvent));
-            lastEventChangingFrame = framePushEvent;
+        if (!isMatchFound) {
+            // a match is not made
+            lastEventChangingFrame = SimpleParserEvent::Log(SimpleParserEvent::MatchFailed, logger, frame.event, passMatchFailEvents);
+            isMatchFailed = true;
+            break;
         }
     }
 
@@ -338,7 +413,13 @@ bool SimpleParser::performParsing(const QString& src, Tree& dest, EventLogger *l
         SimpleParserEvent::Log(SimpleParserEvent::TextToNodePositionMapping, logger, i, iter.value());
     }
 
-    // okay, done; no further match possible
+    if (isMatchFailed) {
+        if (logger) {
+            logger->passFailed(lastEventChangingFrame);
+        }
+        return false;
+    }
+
     // check if all text is consumed
     while (pos < src.length()) {
         QStringRef str(&src, pos, src.length() - pos);
@@ -800,7 +881,7 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
             positionMap.insert(matchPos, std::make_pair(startPos, data));
         }
 
-        return std::make_pair(startOffset, length);
+        return std::make_pair(startOffset - startPos, length);
     } else {
         if (iter != positionMap.end() && iter.key() == state.strLength) {
             iter.value().first = startPos;
@@ -930,16 +1011,20 @@ const QString XML_BALANCED_PARENTHESIS_LIST = QStringLiteral("BalancedParanthesi
 const QString XML_PARENTHESIS = QStringLiteral("Paranthesis");
 const QString XML_WHITESPACE_LIST = QStringLiteral("WhiteSpaces");
 const QString XML_WHITESPACE = QStringLiteral("WhiteSpace");
-const QString XML_ROOT_NODE = QStringLiteral("RootMatchRuleNode");
+const QString XML_TOP_NODE_LIST = QStringLiteral("TopMatchRuleNodeList");
+const QString XML_NODE = QStringLiteral("Node");
 
 const QString XML_TYPE = QStringLiteral("Type");
 const QString XML_NAME = QStringLiteral("Name");
+const QString XML_CHILD_LIST = QStringLiteral("Children");
+const QString XML_CHILD = QStringLiteral("Child");
 const QString XML_PARENT_LIST = QStringLiteral("Parents");
 const QString XML_PARENT = QStringLiteral("Parent");
 const QString XML_PATTERN_LIST = QStringLiteral("Patterns");
 const QString XML_PATTERN = QStringLiteral("Pattern");
 
 const QString XML_TYPENAME = QStringLiteral("TypeName");
+const QString XML_PASS = QStringLiteral("Pass");
 const QString XML_PATTERN_ELEMENT_LIST = QStringLiteral("PatternElements");
 const QString XML_PATTERN_ELEMENT = QStringLiteral("Element");
 
@@ -1038,11 +1123,11 @@ bool getBoundaryTypeFromString(QStringRef str, SimpleParser::BoundaryType& ty)
 
 void SimpleParser::Data::saveToXML_NoTerminate(QXmlStreamWriter& xml) const
 {
-    xml.writeTextElement(XML_ROOT_NODE, rootRuleNodeName);
     writeSortedVec(xml, matchRuleNodes,     XML_MATCH_RULE_NODE_LIST,       XML_MATCH_RULE_NODE);
     writeSortedVec(xml, namedBoundaries,    XML_NAMED_BOUNDARY_LIST,        XML_NAMED_BOUNDARY);
     writeSortedVec(xml, contentTypes,       XML_CONTENT_TYPE_LIST,          XML_CONTENT_TYPE);
     writeSortedVec(xml, parenthesis,        XML_BALANCED_PARENTHESIS_LIST,  XML_PARENTHESIS);
+    XMLUtil::writeStringList(xml, topNodeList, XML_TOP_NODE_LIST, XML_NODE, true);
     XMLUtil::writeStringList(xml, whitespaceList, XML_WHITESPACE_LIST, XML_WHITESPACE, true);
     XMLUtil::writeFlagElement(xml, {{flag_skipEmptyLineBeforeMatching, XML_FLAG_SKIP_EMPTY_LINE_BEFORE_MATCHING}}, XML_FLAGS);
 }
@@ -1056,9 +1141,6 @@ void SimpleParser::Data::saveToXML(QXmlStreamWriter& xml) const
 bool SimpleParser::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCache& strCache)
 {
     const char* curElement = "SimpleParser::Data";
-    if (Q_UNLIKELY(!XMLUtil::readString(xml, curElement, XML_ROOT_NODE, rootRuleNodeName, strCache))) {
-        return false;
-    }
     if (Q_UNLIKELY(!XMLUtil::readLoadableList(xml, curElement, XML_MATCH_RULE_NODE_LIST, XML_MATCH_RULE_NODE, matchRuleNodes, strCache))) {
         return false;
     }
@@ -1069,6 +1151,9 @@ bool SimpleParser::Data::loadFromXML_NoTerminate(QXmlStreamReader& xml, StringCa
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readLoadableList(xml, curElement, XML_BALANCED_PARENTHESIS_LIST, XML_PARENTHESIS, parenthesis, strCache))) {
+        return false;
+    }
+    if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_TOP_NODE_LIST, XML_NODE, topNodeList, strCache))) {
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_WHITESPACE_LIST, XML_WHITESPACE, whitespaceList, strCache))) {
@@ -1092,7 +1177,7 @@ bool SimpleParser::Data::loadFromXML(QXmlStreamReader& xml, StringCache& strCach
 void SimpleParser::MatchRuleNode::saveToXML(QXmlStreamWriter& xml) const
 {
     xml.writeAttribute(XML_NAME, name);
-    XMLUtil::writeStringList(xml, parentNodeNameList, XML_PARENT_LIST, XML_PARENT, true);
+    XMLUtil::writeStringList(xml, childNodeNameList, XML_CHILD_LIST, XML_CHILD, true);
     XMLUtil::writeLoadableList(xml, patterns, XML_PATTERN_LIST, XML_PATTERN);
     xml.writeEndElement();
 }
@@ -1103,7 +1188,7 @@ bool SimpleParser::MatchRuleNode::loadFromXML(QXmlStreamReader& xml, StringCache
     if (Q_UNLIKELY(!XMLUtil::readStringAttribute(xml, curElement, QString(), XML_NAME, name, strCache))) {
         return false;
     }
-    if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_PARENT_LIST, XML_PARENT, parentNodeNameList, strCache))) {
+    if (Q_UNLIKELY(!XMLUtil::readStringList(xml, curElement, XML_CHILD_LIST, XML_CHILD, childNodeNameList, strCache))) {
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readLoadableList(xml, curElement, XML_PATTERN_LIST, XML_PATTERN, patterns, strCache))) {
@@ -1116,6 +1201,10 @@ bool SimpleParser::MatchRuleNode::loadFromXML(QXmlStreamReader& xml, StringCache
 void SimpleParser::Pattern::saveToXML(QXmlStreamWriter& xml) const
 {
     xml.writeAttribute(XML_TYPENAME, typeName);
+    if (patternPass != 0) {
+        xml.writeAttribute(XML_PASS, QString::number(patternPass));
+    }
+
     XMLUtil::writeLoadableList(xml, pattern, XML_PATTERN_ELEMENT_LIST, XML_PATTERN_ELEMENT);
     xml.writeEndElement();
 }
@@ -1124,6 +1213,10 @@ bool SimpleParser::Pattern::loadFromXML(QXmlStreamReader& xml, StringCache& strC
 {
     const char* curElement = "SimpleParser::Pattern";
     if (Q_UNLIKELY(!XMLUtil::readStringAttribute(xml, curElement, QString(), XML_TYPENAME, typeName, strCache))) {
+        return false;
+    }
+    patternPass = 0;
+    if (Q_UNLIKELY(!XMLUtil::readOptionalIntAttribute(xml, curElement, QString(), XML_PASS, patternPass))) {
         return false;
     }
     if (Q_UNLIKELY(!XMLUtil::readLoadableList(xml, curElement, XML_PATTERN_ELEMENT_LIST, XML_PATTERN_ELEMENT, pattern, strCache))) {
@@ -1351,67 +1444,6 @@ QString SimpleParserEvent::getString(const EventLogger* logger, const Event& e, 
         QMetaEnum eventIDEnum = QMetaEnum::fromType<EventID>();
         return QString(eventIDEnum.valueToKey(eventTypeIndex));
     }break;
-    case static_cast<int>(EventID::RootNodeSpecification): {
-        switch (ty) {
-        case InterpretedStringType::EventTitle: {
-            return tr("Root Node Setting (%1)").arg(e.data.at(1).toString());
-        }break;
-        case InterpretedStringType::Detail: {
-            return tr("The parsing starts with root rule \"%1\" according to the parser's option.\n"
-                      "If this is unexpected, please change the corresponding option in the parser's editor.")
-                    .arg(e.data.at(1).toString());
-        }break;
-        }
-    }break;
-    case static_cast<int>(EventID::RootNodeDirectCreation): {
-        int rootSpec = e.references.front().eventIndex;
-        const Event& ref = logger->getEvent(rootSpec);
-        switch (ty) {
-        case InterpretedStringType::EventTitle: {
-            return tr("Root Node Direct Creation (%1)").arg(ref.data.at(1).toString());
-        }break;
-        case InterpretedStringType::Detail: {
-            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
-            return tr("Root rule \"%1\" do not contain any pattern, therefore the output root node is directly created.")
-                    .arg(ref.data.at(1).toString());
-        }break;
-        }
-    }break;
-    case static_cast<int>(EventID::RootNodePatternMatchCreation): {
-        switch (ty) {
-        case InterpretedStringType::EventTitle: {
-            return tr("Root Node Match Creation (%1)").arg(e.data.front().toString());
-        }break;
-        case InterpretedStringType::Detail: {
-            int rootSpec = e.references.front().eventIndex;
-            const Event& ref = logger->getEvent(rootSpec);
-
-            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
-            return tr("A pattern for \"%1\" is the best match in the root rule and is used to generate output root node.\n"
-                      "A pattern is considered a match if a non-zero length of text starting at a given position can be described by the pattern's elements.\n"
-                      "A pattern covering a longer text at starting position is better, and in case of a tie, a pattern with marker elements convering more text is better.")
-                    .arg(ref.data.front().toString());
-        }break;
-        }
-    }break;
-    case static_cast<int>(EventID::RootNodePatternMatchFailed): {
-        int rootSpec = e.references.front().eventIndex;
-        const Event& ref = logger->getEvent(rootSpec);
-        Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
-        switch (ty) {
-        case InterpretedStringType::EventTitle: {
-            return tr("Root Node Match Failed (%1)").arg(ref.data.at(1).toString());
-        }break;
-        case InterpretedStringType::Detail: {
-            int rootSpec = e.references.front().eventIndex;
-            const Event& ref = logger->getEvent(rootSpec);
-
-            Q_ASSERT(ref.eventTypeIndex == static_cast<int>(EventID::RootNodeSpecification));
-            return tr("None of the pattern in root rule \"%1\" matches the beginning of the text. Please check the referenced supporting events to identify the cause of unexpected matching failures.")
-                    .arg(ref.data.at(1).toString());
-        }break;
-        }
-    }break;
     case static_cast<int>(EventID::EmptyLineSkipped): {
         int startLineNum = e.data.at(0).toInt();
         int endLineNum = e.data.at(1).toInt();
@@ -1428,6 +1460,7 @@ QString SimpleParserEvent::getString(const EventLogger* logger, const Event& e, 
         }break;
         }
     }break;
+        /*
     case static_cast<int>(EventID::FramePushed): {
         QString parentRuleName = e.data.front().toString();
         switch (ty) {
@@ -1468,6 +1501,7 @@ QString SimpleParserEvent::getString(const EventLogger* logger, const Event& e, 
         }break;
         }
     }break;
+        */
     case static_cast<int>(EventID::FramePopedForEarlyExit): {
         switch (ty) {
         case InterpretedStringType::EventTitle: {

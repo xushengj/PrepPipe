@@ -130,6 +130,33 @@ bool XMLUtil::readAttribute(
     return true;
 }
 
+bool XMLUtil::readOptionalAttribute(
+        QXmlStreamReader& xml, const char* const currentElement,
+        const QString& attributedElement,
+        const QString& attributeName,
+        std::function<bool(QStringRef)> attributeReadCB,
+        std::initializer_list<QString> possibleValues,
+        const char* const reason)
+{
+    Q_UNUSED(attributedElement)
+    Q_ASSERT(xml.tokenType() == QXmlStreamReader::StartElement);
+    auto attr = xml.attributes();
+    if (!attr.hasAttribute(attributeName)) {
+        // it is not a problem if the optional attribute is missing
+        return true;
+    }
+    auto value = attr.value(attributeName);
+    if (Q_UNLIKELY(!attributeReadCB(value))) {
+        if (reason) {
+            return XMLError::invalidValue(qWarning(), xml, currentElement, attributeName, value, reason);
+        } else {
+            return XMLError::invalidEnumString(
+                qWarning(), xml, currentElement, attributeName, possibleValues);
+        }
+    }
+    return true;
+}
+
 bool XMLUtil::readStringAttribute(
         QXmlStreamReader& xml, const char* const currentElement,
         const QString& attributedElement,

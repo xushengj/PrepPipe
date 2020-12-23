@@ -68,18 +68,13 @@ public:
         // create the initial (default) data
         QString rootName = SimpleParserGUIObject::tr("root");
         SimpleParser::Data data;
-        data.rootRuleNodeName = rootName;
         data.whitespaceList.push_back(QStringLiteral(" "));
         data.whitespaceList.push_back(QStringLiteral("\t"));
-        SimpleParser::MatchRuleNode rootRule;
-        rootRule.name = rootName;
-        data.matchRuleNodes.push_back(rootRule);
         SimpleParser::MatchRuleNode exampleRule;
         exampleRule.name = SimpleParserGUIObject::tr("Example");
-        exampleRule.parentNodeNameList.push_back(rootName);
         data.matchRuleNodes.push_back(exampleRule);
+        data.topNodeList.push_back(exampleRule.name);
         data.flag_skipEmptyLineBeforeMatching = true;
-
         SimpleParserGUIObject* obj = new SimpleParserGUIObject(data);
         obj->setName(name);
         return obj;
