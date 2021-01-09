@@ -33,6 +33,10 @@ private:
 struct PlainTextLocation {
     indextype startPos = -1;
     indextype endPos = -1;
+    PlainTextLocation() = default;
+    PlainTextLocation(indextype start, indextype end)
+        : startPos(start), endPos(end)
+    {}
 
     bool operator<(const PlainTextLocation& rhs) const {
         if (startPos < rhs.startPos)

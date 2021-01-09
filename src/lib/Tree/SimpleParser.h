@@ -162,6 +162,13 @@ public:
         int getRegexIndex(const QString& pattern);
     };
 
+    struct PatternMatchFailAttempts {
+        indextype failElement;
+        int failElementType;
+        QString failElementStr;
+        QVector<TextUtil::PlainTextLocation> elementMatchPosVec;
+    };
+
 public:
     explicit SimpleParser(const Data& d);
     bool performParsing(const QString& src, Tree& dest, EventLogger* logger = nullptr);
@@ -224,6 +231,16 @@ private:
         }
     };
 
+    // the original entry code for testing a pattern
+    PatternMatchResult tryPattern_v1(const Pattern& pattern, int pos, int patternTestSourceEvent);
+
+    // get a list of pattern element indices for the solving order
+    std::vector<indextype> getPatternElementSolvingOrder(const Pattern& pattern);
+
+    // return vec of pairs, everything (both arguments and return values are absolute distance from beginning of the text)
+    std::vector<std::pair<int, int>> tryMatchPatternElement(const PatternElement& element, int holeLB_abs, int holeUB_abs, bool pinLB, bool pinUB);
+
+    // the up-to-date entry function for testing a pattern
     PatternMatchResult tryPattern(const Pattern& pattern, int pos, int patternTestSourceEvent);
 
 private:
@@ -256,6 +273,9 @@ private:
     TreeBuilder builder;
 
 };
+
+// making it usable in QVariant
+Q_DECLARE_METATYPE(SimpleParser::PatternMatchFailAttempts);
 
 class SimpleParserEvent : public EventInterpreter
 {
@@ -296,9 +316,7 @@ public:
         PositionMapping_NodeEvent,
         PostMatchingCheck_MatchFinishEvent,
         PatternMatched_SourceEvent,
-        PatternMatched_ElementMatchEvent,
         PatternNotMatched_SourceEvent,
-        PatternNotMatched_ElementMatchEvent
     };
     Q_ENUM(EventReferenceID)
 
@@ -442,26 +460,35 @@ public:
         return code;
     }
 
-    static int PatternMatched(EventLogger* logger, int startPos, int endPos, int sourceEvent, const QList<int>& elementMatchEvents)
+    static int PatternMatched(EventLogger* logger, int startPos, int endPos, int sourceEvent, const std::vector<std::pair<int,int>>& elementMatchData)
     {
         QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::PatternMatched_ElementMatchEvent, elementMatchEvents, QList<int>());
         EventReference::addReference(refs, EventReferenceID::PatternMatched_SourceEvent, sourceEvent);
         QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
-        return logger->addEvent(SimpleParserEvent::EventID::PatternMatched, QVariantList(), EventColorOption::Referable, refs, locations);
+        QVariantList data;
+        data.reserve(elementMatchData.size());
+        for (const auto& patternElementMatchRange : elementMatchData) {
+            TextUtil::PlainTextLocation loc(patternElementMatchRange.first, patternElementMatchRange.second);
+            QVariant element;
+            element.setValue(loc);
+            data.push_back(element);
+        }
+        return logger->addEvent(SimpleParserEvent::EventID::PatternMatched, data, EventColorOption::Referable, refs, locations);
     }
 
-    static int PatternNotMatched(EventLogger* logger, int startPos, int endPos, int sourceEvent, int elementIndex, const SimpleParser::PatternElement& element, const QList<int>& elementMatchEvents)
+    static int PatternNotMatched(EventLogger* logger, int startPos, int endPos, int sourceEvent, const std::vector<SimpleParser::PatternMatchFailAttempts>& matchAttempts)
     {
         QVariantList data;
-        data << elementIndex;
-        data << static_cast<int>(element.ty);
-        data << element.str;
-
+        data.reserve(matchAttempts.size());
+        for (const auto& attempt : matchAttempts) {
+            QVariant element;
+            element.setValue(attempt);
+            data.push_back(element);
+        }
         QVector<EventReference> refs;
-        EventReference::addReference(refs, EventReferenceID::PatternMatched_ElementMatchEvent, elementMatchEvents, QList<int>());
         EventReference::addReference(refs, EventReferenceID::PatternMatched_SourceEvent, sourceEvent);
         QVector<EventLocationRemark> locations = getSingleInputLoc(startPos, endPos);
+
         return logger->addEvent(SimpleParserEvent::EventID::PatternNotMatched, data, EventColorOption::Referable, refs, locations);
     }
 };

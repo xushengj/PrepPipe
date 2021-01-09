@@ -490,7 +490,7 @@ int SimpleParser::ParseState::getRegexIndex(const QString& pattern)
     return regexIndex;
 }
 
-SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern, int position, int patternTestSourceEvent)
+SimpleParser::PatternMatchResult SimpleParser::tryPattern_v1(const Pattern& pattern, int position, int patternTestSourceEvent)
 {
     // helper function
     auto setDeclByPatternElement = [](BoundaryDeclaration& decl, const PatternElement& pe) -> void {
@@ -608,8 +608,7 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
             result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternNotMatched, state.logger,
                                                            position, currentPosition,
                                                            patternTestSourceEvent,
-                                                           curTestingElementIndex, pattern.pattern.at(curTestingElementIndex),
-                                                           QList<int>()); // TODO add tracking of matching events
+                                                           std::vector<SimpleParser::PatternMatchFailAttempts>()); // TODO add tracking of matching events
             return result;
         }
 
@@ -632,8 +631,7 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
                    result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternNotMatched, state.logger,
                                                                   currentPosition, currentPosition + pos.first,
                                                                   patternTestSourceEvent,
-                                                                  curWSElementIndex, pattern.pattern.at(curWSElementIndex),
-                                                                  QList<int>()); // TODO add tracking of matching events
+                                                                  std::vector<SimpleParser::PatternMatchFailAttempts>()); // TODO add tracking of matching events
                    // curWSElementIndex
                    return result;
                }
@@ -668,7 +666,472 @@ SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern
     result.totalConsumedLength = totalConsumeCount;
     result.boundaryConsumedLength = boundaryConsumeCount;
     // TODO currently we don't track element matching events yet
-    result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternMatched, state.logger, position, position + totalConsumeCount, patternTestSourceEvent, QList<int>());
+    result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternMatched, state.logger, position, position + totalConsumeCount, patternTestSourceEvent, std::vector<std::pair<int,int>>());
+    return result;
+}
+
+std::vector<indextype> SimpleParser::getPatternElementSolvingOrder(const Pattern& pattern)
+{
+    // Tier 1: \n, Literal, Regex, Named Boundary
+    // Tier 2: Whitespace
+    // Tier 3: Content
+    // 0 reserved as a special value
+    std::vector<indextype> patternElementTier;
+    patternElementTier.reserve(pattern.pattern.size());
+    for (indextype i = 0, n = pattern.pattern.size(); i < n; ++i) {
+        const PatternElement& pe = pattern.pattern.at(i);
+        indextype tier = 3;
+        switch (pe.ty) {
+        default: qFatal("Unexpected pattern element type"); break;
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_LineFeed:
+        case PatternElement::ElementType::AnonymousBoundary_StringLiteral:
+        case PatternElement::ElementType::AnonymousBoundary_Regex:
+        case PatternElement::ElementType::NamedBoundary:
+            tier = 1;
+            break;
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces:
+        case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace:
+            tier = 2;
+            break;
+        case PatternElement::ElementType::Content:
+            tier = 3;
+            break;
+        }
+        patternElementTier.push_back(tier);
+    }
+
+    std::vector<indextype> result;
+    result.reserve(pattern.pattern.size());
+
+    std::function<void(std::vector<indextype>&,const std::vector<indextype>&,indextype,indextype,indextype)> addInterval;
+    addInterval = [&addInterval](std::vector<indextype>& result, const std::vector<indextype>& patternElementTier, indextype minTier, indextype lb_included, indextype ub_included) -> void {
+        while (lb_included <= ub_included) {
+            while (patternElementTier.at(lb_included) == minTier) {
+                result.push_back(lb_included);
+                lb_included += 1;
+                if (lb_included > ub_included)
+                    return;
+            }
+
+            if (lb_included == ub_included) {
+                result.push_back(lb_included);
+                return;
+            }
+            // emit [lb_included, ub_included] to result
+            // the caller ensures that pattern elements in the range always have the tier >= minTier
+            indextype minTierEncountered = patternElementTier.at(lb_included);
+            bool isLBMoved = false;
+            for (indextype i = lb_included+1; i <= ub_included; ++i) {
+                indextype curTier = patternElementTier.at(i);
+                if (curTier == minTier) {
+                    result.push_back(i);
+                    if (i == lb_included+1) {
+                        // only lb_included is pending
+                        result.push_back(lb_included);
+                    } else {
+                        // more than one element pending
+                        addInterval(result, patternElementTier, minTier+1, lb_included, i-1);
+                    }
+                    if (i == ub_included) {
+                        return;
+                    } else {
+                        lb_included = i+1;
+                        isLBMoved = true;
+                        break;
+                    }
+                }
+                if (curTier < minTierEncountered) {
+                    minTierEncountered = curTier;
+                }
+            }
+            if (isLBMoved) {
+                // restart the function with new LB
+                continue;
+            }
+            // since LB is not moved, we are not encountering any element with matching minTier
+            // therefore we increase the minTier and loop again
+            Q_ASSERT(minTierEncountered > minTier);
+            minTier = minTierEncountered;
+            // loop again
+        }
+    };
+
+    addInterval(result, patternElementTier, 1, 0, pattern.pattern.size()-1);
+    return result;
+}
+
+std::vector<std::pair<int, int>> SimpleParser::tryMatchPatternElement(const PatternElement& element, int holeLB_abs, int holeUB_abs, bool pinLB, bool pinUB)
+{
+    // note: currently we ONLY find all occurrence of whitespace when both side of the hole is not pinned
+    // In all other boundary types we only return the first occurrence
+    std::vector<std::pair<int, int>> result;
+    QStringRef text = state.str->midRef(holeLB_abs, holeUB_abs-holeLB_abs);
+    auto populateAsString = [=,&result](const QString& str) -> void {
+        if (pinLB) {
+            if (pinUB) {
+                if (str == text) {
+                    result.push_back(std::make_pair(holeLB_abs, holeUB_abs));
+                }
+            } else {
+                if (text.startsWith(str)) {
+                    result.push_back(std::make_pair(holeLB_abs, holeLB_abs + str.length()));
+                }
+            }
+        } else if (pinUB) {
+            if (text.endsWith(str)) {
+                result.push_back(std::make_pair(holeUB_abs - str.length(), holeUB_abs));
+            }
+        } else {
+            // neither end is pinned
+            int curPos = holeLB_abs;
+            int offset = findNextStringMatch(curPos, str);
+            int end = curPos + offset + str.length();
+            while (offset >= 0 && end <= holeUB_abs) {
+                result.push_back(std::make_pair(curPos + offset, end));
+                curPos = end;
+                offset = findNextStringMatch(curPos, str);
+                end = curPos + offset + str.length();
+                // NOTE: we only keep the first result
+                break;
+            }
+        }
+    };
+    auto populateAsRegex = [=,&result](const QString& regexExpr) -> void {
+        // note that at the time of writing, all regex elements should not have the UB pinned
+        Q_ASSERT(!pinUB);
+
+        int regexIndex = state.getRegexIndex(regexExpr);
+        const QRegularExpression& regex = state.regexList.at(regexIndex);
+        auto& positionMap = state.regexMatchPositionMap[regexIndex];
+
+        // we will have to do one round of matching no matter what
+        std::pair<int,int> dists = findNextRegexMatch(holeLB_abs, regex, positionMap);
+        if (dists.first < 0) {
+            // no matches
+            return;
+        }
+
+
+        if (pinLB) {
+            if (dists.first != 0) {
+                // failed to pin
+                return;
+            }
+        }
+
+        int start = holeLB_abs + dists.first;
+        int end = start + dists.second;
+        // debug code
+        qDebug() << "Regex match:" << holeLB_abs << holeUB_abs << "->" << start << "; regex " << regexExpr << " -> " << state.str->midRef(start, end-start);
+        result.push_back(std::make_pair(start, end));
+    };
+    auto populateAsStringListConcatenation = [=,&result](const QStringList& strList) -> void {
+        QStringRef testStr = text;
+        if (pinLB) {
+            // try to find from beginning to the end
+            int consumedLength = 0;
+            bool isImprovementMade = true;
+            while (isImprovementMade) {
+                isImprovementMade = false;
+                for (const auto& str : strList) {
+                    Q_ASSERT(str.length() > 0);
+                    while (testStr.startsWith(str)) {
+                        consumedLength += str.length();
+                        testStr = testStr.mid(str.length());
+                        isImprovementMade = true;
+                    }
+                }
+            }
+            if (consumedLength > 0) {
+                result.push_back(std::make_pair(holeLB_abs, holeLB_abs + consumedLength));
+            }
+            if (pinUB) {
+                if (testStr.length() != 0) {
+                    // we still have text left
+                    return;
+                }
+            }
+        } else if (pinUB) {
+            // try to find from end to beginning
+            int consumedLength = 0;
+            bool isImprovementMade = true;
+            while (isImprovementMade) {
+                isImprovementMade = false;
+                for (const auto& str : strList) {
+                    Q_ASSERT(str.length() > 0);
+                    while (testStr.endsWith(str)) {
+                        consumedLength += str.length();
+                        testStr.chop(str.length());
+                        isImprovementMade = true;
+                    }
+                }
+            }
+            if (consumedLength > 0) {
+                result.push_back(std::make_pair(holeUB_abs - consumedLength, holeUB_abs));
+            }
+        } else {
+            // neither end is pinned
+            // find all occurrence
+            int curPos = holeLB_abs;
+            while (curPos < holeUB_abs) {
+                int minPos = holeUB_abs;
+                int consumedLength = 0;
+                for (const auto& str : strList) {
+                    Q_ASSERT(str.length() > 0);
+                    int offset = findNextStringMatch(curPos, str);
+                    if (offset >= 0 && (curPos + offset) < minPos && ((curPos + offset + str.length()) < holeUB_abs)) {
+                        minPos = (curPos + offset);
+                        consumedLength = str.length();
+                    }
+                }
+                // now we find the first occurrence of a whitespace in [minPos, minPos + consumedLength)
+                // consume as much text as possible
+                int newStart = minPos + consumedLength;
+                QStringRef testStr = state.str->midRef(newStart, holeUB_abs - newStart);
+                bool isImprovementMade = true;
+                while (isImprovementMade) {
+                    isImprovementMade = false;
+                    for (const auto& str : strList) {
+                        if (testStr.startsWith(str)) {
+                            testStr = testStr.mid(str.length());
+                            consumedLength += str.length();
+                            isImprovementMade = true;
+                        }
+                    }
+                }
+                result.push_back(std::make_pair(minPos, minPos + consumedLength));
+                curPos = minPos + consumedLength + 1;
+            }
+        }
+    };
+
+    switch (element.ty) {
+    case PatternElement::ElementType::AnonymousBoundary_StringLiteral: {
+        populateAsString(element.str);
+    }break;
+    case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_LineFeed: {
+        populateAsString(QStringLiteral("\n"));
+    }break;
+    case PatternElement::ElementType::AnonymousBoundary_Regex: {
+        populateAsRegex(element.str);
+    }break;
+    case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_WhiteSpaces: {
+        populateAsStringListConcatenation(data.whitespaceList);
+    }break;
+    case PatternElement::ElementType::AnonymousBoundary_SpecialCharacter_OptionalWhiteSpace: {
+        if (holeLB_abs < holeUB_abs) {
+            populateAsStringListConcatenation(data.whitespaceList);
+            if (result.empty()) {
+                int pos = (pinUB)? holeUB_abs : holeLB_abs;
+                result.push_back(std::make_pair(pos, pos));
+            }
+        } else {
+            // basically no hole
+            Q_ASSERT(holeLB_abs == holeUB_abs);
+            result.push_back(std::make_pair(holeLB_abs, holeLB_abs));
+        }
+    }break;
+    case PatternElement::ElementType::NamedBoundary: {
+        qFatal("NamedBoundary unimplemented in new parser core yet");
+    }break;
+    case PatternElement::ElementType::Content: {
+        // for contents, we currently just try to make it consume the entire space
+        int contentTypeIndex = 0;
+        if (!element.str.isEmpty()) {
+            contentTypeIndex = contentTypeNameToIndexMap.value(element.str, -1);
+            Q_ASSERT(contentTypeIndex >= 0);
+        }
+        const ContentType& c = data.contentTypes.at(contentTypeIndex);
+        int checkResult = contentCheck(c, holeLB_abs, holeUB_abs - holeLB_abs, false);
+        if (checkResult == 0) {
+            result.push_back(std::make_pair(holeLB_abs, holeUB_abs));
+        }
+    }break;
+    }
+    return result;
+}
+
+SimpleParser::PatternMatchResult SimpleParser::tryPattern(const Pattern& pattern, int position, int patternTestSourceEvent)
+{
+    const std::vector<indextype> elementSolveOrder = getPatternElementSolvingOrder(pattern);
+    Q_ASSERT(elementSolveOrder.size() == static_cast<decltype(elementSolveOrder.size())>(pattern.pattern.size()));
+    const int startAbsolutePosition = position;
+
+    /*
+     * The pattern matching algorithm need to handle as much solvable ambiguity as possible,
+     * therefore it must be able to retract in case an earlier, greedy match fails subsequent matching
+     *
+     * The algorithm is as follows:
+     * 1.   get a pattern element solve order, which specifies what PatternElement should be matched first to pinpoint
+     *      the boundary of subsequent matching
+     *      The element solve order should guarantee that searchable text (boundary) appear before the content they enclose
+     * 2.   A depth-first search following the pattern element solve order is made:
+     *      for each step of matching (i.e., each consumption of pattern element), we create an entry that represent the current matching step
+     *      the search is initialized by pushing the result for the first pattern element search (there should only be at most one result)
+     *      then, each iteration finds the entry from a stack top and:
+     *      a. try to match the next pattern element among the holes (unconsumed text).
+     *          if the pattern element is immediately before or after a matched element, then the matching must "snap" to the boundary
+     *          (the element solve order requires that later-matched element should be limited by earlier-matched element)
+     *      b. add all possible solutions the the record
+     */
+    struct SearchEntry {
+        std::size_t prevEntry = 0; // the index of the previous search entry (this forms a linked list)
+        indextype depth = 0; // how many pattern elements has been solved
+        indextype peIndex = 0; // what's the pattern element index of current entry
+        int posStart_abs = 0;   // (absolute) start position of the element
+        int posEnd_abs = 0;     // (absolute) end   position of the element
+    };
+    std::vector<SearchEntry> searchRecords;
+    std::vector<std::size_t> pendingEntryStack;
+
+    std::vector<PatternMatchFailAttempts> failAttempts;
+
+    // step 1: init
+    pendingEntryStack.push_back(0);
+
+    // helper function to populate matched range
+    auto getPEMatchingResult = [&](std::size_t recordIndex) -> std::vector<std::pair<int,int>> {
+        std::vector<std::pair<int,int>> result(pattern.pattern.size(), std::make_pair(0,0));
+        if (searchRecords.empty()) {
+            return result;
+        }
+        while (true) {
+            Q_ASSERT(recordIndex < searchRecords.size());
+            const SearchEntry& e = searchRecords.at(recordIndex);
+            Q_ASSERT(recordIndex >= e.prevEntry);
+            result[e.peIndex] = std::make_pair(e.posStart_abs, e.posEnd_abs);
+            if (recordIndex == e.prevEntry) {
+                break;
+            }
+            recordIndex = e.prevEntry;
+        }
+        return result;
+    };
+
+    // step 2: main loop
+    while (!pendingEntryStack.empty()) {
+        const std::size_t prevRecordIndex = pendingEntryStack.back();
+        pendingEntryStack.pop_back();
+        indextype numProcessedElements = 0;
+        if (prevRecordIndex < searchRecords.size()) {
+            const SearchEntry& entry = searchRecords.at(prevRecordIndex);
+            numProcessedElements = entry.depth;
+        }
+        indextype nextPE = elementSolveOrder.at(numProcessedElements);
+
+        // try to find what range it can use
+        int holeLB = startAbsolutePosition;
+        int holeUB = state.str->length();
+        indextype leftSideElement = nextPE;
+        indextype rightSideElement = nextPE;
+        if (prevRecordIndex < searchRecords.size()) {
+            std::size_t curIndex = prevRecordIndex;
+            while (true) {
+                const SearchEntry& e = searchRecords.at(curIndex);
+                indextype curPE = e.peIndex;
+                if (curPE < nextPE && ((curPE > leftSideElement) || (leftSideElement == nextPE))) {
+                    Q_ASSERT(holeLB <= e.posEnd_abs);
+                    holeLB = e.posEnd_abs;
+                    leftSideElement = curPE;
+                }
+                if (curPE > nextPE && ((curPE < rightSideElement) || (rightSideElement == nextPE))) {
+                    Q_ASSERT(holeUB >= e.posStart_abs);
+                    holeUB = e.posStart_abs;
+                    rightSideElement = curPE;
+                }
+                if (curIndex == e.prevEntry)
+                    break;
+                curIndex = e.prevEntry;
+            }
+        }
+        // try to find element in the range
+        std::vector<std::pair<int, int>> results = tryMatchPatternElement(
+                    pattern.pattern.at(nextPE),
+                    holeLB, holeUB,
+                    ((nextPE == 0) || (leftSideElement+1 == nextPE)),
+                    (nextPE+1 == rightSideElement)
+        );
+        if (results.empty()) {
+            // no matches
+            PatternMatchFailAttempts failData;
+            failData.failElement = nextPE;
+            const auto& pe = pattern.pattern.at(nextPE);
+            failData.failElementType = static_cast<int>(pe.ty);
+            failData.failElementStr = pe.str;
+            std::vector<std::pair<int,int>> matchPosVec = getPEMatchingResult(prevRecordIndex);
+            failData.elementMatchPosVec.reserve(matchPosVec.size());
+            for (const auto& p : matchPosVec) {
+                failData.elementMatchPosVec.push_back(TextUtil::PlainTextLocation(p.first, p.second));
+            }
+            failAttempts.push_back(failData);
+            continue;
+        }
+
+        // check if we finished all the matching first
+        if (numProcessedElements + 1 == pattern.pattern.size()) {
+            // we have finished matching all the elements
+            // just finalize and we are done
+
+            // vector of matched range for each element
+            // all distance are absolute
+            std::vector<std::pair<int,int>> matchPosVec = getPEMatchingResult(prevRecordIndex);
+            {
+                // populate the new result
+                std::pair<int,int>& p = matchPosVec[nextPE];
+                Q_ASSERT(p.first == 0 && p.second == 0);
+                p = results.front();
+            }
+            {
+                // OPTIONAL: verify that we have matched all the elements and we are leaving no characters behind
+                // once this parser is mature enough we can just drop this block of code
+                int lb = startAbsolutePosition;
+                for (const auto& p : matchPosVec) {
+                    Q_ASSERT(p.second >= p.first && p.first == lb);
+                    lb = p.second;
+                }
+            }
+            // populate the result
+            TreeBuilder::Node* node= builder.allocateNode();
+            node->typeName = pattern.typeName;
+            int contentCount = 0;
+            for (indextype i = 0, n = pattern.pattern.size(); i < n; ++i) {
+                const auto& pe = pattern.pattern.at(i);
+                const std::pair<int, int>& matchedTextRange = matchPosVec.at(i);
+                if (!pe.elementName.isEmpty()) {
+                    node->keyList.push_back(pe.elementName);
+                    node->valueList.push_back(state.str->mid(matchedTextRange.first, matchedTextRange.second - matchedTextRange.first));
+                }
+                if (pe.ty == PatternElement::ElementType::Content) {
+                    contentCount += matchedTextRange.second - matchedTextRange.first;
+                }
+            }
+            int matchEnd = matchPosVec.back().second;
+            SimpleParser::PatternMatchResult result;
+            result.node = node;
+            result.boundaryConsumedLength = matchEnd - startAbsolutePosition - contentCount;
+            result.totalConsumedLength = matchEnd - startAbsolutePosition;
+            result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternMatched, state.logger, startAbsolutePosition, matchEnd, patternTestSourceEvent, matchPosVec);
+            return result;
+        }
+
+        // okay, "no match" and "final match" are handled
+        // now handle intermediate matches
+        SearchEntry newEntry;
+        newEntry.prevEntry = prevRecordIndex;
+        newEntry.depth = numProcessedElements+1;
+        newEntry.peIndex = nextPE;
+        std::size_t startIndex = searchRecords.size();
+        for (std::size_t i = 0, n = results.size(); i < n; ++i) {
+            std::tie(newEntry.posStart_abs, newEntry.posEnd_abs) = results.at(i);
+            searchRecords.push_back(newEntry);
+            pendingEntryStack.push_back(startIndex + i);
+        }
+    }
+
+    // okay, stack is empty but we have not returned yet
+    // this is a match failure
+    SimpleParser::PatternMatchResult result;
+    result.nodeFinalEvent = SimpleParserEvent::Log(SimpleParserEvent::PatternNotMatched, state.logger, startAbsolutePosition, startAbsolutePosition, patternTestSourceEvent, failAttempts);
     return result;
 }
 
@@ -679,7 +1142,7 @@ int SimpleParser::getWhitespaceTailChopLength(int startPos, int length)
     bool isChanged = true;
     while (isChanged) {
         isChanged = false;
-        for (const auto& ws : data.whitespaceList) {
+        for (const auto& ws : qAsConst(data.whitespaceList)) {
             if (strRef.endsWith(ws)) {
                 int len = ws.length();
                 totalLength += len;
@@ -862,11 +1325,10 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
     // actually do the match
     auto match = regex.match(*state.str, startPos);
     if (match.hasMatch()) {
-        int startOffset = match.capturedStart();
-        int length = match.capturedEnd() - startOffset;
-        int matchPos = startOffset + startPos;
+        int startAbsDist = match.capturedStart();
+        int length = match.capturedEnd() - startAbsDist;
 
-        if (iter != positionMap.end() && iter.key() == matchPos) {
+        if (iter != positionMap.end() && iter.key() == startAbsDist) {
             // same match
             iter.value().first = startPos;
         } else {
@@ -878,10 +1340,10 @@ std::pair<int, int> SimpleParser::findNextRegexMatch(int startPos, const QRegula
             for (int i = 0; i < numCaptures; ++i) {
                 data.namedCaptures.push_back(match.capturedRef(i+1));
             }
-            positionMap.insert(matchPos, std::make_pair(startPos, data));
+            positionMap.insert(startAbsDist, std::make_pair(startPos, data));
         }
 
-        return std::make_pair(startOffset - startPos, length);
+        return std::make_pair(startAbsDist - startPos, length);
     } else {
         if (iter != positionMap.end() && iter.key() == state.strLength) {
             iter.value().first = startPos;
