@@ -936,16 +936,22 @@ std::vector<std::pair<int, int>> SimpleParser::tryMatchPatternElement(const Patt
     }break;
     case PatternElement::ElementType::Content: {
         // for contents, we currently just try to make it consume the entire space
-        int contentTypeIndex = 0;
+        int contentTypeIndex = -1;
         if (!element.str.isEmpty()) {
             contentTypeIndex = contentTypeNameToIndexMap.value(element.str, -1);
-            Q_ASSERT(contentTypeIndex >= 0);
+            // we may have undefined contents; we just accept everything
+            // Q_ASSERT(contentTypeIndex >= 0);
         }
-        const ContentType& c = data.contentTypes.at(contentTypeIndex);
-        int checkResult = contentCheck(c, holeLB_abs, holeUB_abs - holeLB_abs, false);
-        if (checkResult == 0) {
+        if (contentTypeIndex == -1) {
             result.push_back(std::make_pair(holeLB_abs, holeUB_abs));
+        } else {
+            const ContentType& c = data.contentTypes.at(contentTypeIndex);
+            int checkResult = contentCheck(c, holeLB_abs, holeUB_abs - holeLB_abs, false);
+            if (checkResult == 0) {
+                result.push_back(std::make_pair(holeLB_abs, holeUB_abs));
+            }
         }
+
     }break;
     }
     return result;

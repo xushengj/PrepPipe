@@ -125,7 +125,7 @@ public:
     struct Data {
         QVector<MatchRuleNode> matchRuleNodes;
         QVector<NamedBoundary> namedBoundaries;
-        QVector<ContentType> contentTypes; // the first item will be used for anonymous ones
+        QVector<ContentType> contentTypes;
         QVector<BalancedParenthesis> parenthesis;
         QStringList whitespaceList; // even we mean for list of single characters, QChar only has 16 bits and we need a QString to represent arbitrary (say UTF-32) characters
         QStringList topNodeList; // child node names for the pseudo root node

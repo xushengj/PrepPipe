@@ -77,7 +77,10 @@ bool SimpleParserEditor::inputValidationCallback_MatchRuleNode(const QString& na
 
 bool SimpleParserEditor::inputValidationCallback_ContentType(const QString& name)
 {
-    return contentCtl.isElementExist(name);
+    // We now accept contents that do not exist (the field will just be populated with whatever enclosed by higher-priority elements)
+    // return contentCtl.isElementExist(name);
+    Q_UNUSED(name)
+    return true;
 }
 
 bool SimpleParserEditor::inputValidationCallback_NamedBoundary(const QString& name)
