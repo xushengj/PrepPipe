@@ -29,9 +29,9 @@ public:
 
     void setData(const SimpleParser::MatchRuleNode& dataArg);
     void setData(const QString& name, const HierarchicalElementTreeControllerObject::GraphData* graph, const SimpleParser::MatchRuleNode& dataArg) {
-        Q_UNUSED(name)
         Q_UNUSED(graph)
         setData(dataArg);
+        nameUpdated(name);
     }
     void bindCommonHelper(CommonHelperData& helper) {
         helperPtr = &helper;
